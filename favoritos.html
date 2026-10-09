@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Favoritos - VR Modas</title>
+    
+    <link rel="stylesheet" href="./css/global.css">
+    <link rel="stylesheet" href="./css/produtos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Cabeçalho -->
+    <header class="header">
+        <button id="btn-menu" class="btn-menu">☰</button>
+        <div class="logo">
+            <a href="home.html">
+                <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
+            </a>
+        </div>
+        
+        <div class="caixa-busca">
+            <input type="text" id="input-busca" placeholder="Buscar vestidos, calças, camisas...">
+            <button id="btn-busca">🔍</button>
+        </div>
+
+        <nav id="navbar" class="navbar">
+            <button id="fechar-menu" class="btn-fechar-menu">&times;</button>
+            <a href="home.html">Início</a>
+            <a href="produtos.html">Catálogo</a>
+            <a href="produtos.html?categoria=feminino">Feminino</a>
+            <a href="produtos.html?categoria=masculino">Masculino</a>
+        </nav>
+        
+        <div class="acoes-header" style="display: flex; align-items: center; gap: 10px;">
+            <button id="abrir-favoritos" class="icone-carrinho" title="Meus Favoritos" style="position: relative; background: transparent; border: none; font-size: 20px; cursor: pointer; color: var(--dourado);">
+                ❤️ <span class="contador-favoritos" style="position: absolute; top: -6px; right: -8px; background: var(--dourado); color: var(--preto); font-size: 11px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">0</span>
+            </button>
+            <button id="abrir-carrinho" class="icone-carrinho">🛒 <span class="contador-carrinho">0</span></button>
+        </div>
+    </header>
+
+    <!-- Área Principal de Favoritos -->
+    <main class="catalogo-container" style="display: flex; flex-direction: column; max-width: 1200px; margin: 0 auto; padding: 30px 15px; width: 100%;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 25px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h1 style="color: var(--dourado); font-size: 26px; margin: 0; font-weight: 900;">Meus Favoritos ❤️</h1>
+                <p style="color: var(--cinza-texto); margin: 5px 0 0 0; font-size: 14px;">Peças que você salvou para ver ou comprar mais tarde.</p>
+            </div>
+            <button id="btn-limpar-todos-favoritos" style="background: transparent; color: #ff4444; border: 1px solid #ff4444; padding: 8px 16px; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 13px;">Limpar Todos</button>
+        </div>
+
+        <!-- Grelha de Favoritos -->
+        <section class="grid-catalogo" id="vitrine-pagina-favoritos" style="width: 100%;">
+            <!-- Preenchido dinamicamente pelo script.js -->
+        </section>
+
+    </main>
+
+    <!-- Gaveta Lateral de Favoritos -->
+    <div id="favoritos-lateral" class="carrinho-lateral">
+        <div class="carrinho-header">
+            <h2>Meus Favoritos ❤️</h2>
+            <button id="fechar-favoritos" class="btn-fechar-carrinho">&times;</button>
+        </div>
+        <div id="lista-favoritos" class="itens-carrinho" style="padding: 15px;"></div>
+    </div>
+
+    <!-- Carrinho Lateral -->
+    <div id="carrinho-lateral" class="carrinho-lateral">
+        <div class="carrinho-header">
+            <h2>Sua Sacola</h2>
+            <button id="fechar-carrinho" class="btn-fechar-carrinho">&times;</button>
+        </div>
+        <div id="lista-itens" class="itens-carrinho"></div>
+        <div class="carrinho-footer">
+            <div class="carrinho-total">
+                <span>Total:</span>
+                <span id="valor-total">R$ 0,00</span>
+            </div>
+            <button class="btn-finalizar" id="btn-finalizar-compra">Finalizar Compra</button>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="footer">
+        <div class="logo-footer">
+            <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
+        </div>
+        <p>&copy; 2026 VR Modas. Todos os direitos reservados.</p>
+        <a href="admin.html" style="color: #444; text-decoration: none; font-size: 12px; margin-top: 10px; display: block;">Área do Lojista</a>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

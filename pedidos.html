@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Meus Pedidos - VR Modas</title>
+    <link rel="stylesheet" href="./css/global.css">
+    <link rel="stylesheet" href="./css/produtos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        .container-meus-pedidos {
+            max-width: 800px;
+            margin: 30px auto 60px auto;
+            padding: 0 16px;
+        }
+        .topo-pedidos-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        .btn-voltar-link {
+            color: var(--dourado);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .card-pedido-cliente {
+            background: #121212;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .topo-card-pedido {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #222;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .status-Pendente { background: rgba(255, 152, 0, 0.15); color: #ff9800; border: 1px solid #ff9800; }
+        .status-Pago { background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid #4caf50; }
+        .status-Enviado { background: rgba(33, 150, 243, 0.15); color: #2196f3; border: 1px solid #2196f3; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <a href="home.html">
+                <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="container-meus-pedidos">
+        <div class="topo-pedidos-nav">
+            <a href="home.html" class="btn-voltar-link">⬅ Voltar à Loja</a>
+        </div>
+
+        <h1 style="font-size: 22px; color: #fff; margin-bottom: 6px;">Minhas Compras</h1>
+        <p style="color: var(--cinza-texto); font-size: 13px; margin-bottom: 24px;">Acompanhe o status e a entrega dos seus pedidos em tempo real.</p>
+
+        <div id="lista-pedidos-cliente"></div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('lista-pedidos-cliente');
+            const todosPedidos = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
+            const clienteSessao = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) || null;
+
+            let pedidosExibir = todosPedidos;
+            if (clienteSessao && clienteSessao.nome) {
+                const filtrados = todosPedidos.filter(p => p.cliente && p.cliente.nome.toLowerCase().includes(clienteSessao.nome.toLowerCase()));
+                if (filtrados.length > 0) pedidosExibir = filtrados;
+            }
+
+            if (pedidosExibir.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #888; padding: 40px; background: #121212; border-radius: 8px; border: 1px solid #222;">Você ainda não realizou nenhum pedido.</div>';
+                return;
+            }
+
+            container.innerHTML = pedidosExibir.map(ped => {
+                const itensHTML = ped.itens.map(it => {
+                    const tam = it.tamanho || 'Padrão';
+                    const cor = it.cor || 'Padrão';
+                    return `<div>• ${it.quantidade}x ${it.nome} (${tam} / ${cor})</div>`;
+                }).join('');
+
+                const formaPagto = ped.formaPagamento || 'Pix à vista';
+                const totalValor = Number(ped.total).toFixed(2);
+
+                return `
+                    <div class="card-pedido-cliente">
+                        <div class="topo-card-pedido">
+                            <div>
+                                <strong style="color: var(--dourado); font-size: 15px;">${ped.codigo}</strong>
+                                <div style="font-size: 11px; color: #777;">${ped.data}</div>
+                            </div>
+                            <span class="status-badge status-${ped.status}">${ped.status}</span>
+                        </div>
+                        <div style="font-size: 13px; margin-bottom: 12px; line-height: 1.6; color: #ccc;">
+                            ${itensHTML}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1f1f1f; padding-top: 10px; margin-top: 10px;">
+                            <span style="font-size: 12px; color: #aaa;">Pagamento: <strong>${formaPagto}</strong></span>
+                            <strong style="color: #fff; font-size: 15px;">Total: R$ ${totalValor}</strong>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        });
+    </script>
+</body>
+</html>

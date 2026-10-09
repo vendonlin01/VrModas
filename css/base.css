@@ -1,0 +1,35 @@
+/* =========================================
+   VARIÁVEIS DE CORES E RESET UNIVERSAL
+   ========================================= */
+:root {
+    --preto: #0a0a0a;
+    --preto-claro: #1a1a1a;
+    --dourado: #d4af37;
+    --branco: #ffffff;
+    --cinza-texto: #cccccc;
+}
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden; /* Remove de forma definitiva a barra de deslocamento lateral */
+    position: relative;
+    background-color: var(--preto);
+    color: var(--branco);
+    font-family: 'Montserrat', sans-serif;
+    -webkit-text-size-adjust: 100%;
+}
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button {
+    font-family: 'Montserrat', sans-serif;
+}

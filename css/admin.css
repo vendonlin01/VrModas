@@ -1,0 +1,494 @@
+/* =====================================================
+   PAINEL DO LOJISTA - VR MODAS (DESKTOP & MOBILE RESPONSIVO)
+   ===================================================== */
+
+:root {
+    --fundo-admin: #0d0d0d;
+    --card-admin: #141414;
+    --borda-admin: #262626;
+    --dourado: #d4af37;
+    --dourado-hover: #e5c358;
+    --branco: #ffffff;
+    --cinza-texto: #aaaaaa;
+}
+
+body {
+    background-color: var(--fundo-admin);
+    color: var(--branco);
+    font-family: 'Montserrat', sans-serif;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+/* =====================================================
+   1. LAYOUT PRINCIPAL (DESKTOP)
+   ===================================================== */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.admin-sidebar {
+    width: 260px;
+    background-color: #111111;
+    border-right: 1px solid var(--borda-admin);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.admin-logo {
+    padding: 24px 20px;
+    font-size: 20px;
+    font-weight: 900;
+    border-bottom: 1px solid var(--borda-admin);
+}
+
+.logo-vr {
+    color: var(--dourado);
+}
+
+.logo-modas {
+    color: var(--branco);
+}
+
+.admin-nav {
+    display: flex;
+    flex-direction: column;
+    padding-top: 10px;
+}
+
+.admin-conteudo {
+    flex: 1;
+    padding: 30px;
+    max-width: 1300px;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-header {
+    margin-bottom: 30px;
+}
+
+.admin-header h1 {
+    font-size: 26px;
+    margin: 0 0 6px 0;
+    color: var(--branco);
+    font-weight: 900;
+}
+
+.admin-header p {
+    color: var(--cinza-texto);
+    font-size: 13.5px;
+    margin: 0;
+}
+
+.admin-card {
+    background-color: var(--card-admin);
+    border: 1px solid var(--borda-admin);
+    border-radius: 10px;
+    padding: 24px;
+    box-sizing: border-box;
+    margin-bottom: 25px;
+}
+
+.admin-card h2 {
+    font-size: 18px;
+    margin: 0 0 6px 0;
+    color: var(--branco);
+    font-weight: 700;
+}
+
+.subtexto-card {
+    color: var(--cinza-texto);
+    font-size: 13px;
+    margin: 0 0 20px 0;
+}
+
+/* =====================================================
+   2. CARDS DO DASHBOARD & MÉTRICAS
+   ===================================================== */
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-bottom: 25px;
+}
+
+.dash-card {
+    background-color: var(--card-admin);
+    border: 1px solid var(--borda-admin);
+    border-radius: 8px;
+    padding: 20px;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.dash-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: var(--cinza-texto);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.dash-card p {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--branco);
+}
+
+.borda-dourada { border-top: 3px solid var(--dourado); }
+.borda-azul { border-top: 3px solid #1e88e5; }
+.borda-vermelha { border-top: 3px solid #e53935; }
+.borda-verde { border-top: 3px solid #43a047; }
+
+/* =====================================================
+   3. FORMULÁRIOS ADMINISTRATIVOS
+   ===================================================== */
+.form-admin {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.linha-inputs {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.grupo-input {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.grupo-input label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #ddd;
+}
+
+.grupo-input input,
+.grupo-input select,
+.grupo-input textarea {
+    background-color: #0d0d0d;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 11px 14px;
+    color: var(--branco);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.grupo-input input:focus,
+.grupo-input select:focus,
+.grupo-input textarea:focus {
+    border-color: var(--dourado);
+}
+
+.botoes-form {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.btn-salvar {
+    background: linear-gradient(135deg, var(--dourado) 0%, #b89329 100%);
+    color: #000;
+    border: none;
+    padding: 13px 22px;
+    border-radius: 6px;
+    font-weight: 900;
+    font-size: 12.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: filter 0.2s;
+}
+
+.btn-salvar:hover {
+    filter: brightness(1.1);
+}
+
+.btn-cancelar {
+    background: transparent;
+    border: 1px solid #444;
+    color: #bbb;
+    padding: 13px 20px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* =====================================================
+   4. TABELAS (ESTILO DESKTOP)
+   ===================================================== */
+.tabela-container {
+    width: 100%;
+    overflow-x: auto;
+    box-sizing: border-box;
+}
+
+.tabela-produtos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.tabela-produtos thead th {
+    background-color: #1b1b1b;
+    padding: 12px 14px;
+    color: var(--dourado);
+    font-weight: 700;
+    border-bottom: 2px solid #2a2a2a;
+    white-space: nowrap;
+}
+
+.tabela-produtos tbody td {
+    padding: 14px;
+    border-bottom: 1px solid #222;
+    vertical-align: middle;
+}
+
+.img-miniatura-tabela {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #333;
+    display: block;
+}
+
+.badge-estoque {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.badge-ok {
+    background: rgba(76, 175, 80, 0.15);
+    color: #4caf50;
+    border: 1px solid #4caf50;
+}
+
+.badge-baixo {
+    background: rgba(229, 57, 53, 0.15);
+    color: #e53935;
+    border: 1px solid #e53935;
+}
+
+/* =====================================================
+   5. RESPONSIVIDADE COMPLETA PARA CELULAR (MOBILE VIEW)
+   ===================================================== */
+@media (max-width: 900px) {
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    /* BARRA LATERAL TRANSFORMA-SE EM TOPO DESLIZÁVEL */
+    .admin-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--borda-admin);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: #0f0f0f;
+    }
+
+    .admin-logo {
+        padding: 12px 16px;
+        font-size: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .admin-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding: 4px 10px 8px 10px;
+        gap: 6px;
+    }
+
+    .admin-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .admin-nav button.nav-btn {
+        width: auto;
+        white-space: nowrap;
+        padding: 8px 14px;
+        font-size: 12px;
+        border-left: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 20px;
+        background: #181818;
+        border: 1px solid #2e2e2e;
+        flex-shrink: 0;
+    }
+
+    .admin-nav button.nav-btn.ativo {
+        background: var(--dourado);
+        color: #000;
+        border-color: var(--dourado);
+    }
+
+    .link-voltar {
+        display: none !important;
+    }
+
+    /* CONTEÚDO PRINCIPAL NO MOBILE */
+    .admin-conteudo {
+        padding: 14px 12px 60px 12px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .admin-header {
+        margin-bottom: 16px;
+    }
+
+    .admin-header h1 {
+        font-size: 20px;
+    }
+
+    .admin-header p {
+        font-size: 12px;
+    }
+
+    .admin-card {
+        padding: 16px 14px;
+        border-radius: 8px;
+    }
+
+    .linha-inputs {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* CARDS DO DASHBOARD NO CELULAR */
+    .dashboard-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .dash-card {
+        padding: 14px 12px;
+    }
+
+    .dash-card h3 {
+        font-size: 11px;
+    }
+
+    .dash-card p {
+        font-size: 19px;
+    }
+
+    /* GRÁFICOS NO CELULAR */
+    .grid-graficos {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .card-grafico {
+        padding: 14px 12px;
+    }
+
+    /* TRANSFORMAÇÃO DE TABELAS EM CARDS VERTICAIS NO CELULAR */
+    .tabela-container {
+        overflow-x: visible;
+    }
+
+    .tabela-produtos, 
+    .tabela-produtos thead, 
+    .tabela-produtos tbody, 
+    .tabela-produtos th, 
+    .tabela-produtos td, 
+    .tabela-produtos tr {
+        display: block;
+    }
+
+    .tabela-produtos thead {
+        display: none; /* Oculta cabeçalhos da tabela no celular */
+    }
+
+    .tabela-produtos tbody tr {
+        background: #141414;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-sizing: border-box;
+    }
+
+    .tabela-produtos tbody td {
+        padding: 0;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        font-size: 13px;
+        box-sizing: border-box;
+    }
+
+    /* Foto em destaque no topo do card do produto */
+    .tabela-produtos tbody td:first-child {
+        justify-content: flex-start;
+        margin-bottom: 4px;
+    }
+
+    .tabela-produtos tbody td:first-child img {
+        width: 60px;
+        height: 60px;
+    }
+
+    /* Linha de botões de Ações */
+    .tabela-produtos tbody td:last-child {
+        border-top: 1px solid #222;
+        padding-top: 10px;
+        margin-top: 4px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .btn-acao {
+        flex: 1;
+        padding: 9px 0 !important;
+        text-align: center;
+        font-size: 12px !important;
+    }
+
+    /* Seletor de Status nos Pedidos */
+    .select-status-pedido {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px !important;
+    }
+}

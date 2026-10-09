@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Lojista - VR Modas</title>
+    
+    <link rel="stylesheet" href="./css/global.css">
+    <link rel="stylesheet" href="./css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .secao-admin {
+            display: none;
+            animation: surgirAba 0.25s ease forwards;
+        }
+
+        .secao-admin.ativa {
+            display: block;
+        }
+
+        @keyframes surgirAba {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .admin-nav button.nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--cinza-texto, #aaa);
+            padding: 13px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+            text-align: left;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .admin-nav button.nav-btn:hover {
+            color: var(--branco, #fff);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .admin-nav button.nav-btn.ativo {
+            color: var(--dourado, #d4af37);
+            background: rgba(212, 175, 55, 0.08);
+            border-left-color: var(--dourado, #d4af37);
+        }
+
+        .grid-graficos {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .card-grafico {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .card-grafico h3 {
+            color: var(--dourado, #d4af37);
+            font-size: 15px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .abas-categorias {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn-aba-cat {
+            background: #181818;
+            color: #aaa;
+            border: 1px solid #333;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-aba-cat.ativo {
+            background: var(--dourado, #d4af37);
+            color: #000;
+            border-color: var(--dourado, #d4af37);
+        }
+
+        .campo-destaque-promocao {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #141414;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid #2a2a2a;
+            margin-top: 10px;
+        }
+
+        .campo-destaque-promocao input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--dourado, #d4af37);
+        }
+
+        .campo-destaque-promocao label {
+            cursor: pointer;
+            color: var(--dourado, #d4af37);
+            font-weight: 700;
+            font-size: 13px;
+            margin: 0;
+        }
+
+        @media (max-width: 900px) {
+            .grid-graficos {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-layout">
+        
+        <!-- Menu Lateral Estruturado em Abas -->
+        <aside class="admin-sidebar">
+            <div class="admin-logo">
+                <span class="logo-vr">VR</span> <span class="logo-modas">PAINEL</span>
+            </div>
+            <nav class="admin-nav" id="sidebar-nav">
+                <button type="button" class="nav-btn ativo" data-alvo="secao-dashboard">📊 Dashboard & Vendas</button>
+                <button type="button" class="nav-btn" data-alvo="secao-cadastro">➕ Cadastrar Nova Peça</button>
+                <button type="button" class="nav-btn" data-alvo="secao-catalogo">📦 Catálogo & Estoque</button>
+                <button type="button" class="nav-btn" data-alvo="secao-pedidos">🛍️ Pedidos Recebidos</button>
+                <button type="button" class="nav-btn" data-alvo="secao-banners">🎨 Banners da Home</button>
+                <button type="button" class="nav-btn" data-alvo="secao-config">⚙️ Configurações & Backup</button>
+                <a href="home.html" class="link-voltar" style="margin-top: 20px; display: block; padding: 12px 18px; color: var(--dourado); text-decoration: none; font-size: 13px; font-weight: 700;">⬅️ Ver Loja Ao Vivo</a>
+            </nav>
+        </aside>
+
+        <!-- Área Central de Conteúdo -->
+        <main class="admin-conteudo">
+            
+            <header class="admin-header">
+                <h1 id="titulo-secao-atual">Dashboard & Vendas</h1>
+                <p id="subtitulo-secao-atual">Visão geral do faturamento, pedidos e relatórios de desempenho.</p>
+            </header>
+
+            <!-- ====================================================
+                 1. SEÇÃO: DASHBOARD & GRÁFICOS DE VENDAS
+                 ==================================================== -->
+            <section id="secao-dashboard" class="secao-admin ativa">
+                <div class="dashboard-cards">
+                    <div class="dash-card borda-dourada">
+                        <h3>Faturamento Total</h3>
+                        <p id="dash-faturamento">R$ 0,00</p>
+                    </div>
+                    <div class="dash-card borda-azul">
+                        <h3>Pedidos Concluídos</h3>
+                        <p id="dash-total-pedidos">0</p>
+                    </div>
+                    <div class="dash-card borda-vermelha">
+                        <h3>Estoque Baixo (< 5 un)</h3>
+                        <p id="dash-estoque-baixo">0</p>
+                    </div>
+                    <div class="dash-card borda-verde">
+                        <h3>Total de Produtos</h3>
+                        <p id="dash-total-produtos">0</p>
+                    </div>
+                </div>
+
+                <div class="grid-graficos">
+                    <div class="card-grafico">
+                        <h3>📈 Faturamento & Histórico de Vendas</h3>
+                        <div style="position: relative; height: 280px; width: 100%;">
+                            <canvas id="graficoVendas"></canvas>
+                        </div>
+                    </div>
+                    <div class="card-grafico">
+                        <h3>👗 Distribuição de Peças por Categoria</h3>
+                        <div style="position: relative; height: 280px; width: 100%;">
+                            <canvas id="graficoCategorias"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ====================================================
+                 2. SEÇÃO: CADASTRO E EDIÇÃO DE PRODUTOS
+                 ==================================================== -->
+            <section id="secao-cadastro" class="secao-admin">
+                <div class="admin-card">
+                    <h2 id="titulo-form-produto">➕ Cadastrar Nova Peça</h2>
+                    
+                    <form id="form-cadastro-produto" class="form-admin">
+                        <input type="hidden" id="editando-id" value="">
+
+                        <div class="linha-inputs">
+                            <div class="grupo-input">
+                                <label>Nome do Produto *</label>
+                                <input type="text" id="nome-produto" placeholder="Ex: Vestido Midi Seda Dourada" required>
+                            </div>
+                            <div class="grupo-input">
+                                <label>Categoria / Departamento *</label>
+                                <select id="categoria-produto" required>
+                                    <option value="" disabled selected>Selecione a Categoria</option>
+                                    <optgroup label="Feminino">
+                                        <option value="vestidos">👗 Vestidos</option>
+                                        <option value="conjuntos">✨ Conjuntos</option>
+                                        <option value="calcas">👖 Calças & Saias</option>
+                                    </optgroup>
+                                    <optgroup label="Masculino">
+                                        <option value="camisas">👔 Camisas</option>
+                                        <option value="bermudas">🩳 Bermudas & Calças</option>
+                                    </optgroup>
+                                    <optgroup label="Acessórios">
+                                        <option value="bolsas">👜 Bolsas & Carteiras</option>
+                                        <option value="cintos">🎗️ Cintos</option>
+                                        <option value="joias">💍 Joias & Bijuterias</option>
+                                        <option value="acessorios">🕶️ Outros Acessórios</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Preço Original, Desconto Individual e Stock Geral -->
+                        <div class="linha-inputs">
+                            <div class="grupo-input">
+                                <label>Preço Normal (R$) *</label>
+                                <input type="number" id="preco-produto" step="0.01" min="0" placeholder="Ex: 199.90" required>
+                            </div>
+                            <div class="grupo-input">
+                                <label style="color: var(--dourado);">Preço Promocional com Desconto (R$) (Opcional)</label>
+                                <input type="number" id="preco-promocional-produto" step="0.01" min="0" placeholder="Ex: 149.90">
+                                <small style="color: #777; font-size: 11px;">Se preenchido, o preço original surge riscado na loja.</small>
+                            </div>
+                            <div class="grupo-input">
+                                <label>Qtd. Total em Estoque *</label>
+                                <input type="number" id="estoque-produto" min="0" placeholder="Ex: 25" required>
+                            </div>
+                        </div>
+
+                        <!-- Stock Interno Detalhado por Cor (Visível apenas ao Admin) -->
+                        <div class="grupo-input" style="background: #141414; padding: 12px; border-radius: 6px; border: 1px solid #2a2a2a;">
+                            <label style="color: var(--dourado); font-weight: 700;">🔒 Controlo Interno: Estoque por Cor (Apenas para o Administrador)</label>
+                            <input type="text" id="estoque-por-cor-produto" placeholder="Ex: Azul: 10, Preto: 10, Dourado: 5">
+                            <small style="color: #888; font-size: 11px; display: block; margin-top: 4px;">Registe as quantidades separadas por cor para a sua gestão interna de armazém.</small>
+                        </div>
+
+                        <!-- Condições de Pagamento e Parcelamento -->
+                        <div class="linha-inputs" style="background: #141414; padding: 14px; border-radius: 6px; border: 1px solid #2a2a2a; margin-top: 15px;">
+                            <div class="grupo-input" style="flex: 1;">
+                                <label style="color: var(--dourado); font-weight: 700;">💳 Parcelamento Máximo no Cartão</label>
+                                <select id="max-parcelas" style="width: 100%; background: #0f0f0f; border: 1px solid #333; color: var(--branco); padding: 10px; border-radius: 6px; font-size: 13px;">
+                                    <option value="1">1x (À vista)</option>
+                                    <option value="2">Até 2x</option>
+                                    <option value="3" selected>Até 3x</option>
+                                    <option value="4">Até 4x</option>
+                                    <option value="5">Até 5x</option>
+                                    <option value="6">Até 6x</option>
+                                    <option value="7">Até 7x</option>
+                                    <option value="8">Até 8x</option>
+                                    <option value="9">Até 9x</option>
+                                    <option value="10">Até 10x</option>
+                                    <option value="11">Até 11x</option>
+                                    <option value="12">Até 12x</option>
+                                </select>
+                            </div>
+
+                            <div class="grupo-input" style="flex: 1;">
+                                <label style="color: var(--dourado); font-weight: 700;">✨ Parcelas SEM JUROS</label>
+                                <select id="parcelas-sem-juros" style="width: 100%; background: #0f0f0f; border: 1px solid #333; color: var(--branco); padding: 10px; border-radius: 6px; font-size: 13px;">
+                                    <option value="1">Apenas 1x sem juros</option>
+                                    <option value="2">Até 2x sem juros</option>
+                                    <option value="3" selected>Até 3x sem juros</option>
+                                    <option value="4">Até 4x sem juros</option>
+                                    <option value="5">Até 5x sem juros</option>
+                                    <option value="6">Até 6x sem juros</option>
+                                    <option value="7">Até 7x sem juros</option>
+                                    <option value="8">Até 8x sem juros</option>
+                                    <option value="9">Até 9x sem juros</option>
+                                    <option value="10">Até 10x sem juros</option>
+                                    <option value="11">Até 11x sem juros</option>
+                                    <option value="12">Todas sem juros</option>
+                                </select>
+                            </div>
+
+                            <div class="grupo-input" style="flex: 1;">
+                                <label style="color: #aaa; font-size: 12px;">Taxa de Juros a.m. (após sem juros)</label>
+                                <input type="number" id="taxa-juros" step="0.1" min="0" value="2.99" placeholder="Ex: 2.99" style="width: 100%; background: #0f0f0f; border: 1px solid #333; color: var(--branco); padding: 10px; border-radius: 6px; font-size: 13px;">
+                            </div>
+                        </div>
+
+                        <div class="campo-destaque-promocao">
+                            <input type="checkbox" id="destaque-promocao">
+                            <label for="destaque-promocao">🔥 Destacar este produto na aba de Ofertas</label>
+                        </div>
+
+                        <!-- Tamanhos Dinâmicos (Alternam Conforme a Categoria Escolhida) -->
+                        <div class="grupo-input" style="margin-top: 15px;">
+                            <label>Tamanhos Disponíveis (Adaptados à Categoria)</label>
+                            <div class="checkbox-group" id="container-tamanhos-dinamicos">
+                                <span style="color: #777; font-size: 12px;">Selecione primeiro uma categoria acima.</span>
+                            </div>
+                        </div>
+
+                        <div class="grupo-input">
+                            <label>Cores Disponíveis (separadas por vírgula)</label>
+                            <input type="text" id="cores-produto" placeholder="Ex: preto, azul, dourado, rosa">
+                        </div>
+
+                        <div class="grupo-input">
+                            <label>Fotos da Peça (Multi-upload otimizado)</label>
+                            <input type="file" id="foto-produto" accept="image/*" class="input-file" multiple>
+                            <div id="preview-fotos" class="container-previews"></div>
+                        </div>
+
+                        <div class="grupo-input">
+                            <label>Descrição Detalhada</label>
+                            <textarea id="descricao-produto" rows="4" placeholder="Fale sobre o tecido, caimento e detalhes da peça..."></textarea>
+                        </div>
+
+                        <div class="botoes-form">
+                            <button type="submit" id="btn-submit-produto" class="btn-salvar">Salvar Peça no Catálogo</button>
+                            <button type="button" id="btn-cancelar-edicao" class="btn-cancelar" style="display: none;">Cancelar Edição</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- ====================================================
+                 3. SEÇÃO: CATÁLOGO & CONTROLE DE ESTOQUE
+                 ==================================================== -->
+            <section id="secao-catalogo" class="secao-admin">
+                <div class="admin-card">
+                    <h2>📦 Gerenciar Catálogo & Estoque</h2>
+                    <p class="subtexto-card">Edite informações, preços ou remova peças organizadas por categoria.</p>
+
+                    <div class="abas-categorias" id="abas-categorias-admin">
+                        <button type="button" class="btn-aba-cat ativo" data-cat="todos">Todos (<span id="cont-cat-todos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="vestidos">Vestidos (<span id="cont-cat-vestidos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="conjuntos">Conjuntos (<span id="cont-cat-conjuntos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="calcas">Calças & Saias (<span id="cont-cat-calcas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="camisas">Camisas (<span id="cont-cat-camisas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="bermudas">Bermudas (<span id="cont-cat-bermudas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="acessorios">Acessórios (<span id="cont-cat-acessorios">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="ofertas" style="color: var(--dourado, #d4af37);">🔥 Ofertas (<span id="cont-cat-ofertas">0</span>)</button>
+                    </div>
+
+                    <div class="tabela-container">
+                        <table class="tabela-produtos">
+                            <thead>
+                                <tr>
+                                    <th>Foto</th>
+                                    <th>Produto</th>
+                                    <th>Categoria</th>
+                                    <th>Preço</th>
+                                    <th>Estoque Geral / Cores</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-produtos-admin"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ====================================================
+                 4. SEÇÃO: PEDIDOS RECEBIDOS
+                 ==================================================== -->
+            <section id="secao-pedidos" class="secao-admin">
+                <div class="admin-card">
+                    <h2>🛍️ Pedidos dos Clientes</h2>
+                    <p class="subtexto-card">Acompanhe compras geradas pela sacola, altere status e emita comprovantes em PDF.</p>
+
+                    <div class="tabela-container">
+                        <table class="tabela-produtos">
+                            <thead>
+                                <tr>
+                                    <th>Pedido</th>
+                                    <th>Data / Hora</th>
+                                    <th>Itens</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-pedidos-admin"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ====================================================
+                 5. SEÇÃO: BANNERS DA HOME
+                 ==================================================== -->
+            <section id="secao-banners" class="secao-admin">
+                <div class="admin-card">
+                    <h2>🎨 Banners da Página Inicial</h2>
+                    <p class="subtexto-card">Adicione fotos horizontais, frases de destaque e links para a vitrine.</p>
+                    
+                    <form id="form-cadastro-banner" class="form-admin">
+                        <div class="linha-inputs">
+                            <div class="grupo-input">
+                                <label>Título Principal do Banner</label>
+                                <input type="text" id="titulo-banner" placeholder="Ex: Nova Coleção de Inverno" required>
+                            </div>
+                            <div class="grupo-input">
+                                <label>Subtítulo / Descrição Rápida</label>
+                                <input type="text" id="subtitulo-banner" placeholder="Ex: Elegância que aquece todos os momentos" required>
+                            </div>
+                        </div>
+
+                        <div class="linha-inputs">
+                            <div class="grupo-input">
+                                <label>Texto do Botão</label>
+                                <input type="text" id="btn-texto-banner" placeholder="Ex: Ver Coleção" value="Ver Coleção" required>
+                            </div>
+                            <div class="grupo-input">
+                                <label>Link de Destino do Botão</label>
+                                <input type="text" id="btn-link-banner" placeholder="Ex: produtos.html ou #vitrine" value="#vitrine" required>
+                            </div>
+                        </div>
+
+                        <div class="grupo-input">
+                            <label>Imagem de Fundo do Banner (Formato horizontal)</label>
+                            <input type="file" id="foto-banner" accept="image/*" class="input-file" required>
+                            <div id="preview-banner" class="container-previews"></div>
+                        </div>
+
+                        <button type="submit" class="btn-salvar">Publicar Banner na Home</button>
+                    </form>
+
+                    <div class="secao-banners-ativos" style="margin-top: 30px;">
+                        <h3>Banners Ativos na Loja</h3>
+                        <div id="lista-banners-admin"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ====================================================
+                 6. SEÇÃO: CONFIGURAÇÕES, CUPONS & BACKUP
+                 ==================================================== -->
+            <section id="secao-config" class="secao-admin">
+                <div class="admin-card">
+                    <h2>⚙️ Configurações de Atendimento & Suporte</h2>
+                    <p class="subtexto-card">Defina os canais oficiais de suporte. O chat e os links de contato da loja atualizarão automaticamente.</p>
+
+                    <form id="form-config-loja" class="form-admin">
+                        <div class="linha-inputs">
+                            <div class="grupo-input">
+                                <label for="config-whatsapp">WhatsApp Oficial de Suporte (com DDD e 55) *</label>
+                                <input type="text" id="config-whatsapp" placeholder="Ex: 5589999999999" required>
+                                <small style="color: var(--cinza-texto); font-size: 11px;">Digite apenas números com código do país (55) e DDD.</small>
+                            </div>
+
+                            <div class="grupo-input">
+                                <label for="config-email">E-mail Oficial de Atendimento *</label>
+                                <input type="email" id="config-email" placeholder="Ex: contato@vrmodas.com" required>
+                            </div>
+                        </div>
+
+                        <div class="botoes-form" style="margin-top: 10px;">
+                            <button type="submit" class="btn-salvar">Salvar Configurações</button>
+                        </div>
+                    </form>
+
+                    <!-- Gestão de Cupons de Desconto -->
+                    <div style="margin-top: 35px; border-top: 1px solid #2a2a2a; padding-top: 20px;">
+                        <h2 style="font-size: 17px; margin-top: 10px;">🎟️ Cupons de Desconto Ativos</h2>
+                        <p class="subtexto-card">Cadastre códigos promocionais em percentual (%) ou valor fixo (R$).</p>
+
+                        <form id="form-cadastro-cupom" class="form-admin" style="margin-bottom: 20px;">
+                            <div class="linha-inputs">
+                                <div class="grupo-input">
+                                    <label>Código do Cupom *</label>
+                                    <input type="text" id="cupom-codigo" placeholder="Ex: BEMVINDA10" style="text-transform: uppercase;" required>
+                                </div>
+                                <div class="grupo-input">
+                                    <label>Tipo de Desconto *</label>
+                                    <select id="cupom-tipo">
+                                        <option value="porcentagem">Percentual (%)</option>
+                                        <option value="fixo">Valor Fixo (R$)</option>
+                                    </select>
+                                </div>
+                                <div class="grupo-input">
+                                    <label>Valor do Desconto *</label>
+                                    <input type="number" id="cupom-valor" step="0.01" min="1" placeholder="Ex: 10" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-salvar" style="max-width: 220px; padding: 11px;">Cadastrar Cupom</button>
+                        </form>
+
+                        <div class="tabela-container">
+                            <table class="tabela-produtos">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Tipo</th>
+                                        <th>Desconto</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lista-cupons-admin"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Cópia de Segurança e Restauro de Dados -->
+                    <div style="margin-top: 35px; border-top: 1px solid #2a2a2a; padding-top: 20px;">
+                        <h2 style="font-size: 17px; margin-top: 10px;">💾 Backup & Restauração de Dados</h2>
+                        <p class="subtexto-card">Guarde uma cópia de segurança de todos os produtos, pedidos e cupões para não perder nada.</p>
+                        
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+                            <button type="button" id="btn-exportar-backup" class="btn-salvar" style="background: #1976d2; max-width: 240px;">⬇️ Baixar Backup (.JSON)</button>
+                            
+                            <label class="btn-salvar" style="background: #388e3c; max-width: 240px; text-align: center; cursor: pointer;">
+                                ⬆️ Restaurar Backup
+                                <input type="file" id="input-restaurar-backup" accept=".json" style="display: none;">
+                            </label>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="js/db.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,588 @@
+/* =====================================================
+   CATÁLOGO VR MODAS - DESIGN RESPONSIVO E ELEGANTE
+   ===================================================== */
+
+:root {
+    --fundo-app: #0a0a0a;
+    --card-fundo: #121212;
+    --dourado: #d4af37;
+    --dourado-hover: #e5c358;
+    --branco: #ffffff;
+    --cinza-texto: #9a9a9a;
+    --borda-fina: #222222;
+}
+
+body {
+    background-color: var(--fundo-app);
+    color: var(--branco);
+    font-family: 'Montserrat', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+/* =====================================================
+   1. CABEÇALHO COM BUSCA EXPANSÍVEL (SEMPRE VISÍVEL)
+   ===================================================== */
+.header-catalogo-fixo {
+    background: #0d0d0d;
+    border-bottom: 1px solid var(--borda-fina);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 10px 14px 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.linha-topo-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.btn-voltar-home {
+    background: #181818;
+    border: 1px solid var(--borda-fina);
+    color: var(--dourado);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.btn-voltar-home:active {
+    background: var(--dourado);
+    color: #000;
+    transform: scale(0.92);
+}
+
+.logo-box a {
+    text-decoration: none;
+    font-size: 19px;
+    font-weight: 900;
+}
+
+.logo-vr {
+    color: var(--dourado);
+}
+
+.logo-modas {
+    color: var(--branco);
+}
+
+.acoes-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.icone-carrinho {
+    background: #181818;
+    border: 1px solid var(--borda-fina);
+    color: var(--branco);
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* =====================================================
+   EFEITO DA BARRA DE PESQUISA (EXPANSÍVEL E ANIMADA)
+   ===================================================== */
+.barra-pesquisa-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.caixa-busca-animada {
+    width: 60%; /* Começa pequenininha, elegante */
+    height: 36px;
+    background: #141414;
+    border: 1px solid #333;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    box-sizing: border-box;
+    transition: all 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* Quando toca ou clica para digitar, ela cresce suavemente para 100%! */
+.caixa-busca-animada:focus-within,
+.caixa-busca-animada.foco-crescer {
+    width: 100%;
+    border-color: var(--dourado);
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
+    background: #181818;
+}
+
+.icone-lupa {
+    font-size: 13px;
+    margin-right: 8px;
+    user-select: none;
+}
+
+.caixa-busca-animada input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--branco);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    width: 100%;
+}
+
+.caixa-busca-animada input::placeholder {
+    color: #777;
+    font-size: 11.5px;
+}
+
+.btn-limpar-busca {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+/* =====================================================
+   2. PÍLULAS DE CATEGORIAS (HORIZONTAL TOUCH)
+   ===================================================== */
+.barrinha-chips-container {
+    background: #0f0f0f;
+    border-bottom: 1px solid var(--borda-fina);
+    padding: 10px 0;
+    position: sticky;
+    top: 96px;
+    z-index: 90;
+    backdrop-filter: blur(8px);
+}
+
+.chips-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 14px;
+    scrollbar-width: none;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+.chips-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.chip-cat {
+    background: #181818;
+    color: #aaa;
+    border: 1px solid #2e2e2e;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.chip-cat.ativo {
+    background: var(--dourado);
+    color: #000;
+    font-weight: 700;
+    border-color: var(--dourado);
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.35);
+}
+
+.chip-promo {
+    border-color: rgba(212, 175, 55, 0.4);
+    color: var(--dourado);
+}
+
+/* =====================================================
+   3. BARRA DE UTILITÁRIOS (FILTRAR & ORDENAR)
+   ===================================================== */
+.barra-controle-catalogo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1280px;
+    margin: 10px auto 4px auto;
+    padding: 0 14px;
+    box-sizing: border-box;
+}
+
+.btn-trigger-filtro {
+    background: #161616;
+    border: 1px solid #2c2c2c;
+    color: var(--branco);
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.total-pecas-label {
+    display: none;
+}
+
+.controle-ordenar-wrap select {
+    background: #161616;
+    border: 1px solid #2c2c2c;
+    color: var(--branco);
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+}
+
+/* =====================================================
+   4. LAYOUT PRINCIPAL E GAVETA BOTTOM-SHEET
+   ===================================================== */
+.catalogo-layout {
+    display: flex;
+    gap: 20px;
+    max-width: 1280px;
+    margin: 8px auto 50px auto;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+.sidebar-filtros {
+    position: fixed;
+    bottom: -100%;
+    left: 0;
+    width: 100%;
+    height: 78vh;
+    background: #111;
+    border-top: 2px solid var(--dourado);
+    border-radius: 20px 20px 0 0;
+    z-index: 3500;
+    display: flex;
+    flex-direction: column;
+    transition: bottom 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+    box-shadow: 0 -12px 35px rgba(0, 0, 0, 0.9);
+}
+
+.sidebar-filtros.aberto {
+    bottom: 0;
+}
+
+.indicador-puxar-mobile {
+    width: 40px;
+    height: 4px;
+    background: #333;
+    border-radius: 4px;
+    margin: 10px auto 4px auto;
+}
+
+.header-gaveta-filtros {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 18px;
+    border-bottom: 1px solid #202020;
+}
+
+.header-gaveta-filtros h3 {
+    margin: 0;
+    font-size: 15px;
+    color: var(--branco);
+}
+
+.btn-fechar-gaveta {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.corpo-filtros-gaveta {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 18px;
+}
+
+.bloco-filtro {
+    margin-bottom: 18px;
+    border-bottom: 1px solid #1f1f1f;
+    padding-bottom: 14px;
+}
+
+.bloco-filtro h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--dourado);
+    margin: 0 0 10px 0;
+}
+
+.opcoes-radio {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.opcoes-radio label {
+    font-size: 12px;
+    color: #ccc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.grid-tamanhos-filtro {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+
+.box-check-tam input {
+    display: none;
+}
+
+.box-check-tam span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    background: #181818;
+    border: 1px solid #2e2e2e;
+    border-radius: 4px;
+    color: #bbb;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.box-check-tam input:checked + span {
+    background: var(--dourado);
+    color: #000;
+    font-weight: 900;
+    border-color: var(--dourado);
+}
+
+.footer-gaveta-filtros {
+    padding: 12px 18px env(safe-area-inset-bottom, 14px) 18px;
+    background: #0a0a0a;
+    border-top: 1px solid #1f1f1f;
+    display: flex;
+    gap: 8px;
+}
+
+.btn-limpar-flt {
+    flex: 1;
+    background: transparent;
+    border: 1px solid #3a3a3a;
+    color: #aaa;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.btn-aplicar-flt {
+    flex: 2;
+    background: var(--dourado);
+    color: #000;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.overlay-filtros {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    z-index: 3400;
+}
+
+.overlay-filtros.ativo {
+    display: block;
+}
+
+/* =====================================================
+   5. VITRINE E GRADE 2x2 PERFEITA
+   ===================================================== */
+.conteudo-vitrine {
+    width: 100%;
+}
+
+.grid-produtos {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 100%;
+}
+
+.card-produto {
+    background: var(--card-fundo);
+    border: 1px solid var(--borda-fina);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.btn-favoritar-card {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(10, 10, 10, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.imagem-produto {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    display: block;
+    background: #181818;
+}
+
+.card-info {
+    padding: 8px 9px 10px 9px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.card-info a {
+    text-decoration: none;
+}
+
+.card-info h3 {
+    font-size: 11.5px;
+    color: var(--branco);
+    margin: 0 0 3px 0;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-info .preco {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--dourado);
+    margin: 0 0 8px 0;
+}
+
+.btn-comprar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: var(--dourado);
+    color: #050505;
+    padding: 7px 0;
+    border-radius: 4px;
+    font-weight: 900;
+    font-size: 10px;
+    text-transform: uppercase;
+    text-decoration: none;
+    letter-spacing: 0.4px;
+    margin-top: auto;
+}
+
+/* =====================================================
+   AJUSTES PARA COMPUTADOR (DESKTOP)
+   ===================================================== */
+@media (min-width: 769px) {
+    .header-catalogo-fixo {
+        padding: 12px 25px;
+    }
+
+    .linha-topo-nav {
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    .caixa-busca-animada {
+        width: 320px;
+    }
+
+    .caixa-busca-animada:focus-within {
+        width: 480px;
+    }
+
+    .barrinha-chips-container {
+        top: 106px;
+    }
+
+    .grid-produtos {
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 18px;
+    }
+
+    .sidebar-filtros {
+        position: static;
+        width: 250px;
+        height: auto;
+        border: 1px solid var(--borda-fina);
+        border-radius: 10px;
+        box-shadow: none;
+    }
+
+    .header-gaveta-filtros,
+    .indicador-puxar-mobile {
+        display: none;
+    }
+
+    .btn-trigger-filtro {
+        display: none;
+    }
+
+    .total-pecas-label {
+        display: block;
+    }
+}

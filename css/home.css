@@ -1,0 +1,237 @@
+/* =========================================
+   BANNER PRINCIPAL (HERO / CARROSSEL)
+   ========================================= */
+.carrossel-container {
+    position: relative;
+    height: 60vh;
+    overflow: hidden;
+    background-color: var(--preto-claro);
+    border-bottom: 2px solid var(--dourado);
+}
+
+.slide {
+    position: absolute;
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 20px;
+}
+
+.slide.ativo { 
+    opacity: 1; 
+    z-index: 10; 
+}
+
+.slide-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    max-width: 800px;
+}
+
+.slide-content h1 { 
+    font-size: 54px; 
+    color: var(--dourado); 
+    text-transform: uppercase; 
+    margin: 0;
+    font-weight: 900;
+    line-height: 1.1;
+    text-shadow: 0 3px 12px rgba(0,0,0,0.8);
+}
+
+.slide-content p { 
+    font-size: 18px; 
+    color: var(--branco); 
+    margin: 0; 
+    background: rgba(0, 0, 0, 0.65); 
+    padding: 8px 18px; 
+    border-radius: 4px; 
+    display: inline-block;
+    border-left: 3px solid var(--dourado);
+}
+
+.btn-dourado {
+    background-color: var(--dourado);
+    color: var(--preto);
+    padding: 14px 35px;
+    font-size: 16px;
+    font-weight: 900;
+    text-transform: uppercase;
+    border-radius: 4px;
+    transition: background-color 0.3s, transform 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-dourado:hover { 
+    background-color: #b5952f; 
+    transform: translateY(-2px);
+}
+
+/* =========================================
+   SESSÃO DE PRODUTOS (VITRINE)
+   ========================================= */
+.produtos {
+    padding: 60px 50px;
+}
+
+.produtos h2 {
+    text-align: center;
+    font-size: 32px;
+    color: var(--dourado);
+    margin-bottom: 40px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.grid-produtos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 25px;
+}
+
+/* Cards de produto na vitrine */
+.grid-produtos .card-produto {
+    background-color: var(--preto-claro);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #222;
+    transition: transform 0.3s, border-color 0.3s;
+    display: flex;
+    flex-direction: column;
+}
+
+.grid-produtos .card-produto:hover {
+    transform: translateY(-4px);
+    border-color: var(--dourado);
+}
+
+/* =========================================
+   SISTEMA DE TOASTS (NOTIFICAÇÕES)
+   ========================================= */
+#toast-container {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    background-color: var(--preto-claro);
+    color: var(--branco);
+    border-left: 5px solid var(--dourado);
+    padding: 14px 22px;
+    border-radius: 4px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.toast span { 
+    color: var(--dourado); 
+    font-size: 18px; 
+}
+
+.toast.mostrar { 
+    opacity: 1; 
+    transform: translateX(0); 
+}
+
+/* =========================================
+   RESPONSIVIDADE (MOBILE / CELULARES)
+   ========================================= */
+@media (max-width: 768px) {
+    /* Banner Hero no celular */
+    .carrossel-container {
+        height: 50vh;
+        min-height: 380px;
+    }
+
+    .slide-content {
+        padding: 0 10px;
+        gap: 12px;
+    }
+
+    .slide-content h1 { 
+        font-size: 28px; 
+    }
+
+    .slide-content p { 
+        font-size: 14px; 
+        padding: 6px 12px;
+    }
+
+    .btn-dourado {
+        padding: 12px 24px;
+        font-size: 14px;
+    }
+
+    /* Vitrine no celular */
+    .produtos { 
+        padding: 30px 12px; 
+    }
+
+    .produtos h2 {
+        font-size: 24px;
+        margin-bottom: 25px;
+    }
+
+    /* Vitrine lado a lado em 2 colunas */
+    .grid-produtos {
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 12px; 
+    }
+
+    /* Ajuste fino dos elementos internos do card no mobile */
+    .grid-produtos .card-produto img.imagem-produto {
+        height: 210px !important;
+    }
+
+    .grid-produtos .card-produto div[style*="padding: 15px"] {
+        padding: 10px !important;
+    }
+
+    .grid-produtos .card-produto h3 {
+        font-size: 14px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .grid-produtos .card-produto .preco {
+        font-size: 14px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .grid-produtos .card-produto .btn-comprar {
+        padding: 8px !important;
+        font-size: 12px !important;
+    }
+
+    /* Toasts posicionados no rodapé em telas móveis */
+    #toast-container { 
+        top: auto; 
+        bottom: 25px; 
+        right: 12px; 
+        left: 12px; 
+    }
+}

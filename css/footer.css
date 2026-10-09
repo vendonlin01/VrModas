@@ -1,0 +1,111 @@
+/* =========================================
+   RODAPÉ DIRETO: SOBRE + ATENDIMENTO
+   ========================================= */
+.footer {
+    background-color: #121212;
+    border-top: 1px solid #2a2a2a;
+    padding: 45px 20px 25px 20px;
+    margin-top: 60px;
+    color: var(--cinza-texto);
+    font-family: 'Montserrat', sans-serif;
+}
+
+.footer-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 50px;
+    align-items: start;
+}
+
+.footer-col h4 {
+    color: var(--dourado);
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    font-weight: 700;
+}
+
+.logo-footer {
+    font-size: 24px;
+    font-weight: 900;
+    margin-bottom: 10px;
+}
+
+.logo-footer .logo-vr { color: var(--dourado); }
+.logo-footer .logo-modas { color: var(--branco); }
+
+.footer-col p {
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0 0 10px 0;
+}
+
+/* Bloco de Contacto Direto */
+.info-contato p {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.info-contato strong {
+    color: var(--branco);
+}
+
+.link-suporte {
+    color: var(--dourado);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.link-suporte:hover {
+    color: #e6c34e;
+    text-decoration: underline;
+}
+
+.info-contato small {
+    color: #777;
+    font-size: 12px;
+}
+
+/* Linha Final de Copyright */
+.footer-bottom {
+    max-width: 1000px;
+    margin: 35px auto 0 auto;
+    padding-top: 20px;
+    border-top: 1px solid #222;
+    text-align: center;
+    font-size: 12px;
+    color: #777;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.link-lojista {
+    color: #444;
+    text-decoration: none;
+    font-size: 11px;
+    transition: color 0.2s ease;
+}
+
+.link-lojista:hover {
+    color: #888;
+}
+
+/* =========================================
+   RESPONSIVIDADE NO TELEMÓVEL
+   ========================================= */
+@media (max-width: 768px) {
+    .footer {
+        padding: 35px 16px 20px 16px;
+    }
+
+    .footer-container {
+        grid-template-columns: 1fr;
+        gap: 25px;
+        text-align: center;
+    }
+}

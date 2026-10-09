@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VR Modas - Página Inicial</title>
+
+    <!-- Folhas de Estilo -->
+    <link rel="stylesheet" href="./css/global.css">
+    <link rel="stylesheet" href="./css/produtos.css">
+    <link rel="stylesheet" href="./css/home.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           ESTILOS DO BOTÃO E MENU DE PERFIL
+           ========================================= */
+        .perfil-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .btn-usuario {
+            background: transparent;
+            border: 1px solid #333;
+            color: var(--branco);
+            font-size: 16px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Montserrat', sans-serif;
+            transition: all 0.25s ease;
+        }
+
+        .btn-usuario:hover {
+            border-color: var(--dourado);
+            color: var(--dourado);
+        }
+
+        .dropdown-usuario {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            background: var(--preto-claro);
+            border: 1px solid #333;
+            border-top: 2px solid var(--dourado);
+            border-radius: 6px;
+            min-width: 170px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+            z-index: 2500;
+            padding: 8px 0;
+        }
+
+        .dropdown-usuario.ativo {
+            display: block;
+        }
+
+        .dropdown-usuario .info-nome {
+            padding: 8px 14px;
+            font-size: 12px;
+            color: var(--dourado);
+            font-weight: 700;
+            border-bottom: 1px solid #222;
+        }
+
+        .dropdown-usuario a,
+        .dropdown-usuario button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px 14px;
+            background: transparent;
+            border: none;
+            color: var(--cinza-texto);
+            font-size: 13px;
+            font-family: 'Montserrat', sans-serif;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .dropdown-usuario a:hover,
+        .dropdown-usuario button:hover {
+            background: #1a1a1a;
+            color: var(--branco);
+        }
+
+        .dropdown-usuario button.btn-logout {
+            color: #ff4444;
+            border-top: 1px solid #222;
+        }
+
+        .dropdown-usuario button.btn-logout:hover {
+            background: rgba(255, 68, 68, 0.1);
+            color: #ff4444;
+        }
+
+        /* =========================================
+           DROPDOWNS DO MENU DE NAVEGAÇÃO
+           ========================================= */
+        .nav-dropdown {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .nav-link-dropdown,
+        .nav-item {
+            color: var(--branco);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+            transition: color 0.25s ease;
+            cursor: pointer;
+        }
+
+        .nav-link-dropdown:hover,
+        .nav-item:hover {
+            color: var(--dourado);
+        }
+
+        .nav-destaque {
+            color: var(--dourado) !important;
+            font-weight: 900 !important;
+        }
+
+        .seta-menu {
+            font-size: 10px;
+            transition: transform 0.25s ease;
+        }
+
+        .dropdown-conteudo {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #141414;
+            border: 1px solid #333;
+            border-top: 2px solid var(--dourado);
+            border-radius: 6px;
+            min-width: 195px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.85);
+            z-index: 2200;
+            padding: 6px 0;
+        }
+
+        .nav-dropdown:hover .dropdown-conteudo {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-dropdown:hover .seta-menu {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-conteudo a {
+            padding: 10px 16px;
+            color: #ccc;
+            font-size: 13px;
+            text-transform: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .dropdown-conteudo a:hover {
+            background-color: #222;
+            color: var(--dourado);
+        }
+
+        /* Comportamento responsivo na gaveta mobile */
+        @media (max-width: 768px) {
+            .nav-dropdown {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+
+            .dropdown-conteudo {
+                position: static;
+                box-shadow: none;
+                border: none;
+                border-left: 2px solid var(--dourado);
+                background: transparent;
+                padding-left: 10px;
+                margin: 4px 0 8px 10px;
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .dropdown-conteudo a {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* =========================================
+           REFORÇO DO BOTÃO "VER DETALHES" DOURADO
+           ========================================= */
+        .card-info {
+            padding: 14px 12px 16px 12px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 !important;
+            box-sizing: border-box !important;
+        }
+
+        .btn-comprar,
+        button.btn-comprar,
+        a.btn-comprar {
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            background: linear-gradient(135deg, #d4af37 0%, #b5952f 100%) !important;
+            color: #0a0a0a !important;
+            border: none !important;
+            outline: none !important;
+            padding: 11px 10px !important;
+            font-family: 'Montserrat', sans-serif !important;
+            font-size: 12px !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            text-align: center !important;
+            box-sizing: border-box !important;
+            text-decoration: none !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4) !important;
+            transition: all 0.25s ease !important;
+            margin: 0 !important;
+        }
+
+        .btn-comprar:hover,
+        button.btn-comprar:hover,
+        a.btn-comprar:hover {
+            background: #e6c34e !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 15px rgba(212, 175, 55, 0.35) !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Cabeçalho com Barra de Pesquisa -->
+    <header class="header">
+        <!-- 1. Menu Hambúrguer (Só visível no telemóvel) -->
+        <button id="btn-menu" class="btn-menu">☰</button>
+
+        <!-- 2. Logótipo na Esquerda -->
+        <div class="logo">
+            <a href="home.html">
+                <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
+            </a>
+        </div>
+
+        <!-- 3. Barra de Pesquisa no Centro -->
+        <div class="caixa-busca">
+            <input type="text" id="input-busca" placeholder="Buscar vestidos, calças, camisas...">
+            <button id="btn-busca">🔍</button>
+        </div>
+
+        <!-- 4. Menu de Navegação Estruturado com Dropdowns -->
+        <nav id="navbar" class="navbar">
+            <button id="fechar-menu" class="btn-fechar-menu">&times;</button>
+            <a href="home.html" class="nav-item" style="color: var(--dourado);">Início</a>
+            <a href="produtos.html" class="nav-item">Catálogo</a>
+
+            <!-- Submenu Feminino -->
+            <div class="nav-dropdown">
+                <a href="produtos.html?categoria=vestidos" class="nav-link-dropdown">
+                    Feminino <span class="seta-menu">▾</span>
+                </a>
+                <div class="dropdown-conteudo">
+                    <a href="produtos.html?categoria=vestidos">👗 Vestidos</a>
+                    <a href="produtos.html?categoria=conjuntos">✨ Conjuntos</a>
+                    <a href="produtos.html?categoria=calcas">👖 Calças & Saias</a>
+                </div>
+            </div>
+
+            <!-- Submenu Masculino -->
+            <div class="nav-dropdown">
+                <a href="produtos.html?categoria=camisas" class="nav-link-dropdown">
+                    Masculino <span class="seta-menu">▾</span>
+                </a>
+                <div class="dropdown-conteudo">
+                    <a href="produtos.html?categoria=camisas">👔 Camisas</a>
+                    <a href="produtos.html?categoria=bermudas">🩳 Bermudas & Calças</a>
+                </div>
+            </div>
+
+            <!-- Submenu Acessórios -->
+            <div class="nav-dropdown">
+                <a href="produtos.html?categoria=acessorios" class="nav-link-dropdown">
+                    Acessórios <span class="seta-menu">▾</span>
+                </a>
+                <div class="dropdown-conteudo">
+                    <a href="produtos.html?categoria=acessorios">👜 Bolsas & Carteiras</a>
+                    <a href="produtos.html?categoria=acessorios">🎗️ Cintos</a>
+                    <a href="produtos.html?categoria=acessorios">💍 Joias & Bijuterias</a>
+                </div>
+            </div>
+
+            <!-- Ofertas -->
+            <a href="produtos.html?categoria=ofertas" class="nav-item nav-destaque">Ofertas 🔥</a>
+        </nav>
+
+        <!-- 5. Ações do Cabeçalho (Perfil, Favoritos, Sacola) no Canto Direito -->
+        <div class="acoes-header">
+            <!-- Botão de Perfil -->
+            <div class="perfil-container" id="area-perfil">
+                <button id="btn-usuario" class="btn-usuario" title="Minha Conta">
+                    <span id="icone-usuario">👤</span>
+                    <span id="texto-usuario" style="font-size: 12px; font-weight: 700; display: none;"></span>
+                </button>
+                <div class="dropdown-usuario" id="menu-usuario">
+                    <div class="info-nome" id="dropdown-nome">Olá, Visitante</div>
+                    <a href="login.html" id="link-login-dropdown">Entrar na Conta</a>
+                    <a href="cadastro.html" id="link-cadastro-dropdown">Criar Conta</a>
+                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪 Sair</button>
+                </div>
+            </div>
+
+            <!-- Botão de Favoritos -->
+            <button id="abrir-favoritos" class="icone-carrinho" title="Meus Favoritos">
+                ❤️ <span class="contador-favoritos">0</span>
+            </button>
+
+            <!-- Botão de Carrinho -->
+            <button id="abrir-carrinho" class="icone-carrinho" title="Minha Sacola">
+                🛒 <span class="contador-carrinho">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- CARROSSEL DINÂMICO DE BANNERS (HERO) -->
+    <div class="carrossel-container" id="carrossel-home">
+        <!-- O JavaScript preenche automaticamente com os banners cadastrados pelo Lojista -->
+    </div>
+
+    <!-- Vitrine Dinâmica -->
+    <section id="vitrine" class="produtos">
+        <h2>Destaques</h2>
+        <div id="vitrine-produtos" class="grid-produtos"></div>
+    </section>
+
+    <!-- Gaveta Lateral de Favoritos -->
+    <div id="favoritos-lateral" class="carrinho-lateral">
+        <div class="carrinho-header">
+            <h2>Meus Favoritos ❤️</h2>
+            <button id="fechar-favoritos" class="btn-fechar-carrinho">&times;</button>
+        </div>
+        <div id="lista-favoritos" class="itens-carrinho" style="padding: 15px;">
+            <!-- Preenchido dinamicamente pelo JavaScript -->
+        </div>
+    </div>
+
+    <!-- Carrinho Lateral -->
+    <div id="carrinho-lateral" class="carrinho-lateral">
+        <div class="carrinho-header">
+            <h2>Sua Sacola</h2>
+            <button id="fechar-carrinho" class="btn-fechar-carrinho">&times;</button>
+        </div>
+        <div id="lista-itens" class="itens-carrinho"></div>
+        <div class="carrinho-footer">
+            <div class="carrinho-total">
+                <span>Total:</span>
+                <span id="valor-total">R$ 0,00</span>
+            </div>
+            <button class="btn-finalizar" id="btn-finalizar-compra">Finalizar Compra</button>
+        </div>
+    </div>
+
+    <!-- Rodapé com Central de Atendimento Dinâmica -->
+    <footer class="footer">
+        <div class="footer-container">
+            <!-- Coluna 1: Sobre a Loja -->
+            <div class="footer-col">
+                <div class="logo-footer">
+                    <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
+                </div>
+                <p>Elegância, sofisticação e estilo exclusivo para todas as ocasiões.</p>
+            </div>
+
+            <!-- Coluna 2: Suporte e Atendimento -->
+            <div class="footer-col">
+                <h4>Atendimento ao Cliente</h4>
+                <div class="info-contato">
+                    <p>
+                        <strong>Central de Ajuda:</strong> 
+                        <a href="suporte.html" class="link-suporte">
+                            🤖 Abrir Chat de Suporte
+                        </a>
+                    </p>
+                    <p>
+                        <strong>E-mail:</strong> 
+                        <a href="mailto:contato@vrmodas.com" id="email-suporte-footer" class="link-suporte">✉️ contato@vrmodas.com</a>
+                    </p>
+                    <p><small>Atendimento Seg. a Sáb. das 08h às 18h</small></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 VR Modas. Todos os direitos reservados.</p>
+            <a href="admin.html" class="link-lojista">Área do Lojista</a>
+        </div>
+    </footer>
+
+    <!-- Scripts da Loja -->
+    <script src="js/db.js"></script>
+    <script src="js/loja.js"></script>
+
+    <!-- Script de Gestão do Perfil e Contato Dinâmico -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Sincroniza o e-mail de suporte salvo pelo administrador
+            const configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || {};
+            const linkEmailFooter = document.getElementById('email-suporte-footer');
+            if (configLoja.email && linkEmailFooter) {
+                linkEmailFooter.href = `mailto:${configLoja.email}`;
+                linkEmailFooter.innerText = `✉️ ${configLoja.email}`;
+            }
+
+            const btnUsuario = document.getElementById('btn-usuario');
+            const menuUsuario = document.getElementById('menu-usuario');
+            const textoUsuario = document.getElementById('texto-usuario');
+            const dropdownNome = document.getElementById('dropdown-nome');
+            const linkLogin = document.getElementById('link-login-dropdown');
+            const linkCadastro = document.getElementById('link-cadastro-dropdown');
+            const btnSair = document.getElementById('btn-sair-sessao');
+
+            if (!btnUsuario || !menuUsuario) return;
+
+            // 1. Verifica sessão ativa
+            function carregarDadosUsuario() {
+                const usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo'));
+
+                if (usuarioAtivo && usuarioAtivo.nome) {
+                    const primeiroNome = usuarioAtivo.nome.split(' ')[0];
+                    if (textoUsuario) {
+                        textoUsuario.innerText = primeiroNome;
+                        textoUsuario.style.display = 'inline';
+                    }
+                    if (dropdownNome) dropdownNome.innerText = `Olá, ${primeiroNome}`;
+
+                    if (linkLogin) linkLogin.style.display = 'none';
+                    if (linkCadastro) linkCadastro.style.display = 'none';
+                    if (btnSair) btnSair.style.display = 'block';
+
+                    if (usuarioAtivo.role === 'admin' && dropdownNome) {
+                        dropdownNome.innerText = `👑 ${primeiroNome} (Admin)`;
+                    }
+                } else {
+                    if (textoUsuario) textoUsuario.style.display = 'none';
+                    if (dropdownNome) dropdownNome.innerText = 'Olá, Visitante';
+                    if (linkLogin) linkLogin.style.display = 'block';
+                    if (linkCadastro) linkCadastro.style.display = 'block';
+                    if (btnSair) btnSair.style.display = 'none';
+                }
+            }
+            carregarDadosUsuario();
+
+            // 2. Alternar abertura do menu com suporte a clique e toque
+            function alternarMenu(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                menuUsuario.classList.toggle('ativo');
+            }
+
+            btnUsuario.addEventListener('click', alternarMenu);
+            btnUsuario.addEventListener('touchend', alternarMenu);
+
+            // 3. Impedir que cliques dentro do próprio menu fechem a janela
+            menuUsuario.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            menuUsuario.addEventListener('touchend', (e) => {
+                e.stopPropagation();
+            });
+
+            // 4. Fechar apenas se clicar fora do menu e do botão
+            document.addEventListener('click', (e) => {
+                if (!menuUsuario.contains(e.target) && !btnUsuario.contains(e.target)) {
+                    menuUsuario.classList.remove('ativo');
+                }
+            });
+
+            // 5. Encerrar sessão
+            if (btnSair) {
+                btnSair.addEventListener('click', () => {
+                    sessionStorage.removeItem('vr_usuario_ativo');
+                    sessionStorage.removeItem('vr_cliente_dados');
+                    sessionStorage.removeItem('vr_cliente_logado');
+                    sessionStorage.removeItem('vr_admin_logado');
+                    window.location.reload();
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

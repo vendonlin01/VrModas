@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cadastro de Cliente - VR Modas</title>
+    
+    <link rel="stylesheet" href="./css/global.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: radial-gradient(circle at top, #1a1a1a 0%, #0a0a0a 100%);
+            color: var(--branco);
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 12px;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .cadastro-wrapper {
+            width: 100%;
+            max-width: 620px;
+            background: rgba(22, 22, 22, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: clamp(18px, 4vw, 32px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.08);
+        }
+
+        .cadastro-header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .logo-box {
+            font-size: 26px;
+            font-weight: 900;
+            margin-bottom: 6px;
+            letter-spacing: 1.5px;
+        }
+
+        .logo-box .logo-vr { color: var(--dourado); }
+        .logo-box .logo-modas { color: var(--branco); }
+
+        .cadastro-header h1 {
+            color: var(--branco);
+            font-size: 19px;
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .cadastro-header p {
+            color: var(--cinza-texto);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .secao-titulo {
+            color: var(--dourado);
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin: 20px 0 12px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Grade 2 colunas que vira 1 coluna com conforto em telas pequenas */
+        .grid-campos {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            width: 100%;
+        }
+
+        .col-full {
+            grid-column: 1 / -1;
+        }
+
+        .campo-grupo {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .campo-grupo label {
+            color: #ccc;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .campo-grupo input {
+            width: 100%;
+            background: #0f0f0f;
+            border: 1px solid #333;
+            color: var(--branco);
+            padding: 12px 10px;
+            border-radius: 6px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 16px; /* Previne auto-zoom no mobile */
+            outline: none;
+            transition: border-color 0.25s ease;
+        }
+
+        .campo-grupo input:focus {
+            border-color: var(--dourado);
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.25);
+        }
+
+        .campo-grupo input::placeholder {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .btn-cadastrar {
+            width: 100%;
+            background: linear-gradient(135deg, var(--dourado) 0%, #b5952f 100%);
+            color: var(--preto);
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-cadastrar:active {
+            transform: scale(0.98);
+        }
+
+        .cadastro-footer {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 13px;
+            color: var(--cinza-texto);
+        }
+
+        .cadastro-footer a {
+            color: var(--dourado);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        /* Celulares finos (≤ 420px): campos em 1 coluna para digitar com calma */
+        @media (max-width: 420px) {
+            .grid-campos {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .cadastro-wrapper {
+                padding: 16px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cadastro-wrapper">
+        <div class="cadastro-header">
+            <div class="logo-box">
+                <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
+            </div>
+            <h1>Crie sua Conta</h1>
+            <p>Cadastre-se para acompanhar pedidos e agilizar compras.</p>
+        </div>
+
+        <form id="form-cadastro-cliente">
+            <!-- DADOS PESSOAIS -->
+            <div class="secao-titulo">👤 Dados Pessoais</div>
+            <div class="grid-campos">
+                <div class="campo-grupo col-full">
+                    <label for="cad-nome">Nome Completo *</label>
+                    <input type="text" id="cad-nome" placeholder="Ex: Maria Silva" required>
+                </div>
+
+                <div class="campo-grupo">
+                    <label for="cad-cpf">CPF *</label>
+                    <input type="text" id="cad-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" required>
+                </div>
+
+                <div class="campo-grupo">
+                    <label for="cad-nasc">Data Nascimento</label>
+                    <input type="date" id="cad-nasc">
+                </div>
+
+                <div class="campo-grupo">
+                    <label for="cad-whatsapp">WhatsApp *</label>
+                    <input type="tel" id="cad-whatsapp" placeholder="(89) 99999-9999" maxlength="15" inputmode="tel" required>
+                </div>
+
+                <div class="campo-grupo">
+                    <label for="cad-email">E-mail *</label>
+                    <input type="email" id="cad-email" placeholder="seuemail@exemplo.com" inputmode="email" required>
+                </div>
+
+                <div class="campo-grupo col-full">
+                    <label for="cad-senha">Senha de Acesso *</label>
+                    <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                </div>
+            </div>
+
+            <!-- ENDEREÇO DE ENTREGA -->
+            <div class="secao-titulo">📍 Endereço de Entrega</div>
+            <div class="grid-campos">
+                <div class="campo-grupo">
+                    <label for="cad-cep">CEP *</label>
+                    <input type="text" id="cad-cep" placeholder="00000-000" maxlength="9" inputmode="numeric" required>
+                </div>
+
+                <div class="campo-grupo">
+                    <label for="cad-bairro">Bairro *</label>
+                    <input type="text" id="cad-bairro" placeholder="Bairro" required>
+                </div>
+
+                <div class="campo-grupo col-full">
+                    <label for="cad-rua">Rua / Logradouro *</label>
+                    <input type="text" id="cad-rua" placeholder="Ex: Av. Cândido Coelho" required>
+                </div>
+
+                <div class="campo-grupo">
+                    <label for="cad-numero">Número *</label>
+                    <input type="text" id="cad-numero" placeholder="Ex: 120 ou S/N" required>
+                </div>
+
+                <div class="campo-grupo">
+                    <label for="cad-cidade">Cidade / UF *</label>
+                    <input type="text" id="cad-cidade" placeholder="Cidade - UF" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-cadastrar">Concluir Cadastro</button>
+        </form>
+
+        <div class="cadastro-footer">
+            Já tem uma conta? <a href="login.html">Faça seu Login</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputCpf = document.getElementById('cad-cpf');
+            const inputWhats = document.getElementById('cad-whatsapp');
+            const inputCep = document.getElementById('cad-cep');
+            const form = document.getElementById('form-cadastro-cliente');
+
+            // 1. MÁSCARA DE CPF
+            inputCpf.addEventListener('input', (e) => {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 11) v = v.slice(0, 11);
+                v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                v = v.replace(/(\d{3})(\d)/, '$1.$2');
+                v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+                e.target.value = v;
+            });
+
+            // 2. MÁSCARA DE WHATSAPP
+            inputWhats.addEventListener('input', (e) => {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 11) v = v.slice(0, 11);
+                v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+                v = v.replace(/(\d)(\d{4})$/, '$1-$2');
+                e.target.value = v;
+            });
+
+            // 3. MÁSCARA E BUSCA AUTOMÁTICA DE CEP (ViaCEP)
+            inputCep.addEventListener('input', (e) => {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 8) v = v.slice(0, 8);
+                v = v.replace(/^(\d{5})(\d)/, '$1-$2');
+                e.target.value = v;
+
+                const cepLimpo = v.replace(/\D/g, '');
+                if (cepLimpo.length === 8) {
+                    fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`)
+                        .then(res => res.json())
+                        .then(dados => {
+                            if (!dados.erro) {
+                                document.getElementById('cad-rua').value = dados.logradouro || '';
+                                document.getElementById('cad-bairro').value = dados.bairro || '';
+                                document.getElementById('cad-cidade').value = `${dados.localidade} - ${dados.uf}`;
+                                document.getElementById('cad-numero').focus();
+                            }
+                        })
+                        .catch(() => {});
+                }
+            });
+
+            // 4. GRAVAÇÃO DO CLIENTE
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('cad-email').value.trim().toLowerCase();
+                let usuarios = JSON.parse(localStorage.getItem('vr_modas_usuarios')) || [];
+
+                if (usuarios.some(u => u.email === email)) {
+                    alert('Este e-mail já está cadastrado! Faça login ou use outro.');
+                    return;
+                }
+
+                const novoCliente = {
+                    id: Date.now(),
+                    nome: document.getElementById('cad-nome').value.trim(),
+                    cpf: document.getElementById('cad-cpf').value.trim(),
+                    nascimento: document.getElementById('cad-nasc').value,
+                    whatsapp: document.getElementById('cad-whatsapp').value.trim(),
+                    email: email,
+                    senha: document.getElementById('cad-senha').value,
+                    endereco: {
+                        cep: document.getElementById('cad-cep').value.trim(),
+                        rua: document.getElementById('cad-rua').value.trim(),
+                        numero: document.getElementById('cad-numero').value.trim(),
+                        bairro: document.getElementById('cad-bairro').value.trim(),
+                        cidade: document.getElementById('cad-cidade').value.trim()
+                    },
+                    role: "cliente",
+                    dataCadastro: new Date().toLocaleDateString('pt-BR')
+                };
+
+                usuarios.push(novoCliente);
+                localStorage.setItem('vr_modas_usuarios', JSON.stringify(usuarios));
+
+                sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(novoCliente));
+                sessionStorage.setItem('vr_cliente_logado', 'true');
+                sessionStorage.setItem('vr_cliente_dados', JSON.stringify(novoCliente));
+
+                alert('Cadastro concluído com sucesso! Bem-vindo(a) à VR Modas.');
+                window.location.href = 'home.html';
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Catálogo Exclusivo - VR Modas</title>
+
+    <!-- Folhas de Estilo -->
+    <link rel="stylesheet" href="./css/global.css">
+    <link rel="stylesheet" href="./css/produtos.css">
+    <link rel="stylesheet" href="./css/gavetas.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- CABEÇALHO ELEGANTE -->
+    <header class="header-catalogo-fixo">
+        <div class="linha-topo-nav">
+            <a href="home.html" class="btn-voltar-home" title="Voltar ao Início">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </a>
+
+            <div class="logo-box">
+                <a href="home.html">
+                    <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
+                </a>
+            </div>
+
+            <div class="acoes-header">
+                <button id="abrir-favoritos" class="icone-carrinho" title="Favoritos">❤️ <span class="contador-favoritos">0</span></button>
+                <button id="abrir-carrinho" class="icone-carrinho" title="Sacola">🛒 <span class="contador-carrinho">0</span></button>
+            </div>
+        </div>
+
+        <!-- BARRA DE PESQUISA EXPANSÍVEL (SEMPRE VISÍVEL E COM EFEITO DE CRESCER) -->
+        <div class="barra-pesquisa-wrap">
+            <div class="caixa-busca-animada" id="caixa-busca-container">
+                <span class="icone-lupa">🔍</span>
+                <input type="text" id="input-busca" placeholder="Buscar no catálogo..." autocomplete="off">
+                <button type="button" id="btn-limpar-busca" class="btn-limpar-busca" style="display: none;">&times;</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- PÍLULAS DE CATEGORIAS (SCROLL HORIZONTAL TOUCH) -->
+    <nav class="barrinha-chips-container" aria-label="Categorias">
+        <div class="chips-scroll">
+            <button class="chip-cat ativo" data-categoria="todos">Todos</button>
+            <button class="chip-cat" data-categoria="vestidos">Vestidos</button>
+            <button class="chip-cat" data-categoria="conjuntos">Conjuntos</button>
+            <button class="chip-cat" data-categoria="calcas">Calças & Saias</button>
+            <button class="chip-cat" data-categoria="camisas">Camisas</button>
+            <button class="chip-cat" data-categoria="bermudas">Bermudas</button>
+            <button class="chip-cat" data-categoria="acessorios">Acessórios</button>
+            <button class="chip-cat chip-promo" data-categoria="ofertas">🔥 Ofertas</button>
+        </div>
+    </nav>
+
+    <!-- BARRA DE UTILITÁRIOS (FILTRAR & ORDENAR) -->
+    <div class="barra-controle-catalogo">
+        <button type="button" id="btn-abrir-gaveta-filtros" class="btn-trigger-filtro">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+            <span>Filtros</span>
+            <span id="badge-filtros-ativos" class="badge-filtro" style="display: none;">0</span>
+        </button>
+
+        <span id="contagem-produtos-topo" class="total-pecas-label">Carregando...</span>
+
+        <div class="controle-ordenar-wrap">
+            <select id="ordenar-produtos" aria-label="Ordenar produtos">
+                <option value="padrao">Ordenar: Destaques</option>
+                <option value="menor-preco">Menor Preço</option>
+                <option value="maior-preco">Maior Preço</option>
+                <option value="recentes">Lançamentos</option>
+                <option value="nome-az">Nome (A - Z)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ÁREA PRINCIPAL DA VITRINE -->
+    <main class="catalogo-layout">
+        
+        <!-- GAVETA DE FILTROS AVANÇADOS -->
+        <aside class="sidebar-filtros" id="sidebar-filtros">
+            <div class="indicador-puxar-mobile"></div>
+            
+            <div class="header-gaveta-filtros">
+                <h3>Filtrar Catálogo</h3>
+                <button type="button" id="btn-fechar-gaveta-filtros" class="btn-fechar-gaveta" aria-label="Fechar filtros">&times;</button>
+            </div>
+
+            <div class="corpo-filtros-gaveta">
+                <div class="bloco-filtro">
+                    <h4>Faixa de Preço</h4>
+                    <div class="opcoes-radio">
+                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="todos" checked> <span>Qualquer valor</span></label>
+                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="ate-150"> <span>Até R$ 150,00</span></label>
+                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="150-250"> <span>R$ 150 a R$ 250</span></label>
+                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="acima-250"> <span>Acima de R$ 250</span></label>
+                    </div>
+                </div>
+
+                <div class="bloco-filtro">
+                    <h4>Tamanhos Disponíveis</h4>
+                    <div class="grid-tamanhos-filtro">
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="P"><span>P</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="M"><span>M</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="G"><span>G</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="GG"><span>GG</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="38"><span>38</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="40"><span>40</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="42"><span>42</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="Único"><span>ÚNICO</span></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-gaveta-filtros">
+                <button type="button" id="btn-limpar-filtros" class="btn-limpar-flt">Limpar</button>
+                <button type="button" id="btn-aplicar-filtros" class="btn-aplicar-flt">Ver Resultados</button>
+            </div>
+        </aside>
+
+        <!-- Overlay Escuro -->
+        <div id="overlay-filtros" class="overlay-filtros"></div>
+
+        <!-- Grade de Produtos -->
+        <section class="conteudo-vitrine">
+            <div id="vitrine-produtos" class="grid-produtos"></div>
+        </section>
+    </main>
+
+    <!-- GAVETA DE FAVORITOS -->
+    <div id="favoritos-lateral" class="carrinho-lateral">
+        <div class="carrinho-header">
+            <h2>Favoritos ❤️</h2>
+            <button id="fechar-favoritos" class="btn-fechar-carrinho">&times;</button>
+        </div>
+        <div id="lista-favoritos" class="itens-carrinho"></div>
+    </div>
+
+    <!-- GAVETA DA SACOLA -->
+    <div id="carrinho-lateral" class="carrinho-lateral">
+        <div class="carrinho-header">
+            <h2>Sua Sacola</h2>
+            <button id="fechar-carrinho" class="btn-fechar-carrinho">&times;</button>
+        </div>
+        <div id="lista-itens" class="itens-carrinho"></div>
+        <div class="carrinho-footer">
+            <div class="carrinho-total">
+                <span>Total:</span>
+                <span id="valor-total">R$ 0,00</span>
+            </div>
+            <button class="btn-finalizar" id="btn-finalizar-compra">Finalizar Compra</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/db.js"></script>
+    <script src="js/loja.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnAbrir = document.getElementById('btn-abrir-gaveta-filtros');
+            const btnFechar = document.getElementById('btn-fechar-gaveta-filtros');
+            const sidebar = document.getElementById('sidebar-filtros');
+            const overlay = document.getElementById('overlay-filtros');
+            const btnAplicar = document.getElementById('btn-aplicar-filtros');
+
+            function abrirFiltros() {
+                if (sidebar) sidebar.classList.add('aberto');
+                if (overlay) overlay.classList.add('ativo');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function fecharFiltros() {
+                if (sidebar) sidebar.classList.remove('aberto');
+                if (overlay) overlay.classList.remove('ativo');
+                document.body.style.overflow = '';
+            }
+
+            if (btnAbrir) btnAbrir.onclick = abrirFiltros;
+            if (btnFechar) btnFechar.onclick = fecharFiltros;
+            if (overlay) overlay.onclick = fecharFiltros;
+            if (btnAplicar) btnAplicar.onclick = fecharFiltros;
+
+            // Efeito de crescer da barra de busca
+            const inputBusca = document.getElementById('input-busca');
+            const caixaBusca = document.getElementById('caixa-busca-container');
+            const btnLimpar = document.getElementById('btn-limpar-busca');
+
+            if (inputBusca && caixaBusca) {
+                inputBusca.addEventListener('focus', () => {
+                    caixaBusca.classList.add('foco-crescer');
+                });
+                inputBusca.addEventListener('blur', () => {
+                    if (inputBusca.value.trim() === '') {
+                        caixaBusca.classList.remove('foco-crescer');
+                    }
+                });
+                inputBusca.addEventListener('input', () => {
+                    if (btnLimpar) {
+                        btnLimpar.style.display = inputBusca.value.trim() !== '' ? 'block' : 'none';
+                    }
+                });
+            }
+
+            if (btnLimpar && inputBusca) {
+                btnLimpar.addEventListener('click', () => {
+                    inputBusca.value = '';
+                    inputBusca.dispatchEvent(new Event('input'));
+                    btnLimpar.style.display = 'none';
+                    inputBusca.focus();
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

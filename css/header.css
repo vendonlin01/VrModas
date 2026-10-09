@@ -1,0 +1,324 @@
+/* =========================================
+   CABEÇALHO NO COMPUTADOR (DESKTOP)
+   ========================================= */
+.header {
+    background-color: var(--preto);
+    padding: 16px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--dourado);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 20px;
+}
+
+.logo {
+    flex-shrink: 0;
+}
+
+.logo a {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.logo-vr { color: var(--dourado); }
+.logo-modas { color: var(--branco); }
+
+/* Barra de Pesquisa Centralizada */
+.caixa-busca {
+    display: flex;
+    align-items: center;
+    background-color: var(--preto-claro);
+    border: 1px solid #333;
+    border-radius: 20px;
+    padding: 8px 18px;
+    flex: 1;
+    max-width: 480px;
+    transition: border-color 0.3s ease;
+}
+
+.caixa-busca:focus-within {
+    border-color: var(--dourado);
+}
+
+.caixa-busca input {
+    background: transparent;
+    border: none;
+    color: var(--branco);
+    outline: none;
+    width: 100%;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+}
+
+.caixa-busca button {
+    background: transparent;
+    border: none;
+    color: var(--cinza-texto);
+    cursor: pointer;
+    font-size: 16px;
+    transition: color 0.3s;
+}
+
+.caixa-busca button:hover {
+    color: var(--dourado);
+}
+
+/* Menu de Links no Desktop */
+.navbar {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-shrink: 0;
+}
+
+.navbar a {
+    color: var(--branco);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    transition: color 0.3s ease;
+}
+
+.navbar a:hover {
+    color: var(--dourado);
+}
+
+.btn-menu, .btn-fechar-menu {
+    display: none;
+}
+
+/* Ícones de Ação Alinhados no Canto Direito */
+.acoes-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.perfil-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-usuario {
+    background: transparent;
+    border: 1px solid #333;
+    color: var(--branco);
+    font-size: 16px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+    transition: all 0.25s ease;
+}
+
+.btn-usuario:hover {
+    border-color: var(--dourado);
+    color: var(--dourado);
+}
+
+.dropdown-usuario {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    background: var(--preto-claro);
+    border: 1px solid #333;
+    border-top: 2px solid var(--dourado);
+    border-radius: 6px;
+    min-width: 175px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    z-index: 2500;
+    padding: 8px 0;
+}
+
+.dropdown-usuario.ativo {
+    display: block;
+}
+
+.dropdown-usuario .info-nome {
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--dourado);
+    font-weight: 700;
+    border-bottom: 1px solid #222;
+}
+
+.dropdown-usuario a, 
+.dropdown-usuario button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    color: var(--cinza-texto);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dropdown-usuario a:hover, 
+.dropdown-usuario button:hover {
+    background: #141414;
+    color: var(--branco);
+}
+
+.dropdown-usuario button.btn-logout {
+    color: #ff4444;
+    border-top: 1px solid #222;
+}
+
+.icone-carrinho {
+    background: none;
+    border: none;
+    color: var(--branco);
+    font-size: 19px;
+    cursor: pointer;
+    position: relative;
+    padding: 6px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.contador-favoritos,
+.contador-carrinho {
+    background-color: var(--dourado);
+    color: var(--preto);
+    font-size: 10px;
+    font-weight: 900;
+    border-radius: 50%;
+    width: 17px;
+    height: 17px;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* =========================================
+   ADAPTAÇÃO CELULAR DO HEADER (MOBILE ≤ 768px)
+   ========================================= */
+@media (max-width: 768px) {
+    .header {
+        display: grid;
+        grid-template-columns: 36px 1fr auto;
+        grid-template-rows: auto auto;
+        align-items: center;
+        padding: 10px 14px;
+        gap: 8px;
+    }
+
+    .btn-menu {
+        display: block;
+        grid-column: 1;
+        grid-row: 1;
+        font-size: 24px;
+        background: transparent;
+        border: none;
+        color: var(--dourado);
+        cursor: pointer;
+        padding: 0;
+        text-align: left;
+    }
+
+    .logo {
+        grid-column: 2;
+        grid-row: 1;
+        text-align: center;
+    }
+
+    .logo a {
+        font-size: 20px;
+        letter-spacing: 1px;
+    }
+
+    .acoes-header {
+        grid-column: 3;
+        grid-row: 1;
+        gap: 6px;
+    }
+
+    .btn-usuario {
+        border: none;
+        padding: 4px;
+        font-size: 18px;
+    }
+
+    #texto-usuario {
+        display: none !important;
+    }
+
+    .icone-carrinho {
+        font-size: 18px;
+        padding: 4px;
+    }
+
+    .caixa-busca {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        max-width: 100%;
+        margin: 0;
+        padding: 6px 14px;
+        width: 100%;
+        display: flex;
+    }
+
+    .navbar {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 260px;
+        height: 100vh;
+        background-color: var(--preto-claro);
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 60px 20px;
+        transition: left 0.3s ease;
+        z-index: 2500;
+        border-right: 1px solid #333;
+    }
+
+    .navbar.aberto {
+        left: 0;
+        box-shadow: 8px 0 25px rgba(0,0,0,0.85);
+    }
+
+    .btn-fechar-menu {
+        display: block;
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        background: none;
+        border: none;
+        color: var(--branco);
+        font-size: 26px;
+        cursor: pointer;
+    }
+
+    .dropdown-usuario {
+        position: fixed !important;
+        top: 60px !important;
+        right: 12px !important;
+        width: 200px !important;
+        min-width: auto !important;
+        z-index: 9999 !important;
+    }
+}
