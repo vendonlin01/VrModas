@@ -34,22 +34,36 @@
             }
         }
 
-        .admin-nav button.nav-btn {
-            display: flex;
+       .admin-nav button.nav-btn {
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
-            width: 100%;
-            background: transparent;
-            border: none;
+            gap: 6px;
+            width: auto; /* Permite ficar do tamanho exato da palavra */
+            background: #181818;
+            border: 1px solid #2e2e2e;
             color: var(--cinza-texto, #aaa);
-            padding: 13px 18px;
-            font-size: 13px;
+            padding: 6px 12px; /* Bem mais compacto */
+            font-size: 11px; /* Letra menor e discreta */
             font-weight: 700;
             font-family: 'Montserrat', sans-serif;
-            text-align: left;
+            text-align: center;
             cursor: pointer;
-            border-left: 3px solid transparent;
+            border-radius: 16px; /* Bordas arredondadas estilo pílula */
+            flex-shrink: 0; /* Impede de esmagar */
             transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .admin-nav button.nav-btn:hover {
+            color: var(--branco, #fff);
+            background: #222;
+        }
+
+        .admin-nav button.nav-btn.ativo {
+            color: #000;
+            background: var(--dourado, #d4af37);
+            border-color: var(--dourado, #d4af37);
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
         }
 
         .admin-nav button.nav-btn:hover {
