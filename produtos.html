@@ -3,14 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Catálogo Exclusivo - VR Modas</title>
 
     <!-- Folhas de Estilo -->
     <link rel="stylesheet" href="./css/global.css">
     <link rel="stylesheet" href="./css/produtos.css">
     <link rel="stylesheet" href="./css/gavetas.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;900&display=swap"
+        rel="stylesheet">
 </head>
 
 <body>
@@ -19,7 +21,10 @@
     <header class="header-catalogo-fixo">
         <div class="linha-topo-nav">
             <a href="home.html" class="btn-voltar-home" title="Voltar ao Início">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
             </a>
 
             <div class="logo-box">
@@ -29,8 +34,10 @@
             </div>
 
             <div class="acoes-header">
-                <button id="abrir-favoritos" class="icone-carrinho" title="Favoritos">❤️ <span class="contador-favoritos">0</span></button>
-                <button id="abrir-carrinho" class="icone-carrinho" title="Sacola">🛒 <span class="contador-carrinho">0</span></button>
+                <button id="abrir-favoritos" class="icone-carrinho" title="Favoritos">❤️ <span
+                        class="contador-favoritos">0</span></button>
+                <button id="abrir-carrinho" class="icone-carrinho" title="Sacola">🛒 <span
+                        class="contador-carrinho">0</span></button>
             </div>
         </div>
 
@@ -39,7 +46,8 @@
             <div class="caixa-busca-animada" id="caixa-busca-container">
                 <span class="icone-lupa">🔍</span>
                 <input type="text" id="input-busca" placeholder="Buscar no catálogo..." autocomplete="off">
-                <button type="button" id="btn-limpar-busca" class="btn-limpar-busca" style="display: none;">&times;</button>
+                <button type="button" id="btn-limpar-busca" class="btn-limpar-busca"
+                    style="display: none;">&times;</button>
             </div>
         </div>
     </header>
@@ -61,7 +69,18 @@
     <!-- BARRA DE UTILITÁRIOS (FILTRAR & ORDENAR) -->
     <div class="barra-controle-catalogo">
         <button type="button" id="btn-abrir-gaveta-filtros" class="btn-trigger-filtro">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="21" x2="4" y2="14"></line>
+                <line x1="4" y1="10" x2="4" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12" y2="3"></line>
+                <line x1="20" y1="21" x2="20" y2="16"></line>
+                <line x1="20" y1="12" x2="20" y2="3"></line>
+                <line x1="1" y1="14" x2="7" y2="14"></line>
+                <line x1="9" y1="8" x2="15" y2="8"></line>
+                <line x1="17" y1="16" x2="23" y2="16"></line>
+            </svg>
             <span>Filtros</span>
             <span id="badge-filtros-ativos" class="badge-filtro" style="display: none;">0</span>
         </button>
@@ -81,38 +100,51 @@
 
     <!-- ÁREA PRINCIPAL DA VITRINE -->
     <main class="catalogo-layout">
-        
+
         <!-- GAVETA DE FILTROS AVANÇADOS -->
         <aside class="sidebar-filtros" id="sidebar-filtros">
             <div class="indicador-puxar-mobile"></div>
-            
+
             <div class="header-gaveta-filtros">
                 <h3>Filtrar Catálogo</h3>
-                <button type="button" id="btn-fechar-gaveta-filtros" class="btn-fechar-gaveta" aria-label="Fechar filtros">&times;</button>
+                <button type="button" id="btn-fechar-gaveta-filtros" class="btn-fechar-gaveta"
+                    aria-label="Fechar filtros">&times;</button>
             </div>
 
             <div class="corpo-filtros-gaveta">
                 <div class="bloco-filtro">
                     <h4>Faixa de Preço</h4>
                     <div class="opcoes-radio">
-                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="todos" checked> <span>Qualquer valor</span></label>
-                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="ate-150"> <span>Até R$ 150,00</span></label>
-                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="150-250"> <span>R$ 150 a R$ 250</span></label>
-                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="acima-250"> <span>Acima de R$ 250</span></label>
+                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="todos" checked>
+                            <span>Qualquer valor</span></label>
+                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="ate-150"> <span>Até
+                                R$ 150,00</span></label>
+                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="150-250"> <span>R$
+                                150 a R$ 250</span></label>
+                        <label><input type="radio" name="filtro-preco" class="filtro-preco" value="acima-250">
+                            <span>Acima de R$ 250</span></label>
                     </div>
                 </div>
 
                 <div class="bloco-filtro">
                     <h4>Tamanhos Disponíveis</h4>
                     <div class="grid-tamanhos-filtro">
-                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="P"><span>P</span></label>
-                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="M"><span>M</span></label>
-                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="G"><span>G</span></label>
-                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="GG"><span>GG</span></label>
-                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="38"><span>38</span></label>
-                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="40"><span>40</span></label>
-                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="42"><span>42</span></label>
-                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho" value="Único"><span>ÚNICO</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho"
+                                value="P"><span>P</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho"
+                                value="M"><span>M</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho"
+                                value="G"><span>G</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho"
+                                value="GG"><span>GG</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho"
+                                value="38"><span>38</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho"
+                                value="40"><span>40</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho"
+                                value="42"><span>42</span></label>
+                        <label class="box-check-tam"><input type="checkbox" class="filtro-tamanho"
+                                value="Único"><span>ÚNICO</span></label>
                     </div>
                 </div>
             </div>
@@ -158,8 +190,9 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/db.js"></script>
-    <script src="js/loja.js"></script>
+    <script src="js/favoritos.js"></script>
+    <script src="js/catalogo.js"></script>
+    <script src="js/sacola.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {

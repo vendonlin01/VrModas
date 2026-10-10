@@ -33,3 +33,39 @@ a {
 button {
     font-family: 'Montserrat', sans-serif;
 }
+/* ==========================================
+   PRODUTO ESGOTADO & BLOQUEIO DE BOTÕES
+   ========================================== */
+
+/* Cartão do produto na montra quando sem stock */
+.card-produto.esgotado .imagem-produto {
+    filter: grayscale(85%) opacity(0.6);
+}
+
+/* Etiqueta vermelha "Esgotado" na foto */
+.badge-esgotado-foto {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #e53935;
+    color: #ffffff;
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 800;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    z-index: 2;
+}
+
+/* Botões desativados (sem stock ou travados) */
+.btn-comprar.btn-desativado,
+.btn-adicionar-sacola:disabled,
+button:disabled {
+    background: #2a2a2a !important;
+    color: #777777 !important;
+    border: 1px solid #444444 !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+    box-shadow: none !important;
+}
