@@ -10,6 +10,167 @@
     <link rel="stylesheet" href="./css/detalhes.css">
     <link rel="stylesheet" href="./css/gavetas.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        #container-detalhes {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        /* Estilos do Modal de Medidas */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+        .modal-conteudo {
+            background: #141414;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 480px;
+            width: 90%;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .modal-topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #2a2a2a;
+            padding-bottom: 10px;
+        }
+        .modal-topo h3 {
+            margin: 0;
+            color: var(--dourado, #d4af37);
+            font-size: 16px;
+        }
+        .btn-fechar-modal {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 22px;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .tabela-medidas-app {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: center;
+        }
+        .tabela-medidas-app th, .tabela-medidas-app td {
+            padding: 10px;
+            border: 1px solid #2a2a2a;
+        }
+        .tabela-medidas-app th {
+            background: #1f1f1f;
+            color: var(--dourado, #d4af37);
+        }
+
+        /* Estilos do Formulário de Avaliação */
+        .form-avaliacao-box {
+            background: #141414;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 18px;
+            margin-top: 15px;
+        }
+        .form-avaliacao-box h3 {
+            margin-top: 0;
+            color: var(--dourado, #d4af37);
+            font-size: 15px;
+        }
+        .seletor-estrelas-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .estrelas-clique {
+            display: flex;
+            gap: 4px;
+            font-size: 20px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .estrela-opcao {
+            color: #555;
+            transition: color 0.2s;
+        }
+        .estrela-opcao.ativa {
+            color: #fbc02d;
+        }
+        .grupo-campo-av {
+            margin-bottom: 10px;
+        }
+        .grupo-campo-av input, .grupo-campo-av textarea {
+            width: 100%;
+            box-sizing: border-box;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 12px;
+        }
+        .acoes-form-av {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-enviar-av {
+            background: var(--dourado, #d4af37);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-cancelar-av {
+            background: #2a2a2a;
+            color: #fff;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .card-avaliacao-item {
+            background: #141414;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 14px;
+            margin-top: 10px;
+        }
+        .estrelas-card {
+            color: #fbc02d;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        .comentario-card {
+            font-size: 13px;
+            color: #ccc;
+            margin: 0 0 6px 0;
+            font-style: italic;
+        }
+        .autor-card {
+            font-size: 11px;
+            color: #777;
+        }
+        .badge-verificado {
+            color: #4caf50;
+            font-weight: bold;
+            margin-left: 6px;
+        }
+    </style>
 </head>
 
 <body>
@@ -37,8 +198,8 @@
         </div>
     </header>
 
-    <!-- Estrutura Principal da Página de Detalhes -->
-    <main class="detalhes-wrapper" id="container-detalhes" style="display: none;">
+    <!-- Estrutura Principal -->
+    <main class="detalhes-wrapper" id="container-detalhes">
 
         <!-- Bloco Superior: Foto (Esquerda) e Informações (Direita) -->
         <section class="produto-view">
@@ -49,16 +210,15 @@
 
             <!-- Informações e Seletores -->
             <div class="info-produto">
-                <h1 id="detalhe-nome">Nome da Peça</h1>
+                <h1 id="detalhe-nome">Carregando peça...</h1>
                 <p class="preco" id="detalhe-preco">R$ 0,00</p>
-                <p class="descricao" id="detalhe-descricao">Descrição detalhada da peça...</p>
+                <p class="descricao" id="detalhe-descricao"></p>
 
                 <!-- Tamanhos e Guia de Medidas -->
                 <div class="tamanhos">
                     <div class="topo-tamanhos">
                         <h4>Tamanhos Disponíveis</h4>
-                        <button type="button" id="btn-abrir-guia-medidas" class="btn-link-guia">📐 Guia de
-                            Medidas</button>
+                        <button type="button" id="btn-abrir-guia-medidas" class="btn-link-guia" style="cursor: pointer;">📐 Guia de Medidas</button>
                     </div>
                     <div class="opcoes-tamanho" id="detalhe-tamanhos"></div>
                 </div>
@@ -69,7 +229,7 @@
                     <div class="opcoes-cor" id="detalhe-cores"></div>
                 </div>
 
-                <!-- Quantidade -->
+                <!-- Quantidade com Trava de Estoque -->
                 <div class="quantidade-container">
                     <h4>Quantidade</h4>
                     <div class="controle-quantidade controle-qtd">
@@ -84,17 +244,16 @@
             </div>
         </section>
 
-        <!-- Bloco Inferior: Avaliações Dinâmicas dos Clientes -->
+        <!-- Bloco Inferior: Avaliações -->
         <section class="secao-avaliacoes">
             <div class="topo-avaliacoes">
                 <div>
                     <h2>Avaliações dos Clientes</h2>
                     <p class="subtexto-avaliacoes">Opiniões de quem já comprou esta peça na VR Modas.</p>
                 </div>
-                <button type="button" id="btn-abrir-form-avaliacao" class="btn-avaliar-peca">⭐ Deixar Avaliação</button>
+                <button type="button" id="btn-abrir-form-avaliacao" class="btn-avaliar-peca" style="cursor: pointer;">⭐ Deixar Avaliação</button>
             </div>
 
-            <!-- Formulário Dinâmico de Avaliação (Abre ao Clicar) -->
             <form id="form-avaliacao-cliente" class="form-avaliacao-box" style="display: none;">
                 <h3>Avaliar esta peça</h3>
                 <div class="seletor-estrelas-input">
@@ -114,9 +273,7 @@
                 </div>
 
                 <div class="grupo-campo-av">
-                    <textarea id="texto-avaliacao" rows="3"
-                        placeholder="Conte como foi sua experiência, o caimento do tecido, conforto..."
-                        required></textarea>
+                    <textarea id="texto-avaliacao" rows="3" placeholder="Conte como foi sua experiência com a peça..." required></textarea>
                 </div>
 
                 <div class="acoes-form-av">
@@ -125,14 +282,13 @@
                 </div>
             </form>
 
-            <!-- Lista Dinâmica de Avaliações (Vazia por padrão até haver compras/avaliações) -->
             <div id="lista-avaliacoes-peca" class="grid-avaliacoes"></div>
         </section>
 
     </main>
 
     <!-- Modal do Guia de Medidas -->
-    <div id="modal-guia-medidas" class="modal-backdrop" style="display: none;">
+    <div id="modal-guia-medidas" class="modal-backdrop">
         <div class="modal-conteudo">
             <div class="modal-topo">
                 <h3>Tabela de Medidas (cm)</h3>
@@ -140,38 +296,13 @@
             </div>
             <table class="tabela-medidas-app">
                 <thead>
-                    <tr>
-                        <th>Tamanho</th>
-                        <th>Busto</th>
-                        <th>Cintura</th>
-                        <th>Quadril</th>
-                    </tr>
+                    <tr><th>Tamanho</th><th>Busto</th><th>Cintura</th><th>Quadril</th></tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td><strong>P (38)</strong></td>
-                        <td>84 - 88</td>
-                        <td>66 - 70</td>
-                        <td>94 - 98</td>
-                    </tr>
-                    <tr>
-                        <td><strong>M (40)</strong></td>
-                        <td>89 - 94</td>
-                        <td>71 - 76</td>
-                        <td>99 - 104</td>
-                    </tr>
-                    <tr>
-                        <td><strong>G (42)</strong></td>
-                        <td>95 - 100</td>
-                        <td>77 - 82</td>
-                        <td>105 - 110</td>
-                    </tr>
-                    <tr>
-                        <td><strong>GG (44)</strong></td>
-                        <td>101 - 106</td>
-                        <td>83 - 88</td>
-                        <td>111 - 116</td>
-                    </tr>
+                    <tr><td><strong>P (38)</strong></td><td>84 - 88</td><td>66 - 70</td><td>94 - 98</td></tr>
+                    <tr><td><strong>M (40)</strong></td><td>89 - 94</td><td>71 - 76</td><td>99 - 104</td></tr>
+                    <tr><td><strong>G (42)</strong></td><td>95 - 100</td><td>77 - 82</td><td>105 - 110</td></tr>
+                    <tr><td><strong>GG (44)</strong></td><td>101 - 106</td><td>83 - 88</td><td>111 - 116</td></tr>
                 </tbody>
             </table>
         </div>
@@ -201,78 +332,197 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts Modulares -->
+    <script src="js/db.js"></script>
     <script src="js/favoritos.js"></script>
-    <script src="js/detalhes.js"></script>
     <script src="js/sacola.js"></script>
 
-    <!-- Lógica Exclusiva da Página de Detalhes -->
+    <!-- SCRIPT GERAL DE INTERAÇÃO (PRODUTO, MODAL E AVALIAÇÕES) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Modal do Guia de Medidas
+            const params = new URLSearchParams(window.location.search);
+            const idUrl = params.get('id');
+            const db = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
+
+            // Identificação do Produto
+            let prod = null;
+            if (idUrl) {
+                prod = db.find(p => String(p.id).trim() === String(idUrl).trim());
+            }
+            if (!prod && db.length > 0) prod = db[0];
+
+            if (prod) {
+                // Título e Preço
+                const elNome = document.getElementById('detalhe-nome');
+                if (elNome) elNome.innerText = prod.nome;
+
+                const elPreco = document.getElementById('detalhe-preco');
+                if (elPreco) {
+                    const precoVal = Number(prod.preco || 0);
+                    const promoVal = Number(prod.precoPromocional || 0);
+                    const precoFormatado = precoVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+                    if (promoVal > 0 && promoVal < precoVal) {
+                        const promoFormatado = promoVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                        elPreco.innerHTML = `<span style="text-decoration: line-through; color: #777; font-size: 16px; margin-right: 8px;">${precoFormatado}</span><span style="color: var(--dourado, #d4af37); font-weight: bold;">${promoFormatado}</span>`;
+                    } else {
+                        elPreco.innerText = precoFormatado;
+                    }
+                }
+
+                // Descrição
+                const elDesc = document.getElementById('detalhe-descricao');
+                if (elDesc) elDesc.innerText = prod.descricao || 'Peça exclusiva VR Modas.';
+
+                // Imagem Principal
+                let fotos = (prod.imagens && prod.imagens.length > 0) ? prod.imagens : [prod.imagem || 'img/produto1.jpg'];
+                const imgEl = document.getElementById('detalhe-img');
+                if (imgEl) {
+                    imgEl.src = fotos[0];
+                    imgEl.onerror = () => { imgEl.src = 'img/produto1.jpg'; };
+                }
+
+                // Miniaturas
+                const galeriaEl = document.querySelector('.galeria');
+                if (galeriaEl && fotos.length > 1) {
+                    let miniaturasHtml = `<div class="miniaturas" style="display: flex; gap: 8px; margin-top: 10px; overflow-x: auto;">`;
+                    fotos.forEach((f, i) => {
+                        miniaturasHtml += `<img src="${f}" class="miniatura-foto" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 2px solid ${i === 0 ? 'var(--dourado, #d4af37)' : 'transparent'}; cursor: pointer;" onclick="document.getElementById('detalhe-img').src=this.src">`;
+                    });
+                    miniaturasHtml += `</div>`;
+                    galeriaEl.insertAdjacentHTML('beforeend', miniaturasHtml);
+                }
+
+                // Tamanhos
+                const boxTam = document.getElementById('detalhe-tamanhos');
+                if (boxTam) {
+                    boxTam.innerHTML = '';
+                    const tamanhos = prod.tamanhos && prod.tamanhos.length > 0 ? prod.tamanhos : ['P', 'M', 'G'];
+                    tamanhos.forEach((t, i) => {
+                        boxTam.insertAdjacentHTML('beforeend', `<label style="cursor: pointer; margin-right: 6px;"><input type="radio" name="tamanho" value="${t}" ${i === 0 ? 'checked' : ''}><span class="box-tamanho">${t}</span></label>`);
+                    });
+                }
+
+                // Cores
+                const boxCor = document.getElementById('detalhe-cores');
+                if (boxCor) {
+                    boxCor.innerHTML = '';
+                    const mapa = { 'preto': '#000', 'branco': '#fff', 'dourado': '#d4af37', 'vermelho': '#d32f2f', 'azul': '#1e88e5', 'rosa': '#e91e63', 'verde': '#2e7d32' };
+                    let cores = typeof prod.cores === 'string' ? prod.cores.split(',') : (prod.cores || ['Padrão']);
+                    cores.forEach((c, i) => {
+                        const cNome = String(c).trim();
+                        const cCor = mapa[cNome.toLowerCase()] || '#d4af37';
+                        boxCor.insertAdjacentHTML('beforeend', `<label style="cursor: pointer; margin-right: 6px;"><input type="radio" name="cor" value="${cNome}" ${i === 0 ? 'checked' : ''} style="display:none;"><span class="box-cor" style="display:inline-block; width:34px; height:34px; border-radius:50%; background:${cCor}; border: 1px solid #555;"></span></label>`);
+                    });
+                }
+
+                // Trava de Estoque (+ e -)
+                const estoque = parseInt(prod.estoque || 0);
+                const btnAdd = document.getElementById('btn-adicionar-sacola');
+                const inputQtd = document.getElementById('qtd-produto');
+                const controleQtd = document.querySelector('.controle-qtd');
+
+                if (estoque <= 0 && btnAdd) {
+                    btnAdd.disabled = true;
+                    btnAdd.innerText = 'Produto Esgotado';
+                    btnAdd.classList.add('btn-desativado');
+                    if (inputQtd) inputQtd.value = 0;
+                }
+
+                if (controleQtd && inputQtd && estoque > 0) {
+                    controleQtd.onclick = (e) => {
+                        let val = parseInt(inputQtd.value || '1');
+                        if (e.target.classList.contains('btn-mais') || e.target.innerText === '+') {
+                            if (val < estoque) inputQtd.value = val + 1;
+                            else alert(`Estoque máximo atingido: ${estoque} unidade(s).`);
+                        } else if (e.target.classList.contains('btn-menos') || e.target.innerText === '-') {
+                            if (val > 1) inputQtd.value = val - 1;
+                        }
+                    };
+                }
+            }
+
+            // ==========================================
+            // 1. MODAL DO GUIA DE MEDIDAS
+            // ==========================================
             const modalGuia = document.getElementById('modal-guia-medidas');
             const btnAbrirGuia = document.getElementById('btn-abrir-guia-medidas');
             const btnFecharGuia = document.getElementById('btn-fechar-guia-medidas');
 
             if (btnAbrirGuia && modalGuia) {
-                btnAbrirGuia.onclick = () => modalGuia.style.display = 'flex';
-                btnFecharGuia.onclick = () => modalGuia.style.display = 'none';
-                modalGuia.onclick = (e) => { if (e.target === modalGuia) modalGuia.style.display = 'none'; };
-            }
-
-            // Sistema de Avaliações Dinâmicas por Produto
-            const urlParams = new URLSearchParams(window.location.search);
-            const produtoId = urlParams.get('id');
-            const containerLista = document.getElementById('lista-avaliacoes-peca');
-            const formAv = document.getElementById('form-avaliacao-cliente');
-            const btnAbrirForm = document.getElementById('btn-abrir-form-avaliacao');
-            const btnCancelarForm = document.getElementById('btn-cancelar-av');
-            const estrelas = document.querySelectorAll('.estrela-opcao');
-            const inputNota = document.getElementById('nota-avaliacao-val');
-
-            // Alternar formulário
-            if (btnAbrirForm && formAv) {
-                btnAbrirForm.onclick = () => {
-                    formAv.style.display = formAv.style.display === 'none' ? 'block' : 'none';
+                btnAbrirGuia.onclick = (e) => {
+                    e.preventDefault();
+                    modalGuia.style.display = 'flex';
                 };
             }
-            if (btnCancelarForm && formAv) {
-                btnCancelarForm.onclick = () => { formAv.style.display = 'none'; };
+            if (btnFecharGuia && modalGuia) {
+                btnFecharGuia.onclick = () => {
+                    modalGuia.style.display = 'none';
+                };
+            }
+            if (modalGuia) {
+                modalGuia.onclick = (e) => {
+                    if (e.target === modalGuia) modalGuia.style.display = 'none';
+                };
             }
 
-            // Seleção de estrelas clicáveis (1 a 5)
-            estrelas.forEach(star => {
-                star.onclick = function () {
-                    const valor = parseInt(this.getAttribute('data-valor'));
-                    inputNota.value = valor;
-                    estrelas.forEach((s, idx) => {
-                        if (idx < valor) s.classList.add('ativa');
+            // ==========================================
+            // 2. SISTEMA DE AVALIAÇÕES
+            // ==========================================
+            const produtoIdAtual = prod ? prod.id : (idUrl || 1);
+            const containerListaAv = document.getElementById('lista-avaliacoes-peca');
+            const formAv = document.getElementById('form-avaliacao-cliente');
+            const btnAbrirFormAv = document.getElementById('btn-abrir-form-avaliacao');
+            const btnCancelarFormAv = document.getElementById('btn-cancelar-av');
+            const estrelasEl = document.querySelectorAll('.estrela-opcao');
+            const inputNotaVal = document.getElementById('nota-avaliacao-val');
+
+            // Abrir / Fechar Formulário
+            if (btnAbrirFormAv && formAv) {
+                btnAbrirFormAv.onclick = (e) => {
+                    e.preventDefault();
+                    formAv.style.display = (formAv.style.display === 'none' || formAv.style.display === '') ? 'block' : 'none';
+                };
+            }
+            if (btnCancelarFormAv && formAv) {
+                btnCancelarFormAv.onclick = (e) => {
+                    e.preventDefault();
+                    formAv.style.display = 'none';
+                };
+            }
+
+            // Seleção de Estrelas (1 a 5)
+            estrelasEl.forEach(star => {
+                star.onclick = function() {
+                    const val = parseInt(this.getAttribute('data-valor'));
+                    if (inputNotaVal) inputNotaVal.value = val;
+                    estrelasEl.forEach((s, idx) => {
+                        if (idx < val) s.classList.add('ativa');
                         else s.classList.remove('ativa');
                     });
                 };
             });
 
-            // Carregar avaliações do produto
+            // Carregar Avaliações Salvas
             function carregarAvaliacoes() {
-                if (!containerLista) return;
-                const todasAvaliacoes = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
-                const avaliacoesPeca = todasAvaliacoes.filter(a => String(a.produtoId) === String(produtoId));
+                if (!containerListaAv) return;
+                const todas = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
+                const daPeca = todas.filter(a => String(a.produtoId) === String(produtoIdAtual));
 
-                containerLista.innerHTML = '';
-
-                if (avaliacoesPeca.length === 0) {
-                    containerLista.innerHTML = `
-                        <div class="aviso-sem-avaliacoes">
-                            <p>Esta peça ainda não possui avaliações.</p>
-                            <span>Seja a primeira pessoa a avaliar após a sua compra!</span>
+                containerListaAv.innerHTML = '';
+                if (daPeca.length === 0) {
+                    containerListaAv.innerHTML = `
+                        <div style="text-align: center; color: #777; padding: 25px 10px; font-size: 13px;">
+                            <p style="margin: 0 0 4px 0;">Esta peça ainda não possui avaliações.</p>
+                            <small>Seja a primeira pessoa a avaliar após sua compra!</small>
                         </div>
                     `;
                     return;
                 }
 
-                avaliacoesPeca.forEach(av => {
+                daPeca.forEach(av => {
                     const estrelasTxt = '★'.repeat(av.nota) + '☆'.repeat(5 - av.nota);
-                    containerLista.insertAdjacentHTML('beforeend', `
+                    containerListaAv.insertAdjacentHTML('beforeend', `
                         <div class="card-avaliacao-item">
                             <div class="estrelas-card">${estrelasTxt}</div>
                             <p class="comentario-card">"${av.texto}"</p>
@@ -284,17 +534,19 @@
 
             carregarAvaliacoes();
 
-            // Salvar nova avaliação
+            // Salvar Nova Avaliação
             if (formAv) {
-                formAv.onsubmit = function (e) {
+                formAv.onsubmit = function(e) {
                     e.preventDefault();
                     const autor = document.getElementById('autor-avaliacao').value.trim();
                     const texto = document.getElementById('texto-avaliacao').value.trim();
-                    const nota = parseInt(inputNota.value || '5');
+                    const nota = parseInt(inputNotaVal?.value || '5');
 
-                    const novaAv = {
+                    if (!autor || !texto) return;
+
+                    const nova = {
                         id: Date.now(),
-                        produtoId: produtoId,
+                        produtoId: produtoIdAtual,
                         autor,
                         texto,
                         nota,
@@ -302,13 +554,13 @@
                     };
 
                     const todas = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
-                    todas.unshift(novaAv);
+                    todas.unshift(nova);
                     localStorage.setItem('vr_modas_avaliacoes', JSON.stringify(todas));
 
                     formAv.reset();
                     formAv.style.display = 'none';
                     carregarAvaliacoes();
-                    alert("Obrigada pela sua avaliação! Ela já foi publicada.");
+                    alert("Obrigada pela sua avaliação! Ela já está visível para todas as clientes.");
                 };
             }
         });

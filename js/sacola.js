@@ -1,7 +1,12 @@
+/* =====================================================
+   SACOLA, ENVIO (CASA/LOJA) & FINALIZAÇÃO - VR MODAS
+   ===================================================== */
+
 document.addEventListener('DOMContentLoaded', () => {
     const carrinhoLateral = document.getElementById('carrinho-lateral');
     const btnAbrirCarrinho = document.getElementById('abrir-carrinho');
     const btnFecharCarrinho = document.getElementById('fechar-carrinho');
+    
     if (btnAbrirCarrinho) btnAbrirCarrinho.onclick = () => { renderizarSacola(); carrinhoLateral.classList.add('aberto'); };
     if (btnFecharCarrinho) btnFecharCarrinho.onclick = () => carrinhoLateral.classList.remove('aberto');
 
@@ -13,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let metodoPagamentoSelecionado = 'pix';
     let parcelaSelecionada = 1;
     let cupomAtivo = null;
+
+    // Estado da modalidade: 'entrega' (Receber em Casa) ou 'retirada' (Retirar na Loja)
     let tipoEnvioSelecionado = 'entrega';
 
     function obterClienteAtual() {
@@ -25,12 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatarEnderecoParaTexto(end) {
         if (!end) return 'Retirada na Loja / A combinar';
         if (typeof end === 'string') return end;
-        const partes = [
-            end.rua ? `${end.rua}, Nº ${end.numero || 'S/N'}` : '',
-            end.bairro,
-            end.cidade,
-            end.cep ? `(CEP: ${end.cep})` : ''
-        ].filter(Boolean);
+        const rua = end.rua || end.logradouro || '';
+        const num = end.numero || 'S/N';
+        const bairro = end.bairro || '';
+        const cidade = end.cidade || '';
+        const cep = end.cep ? `(CEP: ${end.cep})` : '';
+        const partes = [rua ? `${rua}, Nº ${num}` : '', bairro, cidade, cep].filter(p => p.trim() !== '');
         return partes.length > 0 ? partes.join(' - ') : 'Retirada na Loja / A combinar';
     }
 
@@ -44,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         qtdItensCarrinho = 0;
 
         if (itensNoCarrinhoData.length === 0) {
-            listaItens.innerHTML = '<p style="color: var(--cinza-texto); text-align: center; padding: 40px 10px;">Sua sacola está vazia.</p>';
+            listaItens.innerHTML = '<p style="color: var(--cinza-texto, #aaa); text-align: center; padding: 40px 10px;">Sua sacola está vazia.</p>';
             const blocoExistente = document.getElementById('bloco-pagamento-sacola');
             if (blocoExistente) blocoExistente.remove();
             cupomAtivo = null;
@@ -62,15 +69,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <img src="${item.imagem}" alt="${item.nome}" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/produto1.jpg'">
 
                     <div class="item-info" style="flex: 1; min-width: 0;">
-                        <h4 style="font-size: 13px; margin: 0 0 3px 0; color: var(--branco); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.nome}</h4>
-                        <small style="color: var(--cinza-texto); display: block; margin-bottom: 4px; font-size: 11px;">Tam: ${item.tamanho} | Cor: ${item.cor}</small>
-                        <p style="color: var(--dourado); font-weight: bold; margin: 0; font-size: 13px;">${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                        <h4 style="font-size: 13px; margin: 0 0 3px 0; color: var(--branco, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.nome}</h4>
+                        <small style="color: var(--cinza-texto, #aaa); display: block; margin-bottom: 4px; font-size: 11px;">Tam: ${item.tamanho} | Cor: ${item.cor}</small>
+                        <p style="color: var(--dourado, #d4af37); font-weight: bold; margin: 0; font-size: 13px;">${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                     </div>
 
                     <div style="display: flex; align-items: center; gap: 6px; background: #141414; padding: 3px 6px; border-radius: 4px; border: 1px solid #333; flex-shrink: 0;">
-                        <button type="button" class="btn-sacola-qtd btn-sacola-menos" data-idref="${item.idRef}" style="background: none; border: none; color: var(--branco); font-size: 13px; cursor: pointer; padding: 0 3px; font-weight: bold;">-</button>
+                        <button type="button" class="btn-sacola-qtd btn-sacola-menos" data-idref="${item.idRef}" style="background: none; border: none; color: #fff; font-size: 13px; cursor: pointer; padding: 0 3px; font-weight: bold;">-</button>
                         <span style="font-size: 12px; font-weight: bold; min-width: 12px; text-align: center;">${item.quantidade}</span>
-                        <button type="button" class="btn-sacola-qtd btn-sacola-mais" data-idref="${item.idRef}" style="background: none; border: none; color: var(--branco); font-size: 13px; cursor: pointer; padding: 0 3px; font-weight: bold;">+</button>
+                        <button type="button" class="btn-sacola-qtd btn-sacola-mais" data-idref="${item.idRef}" style="background: none; border: none; color: #fff; font-size: 13px; cursor: pointer; padding: 0 3px; font-weight: bold;">+</button>
                     </div>
 
                     <button class="btn-remover" data-idref="${item.idRef}" style="background: none; color: #ff4444; border: none; cursor: pointer; font-size: 15px; padding: 4px; flex-shrink: 0;" title="Remover item">✕</button>
@@ -105,15 +112,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const htmlPagamento = `
             <div id="bloco-pagamento-sacola" style="background: #111; padding: 12px; border-radius: 8px; border: 1px solid #2a2a2a; margin-bottom: 12px;">
-                <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado); font-weight: 700; display: block; margin-bottom: 8px;">Como deseja receber seu pedido?</label>
+                
+                <!-- OPÇÃO: RETIRADA VS ENTREGA EM CASA -->
+                <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Como deseja receber seu pedido?</label>
                 <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-                    <button type="button" id="btn-opcao-entrega" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${tipoEnvioSelecionado === 'entrega' ? 'var(--dourado)' : '#1a1a1a'}; color: ${tipoEnvioSelecionado === 'entrega' ? '#000' : '#fff'}; cursor: pointer;">🏠 Receber em Casa</button>
-                    <button type="button" id="btn-opcao-retirada" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${tipoEnvioSelecionado === 'retirada' ? 'var(--dourado)' : '#1a1a1a'}; color: ${tipoEnvioSelecionado === 'retirada' ? '#000' : '#fff'}; cursor: pointer;">🏬 Retirar na Loja</button>
+                    <button type="button" id="btn-opcao-entrega" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${tipoEnvioSelecionado === 'entrega' ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${tipoEnvioSelecionado === 'entrega' ? '#000' : '#fff'}; cursor: pointer;">🏠 Receber em Casa</button>
+                    <button type="button" id="btn-opcao-retirada" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${tipoEnvioSelecionado === 'retirada' ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${tipoEnvioSelecionado === 'retirada' ? '#000' : '#fff'}; cursor: pointer;">🏬 Retirar na Loja</button>
                 </div>
 
+                <!-- ENDEREÇO SE RECEBER EM CASA -->
                 <div id="painel-endereco-casa" style="display: ${tipoEnvioSelecionado === 'entrega' ? 'block' : 'none'}; background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #292929; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <span style="font-size: 11px; font-weight: 700; color: var(--dourado); text-transform: uppercase;">📍 Endereço de Entrega</span>
+                        <span style="font-size: 11px; font-weight: 700; color: var(--dourado, #d4af37); text-transform: uppercase;">📍 Endereço de Entrega</span>
                         <button type="button" id="btn-editar-endereco-sacola" style="background: none; border: none; color: #4fc3f7; font-size: 11px; cursor: pointer; text-decoration: underline;">Alterar</button>
                     </div>
                     <p id="texto-endereco-sacola" style="font-size: 11px; color: #ccc; margin: 0; line-height: 1.4;">${enderecoExibicao}</p>
@@ -122,28 +132,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div id="form-alterar-endereco" style="display: none; margin-top: 8px; border-top: 1px dashed #333; padding-top: 8px;">
                         <input type="text" id="input-novo-endereco" placeholder="Rua, Nº, Bairro, Cidade (CEP)" value="${enderecoEntregaCustom}" style="width: 100%; box-sizing: border-box; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px; border-radius: 4px; font-size: 11px; margin-bottom: 6px;">
                         <div style="display: flex; gap: 6px;">
-                            <button type="button" id="btn-salvar-novo-endereco" style="flex: 1; background: var(--dourado); color: #000; border: none; padding: 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">Salvar</button>
+                            <button type="button" id="btn-salvar-novo-endereco" style="flex: 1; background: var(--dourado, #d4af37); color: #000; border: none; padding: 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">Salvar</button>
                             <button type="button" id="btn-cancelar-novo-endereco" style="background: #333; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">Cancelar</button>
                         </div>
                     </div>
                 </div>
 
+                <!-- AVISO DE RETIRADA NA LOJA -->
                 <div id="painel-aviso-retirada" style="display: ${tipoEnvioSelecionado === 'retirada' ? 'block' : 'none'}; background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #292929; margin-bottom: 10px;">
-                    <span style="font-size: 11px; font-weight: 700; color: var(--dourado);">🏬 Retirada Gratuita</span>
-                    <p style="font-size: 11px; color: #aaa; margin: 4px 0 0 0;">Retire seu pedido na loja da VR Modas após confirmação via WhatsApp.</p>
+                    <span style="font-size: 11px; font-weight: 700; color: var(--dourado, #d4af37);">🏬 Retirada Gratuita no Ponto Físico</span>
+                    <p style="font-size: 11px; color: #aaa; margin: 4px 0 0 0;">Você pode retirar as suas peças diretamente no nosso ponto oficial da VR Modas após confirmação via WhatsApp.</p>
                 </div>
 
+                <!-- CUPOM DE DESCONTO -->
                 <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                    <input type="text" id="input-cupom-sacola" placeholder="Cupom" value="${cupomAtivo ? cupomAtivo.codigo : ''}" style="flex: 1; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px 10px; border-radius: 4px; font-size: 11px; text-transform: uppercase;">
-                    <button type="button" id="btn-aplicar-cupom-sacola" style="background: var(--dourado); color: #000; border: none; padding: 7px 12px; border-radius: 4px; font-weight: 700; font-size: 11px; cursor: pointer;">Aplicar</button>
+                    <input type="text" id="input-cupom-sacola" placeholder="Cupom de desconto" value="${cupomAtivo ? cupomAtivo.codigo : ''}" style="flex: 1; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px 10px; border-radius: 4px; font-size: 11px; text-transform: uppercase;">
+                    <button type="button" id="btn-aplicar-cupom-sacola" style="background: var(--dourado, #d4af37); color: #000; border: none; padding: 7px 12px; border-radius: 4px; font-weight: 700; font-size: 11px; cursor: pointer;">Aplicar</button>
                 </div>
                 ${cupomAtivo ? `<div style="color: #4caf50; font-size: 11px; margin-bottom: 8px; font-weight: 700;">✓ Cupom ${cupomAtivo.codigo} aplicado (-R$ ${valorDesconto.toFixed(2)})</div>` : ''}
 
-                <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado); font-weight: 700; display: block; margin-bottom: 8px;">Forma de Pagamento</label>
+                <!-- MÉTODO DE PAGAMENTO -->
+                <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Forma de Pagamento</label>
                 <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-                    <button type="button" class="btn-metodo-pag ${metodoPagamentoSelecionado === 'pix' ? 'ativo' : ''}" data-metodo="pix" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${metodoPagamentoSelecionado === 'pix' ? 'var(--dourado)' : '#1a1a1a'}; color: ${metodoPagamentoSelecionado === 'pix' ? '#000' : '#fff'}; cursor: pointer;">💠 Pix</button>
-                    <button type="button" class="btn-metodo-pag ${metodoPagamentoSelecionado === 'credito' ? 'ativo' : ''}" data-metodo="credito" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${metodoPagamentoSelecionado === 'credito' ? 'var(--dourado)' : '#1a1a1a'}; color: ${metodoPagamentoSelecionado === 'credito' ? '#000' : '#fff'}; cursor: pointer;">💳 Crédito</button>
-                    <button type="button" class="btn-metodo-pag ${metodoPagamentoSelecionado === 'debito' ? 'ativo' : ''}" data-metodo="debito" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${metodoPagamentoSelecionado === 'debito' ? 'var(--dourado)' : '#1a1a1a'}; color: ${metodoPagamentoSelecionado === 'debito' ? '#000' : '#fff'}; cursor: pointer;">💳 Débito</button>
+                    <button type="button" class="btn-metodo-pag ${metodoPagamentoSelecionado === 'pix' ? 'ativo' : ''}" data-metodo="pix" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${metodoPagamentoSelecionado === 'pix' ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${metodoPagamentoSelecionado === 'pix' ? '#000' : '#fff'}; cursor: pointer;">💠 Pix</button>
+                    <button type="button" class="btn-metodo-pag ${metodoPagamentoSelecionado === 'credito' ? 'ativo' : ''}" data-metodo="credito" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${metodoPagamentoSelecionado === 'credito' ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${metodoPagamentoSelecionado === 'credito' ? '#000' : '#fff'}; cursor: pointer;">💳 Crédito</button>
+                    <button type="button" class="btn-metodo-pag ${metodoPagamentoSelecionado === 'debito' ? 'ativo' : ''}" data-metodo="debito" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${metodoPagamentoSelecionado === 'debito' ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${metodoPagamentoSelecionado === 'debito' ? '#000' : '#fff'}; cursor: pointer;">💳 Débito</button>
                 </div>
             </div>
         `;
@@ -154,9 +167,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const valorEl = document.getElementById('valor-total');
         if (valorEl) valorEl.innerText = totalFinalCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-        document.getElementById('btn-opcao-entrega').onclick = () => { tipoEnvioSelecionado = 'entrega'; renderizarOpcoesPagamento(); };
-        document.getElementById('btn-opcao-retirada').onclick = () => { tipoEnvioSelecionado = 'retirada'; renderizarOpcoesPagamento(); };
+        // Eventos dos botões de Envio
+        const btnOptEntrega = document.getElementById('btn-opcao-entrega');
+        const btnOptRetirada = document.getElementById('btn-opcao-retirada');
+        if (btnOptEntrega && btnOptRetirada) {
+            btnOptEntrega.onclick = () => { tipoEnvioSelecionado = 'entrega'; renderizarOpcoesPagamento(); };
+            btnOptRetirada.onclick = () => { tipoEnvioSelecionado = 'retirada'; renderizarOpcoesPagamento(); };
+        }
 
+        // Alterar Endereço
         const btnEditarEnd = document.getElementById('btn-editar-endereco-sacola');
         const formAltEnd = document.getElementById('form-alterar-endereco');
         const inputNovoEnd = document.getElementById('input-novo-endereco');
@@ -171,6 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        // Cupom
         const btnCupom = document.getElementById('btn-aplicar-cupom-sacola');
         if (btnCupom) {
             btnCupom.onclick = function() {
@@ -187,6 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        // Método Pagamento
         document.querySelectorAll('.btn-metodo-pag').forEach(btn => {
             btn.onclick = function() {
                 metodoPagamentoSelecionado = this.getAttribute('data-metodo');
@@ -201,13 +222,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (valorEl) valorEl.innerText = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
+    // ==========================================
+    // ADICIONAR À SACOLA COM TRAVA DE ESTOQUE
+    // ==========================================
     const btnAdicionarSacola = document.getElementById('btn-adicionar-sacola');
     if (btnAdicionarSacola) {
         btnAdicionarSacola.onclick = () => {
             const urlParams = new URLSearchParams(window.location.search);
             const produtoIdNaUrl = urlParams.get('id');
             const produtosAtuais = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
-            const prodRef = produtosAtuais.find(p => String(p.id) === String(produtoIdNaUrl));
+            
+            // Busca segura pelo ID
+            let prodRef = null;
+            if (produtoIdNaUrl) {
+                prodRef = produtosAtuais.find(p => String(p.id).trim() === String(produtoIdNaUrl).trim());
+            }
+            if (!prodRef && produtosAtuais.length > 0) {
+                prodRef = produtosAtuais[0];
+            }
+
+            const estoqueMax = parseInt(prodRef?.estoque || 0);
+            if (estoqueMax <= 0) {
+                alert("Este produto está esgotado no momento.");
+                return;
+            }
 
             const nomeStr = document.getElementById('detalhe-nome')?.innerText || prodRef?.nome;
             const tamSelecionado = document.querySelector('input[name="tamanho"]:checked')?.value || 'Padrão';
@@ -224,10 +262,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const inputQtd = document.getElementById('qtd-produto');
             let qtd = parseInt(inputQtd?.value || inputQtd?.innerText || '1');
             if (isNaN(qtd) || qtd < 1) qtd = 1;
+            if (qtd > estoqueMax) qtd = estoqueMax;
 
             const itemExistente = itensNoCarrinhoData.find(it => it.nome === nomeStr && it.tamanho === tamSelecionado && it.cor === corSelecionada);
             if (itemExistente) {
-                itemExistente.quantidade += qtd;
+                if (itemExistente.quantidade + qtd <= estoqueMax) {
+                    itemExistente.quantidade += qtd;
+                } else {
+                    itemExistente.quantidade = estoqueMax;
+                    alert(`Quantidade ajustada para o estoque máximo disponível (${estoqueMax} un).`);
+                }
             } else {
                 itensNoCarrinhoData.push({
                     idRef: Date.now(),
@@ -235,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     nome: nomeStr,
                     preco: precoCobrado,
                     quantidade: qtd,
-                    estoqueMax: parseInt(prodRef?.estoque || 99),
+                    estoqueMax: estoqueMax,
                     tamanho: tamSelecionado,
                     cor: corSelecionada,
                     imagem: fotoAtual
@@ -248,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // Ações de Quantidade e Exclusão na Sacola
     if (listaItens) {
         listaItens.onclick = (e) => {
             const btn = e.target.closest('button');
@@ -277,6 +322,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // ==========================================
+    // FINALIZAR PEDIDO (SALVAR & WHATSAPP)
+    // ==========================================
     const btnFinalizarCompra = document.getElementById('btn-finalizar-compra') || document.querySelector('.btn-finalizar');
     if (btnFinalizarCompra) {
         btnFinalizarCompra.onclick = () => {
@@ -338,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // Menu Mobile
     const btnMenu = document.getElementById('btn-menu');
     const navbar = document.getElementById('navbar');
     const btnFecharMenu = document.getElementById('fechar-menu');

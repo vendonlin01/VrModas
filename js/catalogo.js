@@ -1,65 +1,6 @@
-let listaFavoritos = JSON.parse(localStorage.getItem('vr_modas_favoritos')) || [];
-
-function normalizarTexto(txt) {
-    if (!txt) return '';
-    return txt.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-function alternarFavorito(id) {
-    const produtosAtuais = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
-    const prod = produtosAtuais.find(p => String(p.id) === String(id));
-    if (!prod) return;
-
-    const index = listaFavoritos.findIndex(f => String(f.id) === String(id));
-    if (index > -1) {
-        listaFavoritos.splice(index, 1);
-        if (typeof mostrarToast === 'function') mostrarToast(`"${prod.nome}" removido dos favoritos.`);
-    } else {
-        let foto = (prod.imagens && prod.imagens.length > 0) ? prod.imagens[0] : (prod.imagem || 'img/produto1.jpg');
-        const precoEfetivo = prod.precoPromocional || prod.preco;
-        listaFavoritos.push({ id: prod.id, nome: prod.nome, preco: precoEfetivo, imagem: foto });
-        if (typeof mostrarToast === 'function') mostrarToast(`"${prod.nome}" salvo nos favoritos! ❤️`);
-    }
-
-    localStorage.setItem('vr_modas_favoritos', JSON.stringify(listaFavoritos));
-    atualizarContadorFavoritos();
-    renderizarListaFavoritos();
-    if (typeof filtrarEOrdenarCatalogo === 'function') filtrarEOrdenarCatalogo();
-}
-
-function atualizarContadorFavoritos() {
-    document.querySelectorAll('.contador-favoritos').forEach(el => el.innerText = listaFavoritos.length);
-}
-
-function renderizarListaFavoritos() {
-    const listaFavoritosEl = document.getElementById('lista-favoritos');
-    if (!listaFavoritosEl) return;
-    listaFavoritosEl.innerHTML = '';
-    if (listaFavoritos.length === 0) {
-        listaFavoritosEl.innerHTML = '<p style="color: var(--cinza-texto); text-align: center; padding: 30px;">Sua lista de favoritos está vazia.</p>';
-        return;
-    }
-
-    listaFavoritos.forEach(item => {
-        const precoFormatado = Number(item.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        listaFavoritosEl.insertAdjacentHTML('beforeend', `
-            <div class="item-na-sacola" style="display: flex; gap: 12px; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
-                <img src="${item.imagem}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #333;" onerror="this.src='img/produto1.jpg'">
-                <div style="flex: 1;">
-                    <a href="detalhes.html?id=${item.id}" style="color: var(--branco); text-decoration: none; font-size: 13px; font-weight: 700; display: block;">${item.nome}</a>
-                    <span style="color: var(--dourado); font-size: 13px;">${precoFormatado}</span>
-                </div>
-                <button class="btn-remover-favorito" data-id="${item.id}" style="background: transparent; color: #ff4444; border: none; font-size: 16px; cursor: pointer;">✕</button>
-            </div>
-        `);
-    });
-
-    document.querySelectorAll('.btn-remover-favorito').forEach(btn => {
-        btn.onclick = function() {
-            alternarFavorito(this.getAttribute('data-id'));
-        };
-    });
-}
+/* =====================================================
+   CATÁLOGO & VITRINE DE PRODUTOS - VR MODAS
+   ===================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
     const vitrineProdutos = document.getElementById('vitrine-produtos');
@@ -73,20 +14,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParamsConsulta = new URLSearchParams(window.location.search);
     let categoriaAtivaFiltro = urlParamsConsulta.get('categoria') || 'todos';
 
+    function normalizarTexto(txt) {
+        if (!txt) return '';
+        return txt.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
     function renderizarVitrine(lista) {
         if (!vitrineProdutos) return;
         vitrineProdutos.innerHTML = ''; 
-        if (lista.length === 0) {
-            vitrineProdutos.innerHTML = '<p style="color: white; width: 100%; text-align: center; padding: 40px; grid-column: 1 / -1;">Nenhum produto encontrado com os filtros selecionados.</p>';
+
+        if (!lista || lista.length === 0) {
+            vitrineProdutos.innerHTML = '<p style="color: white; width: 100%; text-align: center; padding: 40px; grid-column: 1 / -1;">Nenhum produto cadastrado ou encontrado com os filtros selecionados.</p>';
             return;
         }
+
+        const favs = JSON.parse(localStorage.getItem('vr_modas_favoritos')) || [];
 
         lista.forEach(produto => {
             const estoqueDisponivel = parseInt(produto.estoque || 0);
             const estaEsgotado = estoqueDisponivel <= 0;
 
+            const idFormatado = encodeURIComponent(String(produto.id).trim());
+            const linkDetalhes = `detalhes.html?id=${idFormatado}`;
+
             const precoFormatado = Number(produto.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            const linkDetalhes = `detalhes.html?id=${produto.id}`;
             
             let precoHTML = `<p class="preco">${precoFormatado}</p>`;
             if (produto.precoPromocional && Number(produto.precoPromocional) < Number(produto.preco)) {
@@ -94,19 +45,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 precoHTML = `
                     <p class="preco" style="display: flex; flex-direction: column; gap: 2px;">
                         <span style="text-decoration: line-through; color: #777; font-size: 11px; font-weight: normal;">${precoFormatado}</span>
-                        <span style="color: var(--dourado); font-weight: 800;">${promoFormatado}</span>
+                        <span style="color: var(--dourado, #d4af37); font-weight: 800;">${promoFormatado}</span>
                     </p>
                 `;
             }
 
             let fotoPrincipal = (produto.imagens && produto.imagens.length > 0) ? produto.imagens[0] : (produto.imagem || 'img/produto1.jpg');
-            const isFav = listaFavoritos.some(fav => String(fav.id) === String(produto.id));
+            const isFav = favs.some(fav => String(fav.id) === String(produto.id));
             const coracaoIcone = isFav ? '❤️' : '🤍';
 
             const badgeEsgotadoHTML = estaEsgotado ? `<span class="badge-esgotado-foto">Esgotado</span>` : '';
+            
+            // Botão com clique forçado via data-link para não falhar no mobile nem no desktop
             const btnAcaoHTML = estaEsgotado 
                 ? `<button type="button" class="btn-comprar btn-desativado" disabled>Esgotado</button>`
-                : `<a href="${linkDetalhes}" class="btn-comprar">Ver Detalhes</a>`;
+                : `<a href="${linkDetalhes}" class="btn-comprar btn-link-detalhes" data-url="${linkDetalhes}">Ver Detalhes</a>`;
 
             vitrineProdutos.insertAdjacentHTML('beforeend', `
                 <div class="card-produto ${estaEsgotado ? 'esgotado' : ''}" style="position: relative;">
@@ -114,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button type="button" class="btn-favoritar-card" data-id="${produto.id}" title="Favoritar">
                         ${coracaoIcone}
                     </button>
-                    <a href="${estaEsgotado ? '#' : linkDetalhes}">
+                    <a href="${estaEsgotado ? '#' : linkDetalhes}" class="card-link-foto">
                         <img src="${fotoPrincipal}" class="imagem-produto" alt="${produto.nome}" onerror="this.src='img/produto1.jpg'">
                     </a>
                     <div class="card-info">
@@ -128,10 +81,24 @@ document.addEventListener('DOMContentLoaded', () => {
             `);
         });
 
-        document.querySelectorAll('.btn-favoritar-card').forEach(btn => {
+        // Evento garantido nos botões de favoritar
+        vitrineProdutos.querySelectorAll('.btn-favoritar-card').forEach(btn => {
             btn.onclick = function(e) {
                 e.preventDefault();
-                alternarFavorito(this.getAttribute('data-id'));
+                e.stopPropagation();
+                if (typeof alternarFavorito === 'function') {
+                    alternarFavorito(this.getAttribute('data-id'));
+                }
+            };
+        });
+
+        // Garantia de clique e redirecionamento no botão "Ver Detalhes"
+        vitrineProdutos.querySelectorAll('.btn-link-detalhes').forEach(btn => {
+            btn.onclick = function(e) {
+                const destino = this.getAttribute('data-url');
+                if (destino) {
+                    window.location.href = destino;
+                }
             };
         });
     }
@@ -140,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!vitrineProdutos) return;
         let resultado = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
 
+        // Filtro por Categoria
         if (categoriaAtivaFiltro === 'ofertas') {
             resultado = resultado.filter(p => !!p.promocao || !!p.precoPromocional);
         } else if (categoriaAtivaFiltro === 'acessorios') {
@@ -152,11 +120,13 @@ document.addEventListener('DOMContentLoaded', () => {
             resultado = resultado.filter(p => normalizarTexto(p.categoria).includes(alvo));
         }
 
+        // Busca por Texto
         if (inputBusca && inputBusca.value.trim() !== '') {
             const termo = normalizarTexto(inputBusca.value);
             resultado = resultado.filter(p => normalizarTexto(p.nome).includes(termo) || normalizarTexto(p.categoria).includes(termo));
         }
 
+        // Filtro por Faixa de Preço
         const radioPreco = document.querySelector('.filtro-preco:checked');
         if (radioPreco) {
             const valorFaixa = radioPreco.value;
@@ -169,11 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Filtro por Tamanho
         const tamanhosSelecionados = Array.from(document.querySelectorAll('.filtro-tamanho:checked')).map(cb => cb.value);
         if (tamanhosSelecionados.length > 0) {
             resultado = resultado.filter(p => p.tamanhos && p.tamanhos.some(t => tamanhosSelecionados.includes(t)));
         }
 
+        // Ordenação
         if (selectOrdenacao) {
             const criterio = selectOrdenacao.value;
             if (criterio === 'menor-preco') resultado.sort((a, b) => Number(a.precoPromocional || a.preco) - Number(b.precoPromocional || b.preco));
@@ -186,9 +158,43 @@ document.addEventListener('DOMContentLoaded', () => {
             contagemTopo.innerText = `${resultado.length} peça(s) encontrada(s)`;
         }
 
+        // ==========================================
+    // BOTÃO "VER RESULTADOS" (FILTROS MOBILE / MODAL)
+    // ==========================================
+    document.addEventListener('click', (e) => {
+        const btnResultados = e.target.closest('#btn-ver-resultados, .btn-ver-resultados, [id*="ver-resultado"]');
+        
+        if (btnResultados || (e.target.tagName === 'BUTTON' && e.target.innerText.toLowerCase().includes('resultado'))) {
+            e.preventDefault();
+            
+            // 1. Aplica a filtragem e a ordenação
+            if (typeof window.filtrarEOrdenarCatalogo === 'function') {
+                window.filtrarEOrdenarCatalogo();
+            }
+
+            // 2. Fecha a gaveta ou modal de filtros no telemóvel
+            const gavetaFiltros = document.getElementById('filtros-gaveta') || 
+                                  document.querySelector('.gaveta-filtros') || 
+                                  document.querySelector('.painel-filtros') ||
+                                  document.getElementById('modal-filtros');
+            if (gavetaFiltros) {
+                gavetaFiltros.classList.remove('aberto');
+                gavetaFiltros.classList.remove('ativo');
+                gavetaFiltros.style.display = 'none';
+            }
+
+            // 3. Efetua um scroll suave até à vitrina para ver as peças
+            const vitrina = document.getElementById('vitrine-produtos') || document.getElementById('vitrine');
+            if (vitrina) {
+                vitrina.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    });
+
         renderizarVitrine(resultado);
     };
 
+    // Botões de Categorias (Chips)
     const botoesChips = document.querySelectorAll('.chip-cat');
     if (botoesChips.length > 0) {
         botoesChips.forEach(chip => {
@@ -197,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 botoesChips.forEach(c => c.classList.remove('ativo'));
                 this.classList.add('ativo');
                 categoriaAtivaFiltro = this.getAttribute('data-categoria');
-                filtrarEOrdenarCatalogo();
+                window.filtrarEOrdenarCatalogo();
             };
         });
 
@@ -211,13 +217,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Ações dos botões e campos
     if (inputBusca) {
-        inputBusca.addEventListener('input', filtrarEOrdenarCatalogo);
-        inputBusca.addEventListener('keyup', (e) => { if (e.key === 'Enter') filtrarEOrdenarCatalogo(); });
+        inputBusca.addEventListener('input', window.filtrarEOrdenarCatalogo);
+        inputBusca.addEventListener('keyup', (e) => { if (e.key === 'Enter') window.filtrarEOrdenarCatalogo(); });
     }
-    if (btnBusca) btnBusca.onclick = (e) => { e.preventDefault(); filtrarEOrdenarCatalogo(); };
-    if (btnAplicarFiltros) btnAplicarFiltros.onclick = filtrarEOrdenarCatalogo;
-    if (selectOrdenacao) selectOrdenacao.onchange = filtrarEOrdenarCatalogo;
+    if (btnBusca) btnBusca.onclick = (e) => { e.preventDefault(); window.filtrarEOrdenarCatalogo(); };
+    if (btnAplicarFiltros) btnAplicarFiltros.onclick = (e) => { e.preventDefault(); window.filtrarEOrdenarCatalogo(); };
+    if (selectOrdenacao) selectOrdenacao.onchange = window.filtrarEOrdenarCatalogo;
+
+    // Botão "Ver Resultados" de filtros móveis (gaveta de filtros)
+    const btnVerResultadosGaveta = document.getElementById('btn-ver-resultados') || document.querySelector('.btn-ver-resultados');
+    if (btnVerResultadosGaveta) {
+        btnVerResultadosGaveta.onclick = (e) => {
+            e.preventDefault();
+            window.filtrarEOrdenarCatalogo();
+            const gavetaFiltros = document.getElementById('filtros-gaveta') || document.querySelector('.gaveta-filtros');
+            if (gavetaFiltros) gavetaFiltros.classList.remove('aberto');
+        };
+    }
 
     if (btnLimparFiltros) {
         btnLimparFiltros.onclick = () => {
@@ -232,25 +250,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const chipTodos = document.querySelector('.chip-cat[data-categoria="todos"]');
             if (chipTodos) chipTodos.classList.add('ativo');
 
-            filtrarEOrdenarCatalogo();
+            window.filtrarEOrdenarCatalogo();
             if (typeof mostrarToast === 'function') mostrarToast("Filtros limpos!");
         };
     }
 
-    const abrirFavoritos = document.getElementById('abrir-favoritos');
-    const fecharFavoritos = document.getElementById('fechar-favoritos');
-    const favoritosLateral = document.getElementById('favoritos-lateral');
-
-    if (abrirFavoritos && favoritosLateral) {
-        abrirFavoritos.onclick = () => {
-            renderizarListaFavoritos();
-            favoritosLateral.classList.add('aberto');
-        };
-    }
-    if (fecharFavoritos && favoritosLateral) {
-        fecharFavoritos.onclick = () => favoritosLateral.classList.remove('aberto');
-    }
-
-    atualizarContadorFavoritos();
-    filtrarEOrdenarCatalogo();
+    // Carrega tudo ao iniciar
+    window.filtrarEOrdenarCatalogo();
 });
