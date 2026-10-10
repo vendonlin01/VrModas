@@ -81,8 +81,16 @@ body {
 
 .admin-nav {
     display: flex;
-    flex-direction: column;
-    padding-top: 10px;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 10px 10px 10px;
+    gap: 6px;
+}
+
+.admin-nav::-webkit-scrollbar {
+    display: none;
 }
 
 .admin-conteudo {
@@ -167,10 +175,21 @@ body {
     color: var(--branco);
 }
 
-.borda-dourada { border-top: 3px solid var(--dourado); }
-.borda-azul { border-top: 3px solid #1e88e5; }
-.borda-vermelha { border-top: 3px solid #e53935; }
-.borda-verde { border-top: 3px solid #43a047; }
+.borda-dourada {
+    border-top: 3px solid var(--dourado);
+}
+
+.borda-azul {
+    border-top: 3px solid #1e88e5;
+}
+
+.borda-vermelha {
+    border-top: 3px solid #e53935;
+}
+
+.borda-verde {
+    border-top: 3px solid #43a047;
+}
 
 /* =====================================================
    3. FORMULÁRIOS ADMINISTRATIVOS & BLOCOS
@@ -510,11 +529,11 @@ body {
         overflow-x: visible;
     }
 
-    .tabela-produtos, 
-    .tabela-produtos thead, 
-    .tabela-produtos tbody, 
-    .tabela-produtos th, 
-    .tabela-produtos td, 
+    .tabela-produtos,
+    .tabela-produtos thead,
+    .tabela-produtos tbody,
+    .tabela-produtos th,
+    .tabela-produtos td,
     .tabela-produtos tr {
         display: block;
     }
