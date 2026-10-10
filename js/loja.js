@@ -61,7 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }
 
-            // Foto com garantia e fallback se falhar
             let fotoPrincipal = 'img/produto1.jpg';
             if (produto.imagens && produto.imagens.length > 0 && produto.imagens[0]) {
                 fotoPrincipal = produto.imagens[0];
@@ -307,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filtrarEOrdenarCatalogo();
 
     // ==========================================
-    // 4. PÁGINA DE DETALHES (CORREÇÃO DE FOTOS E CORES)
+    // 4. PÁGINA DE DETALHES
     // ==========================================
     const urlParams = new URLSearchParams(window.location.search);
     const produtoIdNaUrl = urlParams.get('id');
@@ -319,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
             paginaDetalhes.style.display = 'block';
             document.getElementById('detalhe-nome').innerText = produtoSelecionado.nome;
             
-            // Exibição do Preço na Página de Detalhes
             const elPrecoDetalhe = document.getElementById('detalhe-preco');
             if (elPrecoDetalhe) {
                 const precoFormatado = Number(produtoSelecionado.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -365,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 containerGaleria.innerHTML = htmlGaleria;
             }
 
-            // Renderiza tamanhos
             const containerTamanhos = document.getElementById('detalhe-tamanhos');
             if (containerTamanhos) {
                 containerTamanhos.innerHTML = '';
@@ -376,7 +373,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Renderiza cores
             const containerCores = document.getElementById('detalhe-cores');
             if (containerCores) {
                 containerCores.innerHTML = '';
@@ -456,15 +452,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 5. SACOLA, ENDEREÇO, CUPOM E PAGAMENTO
+    // 5. OBTENÇÃO ROBUSTA DO CLIENTE & ENDEREÇO
+    // ==========================================
+    function obterClienteAtual() {
+        return JSON.parse(localStorage.getItem('vr_modas_usuario_logado')) ||
+               JSON.parse(sessionStorage.getItem('vr_cliente_dados')) ||
+               JSON.parse(localStorage.getItem('vr_cliente_dados')) ||
+               JSON.parse(localStorage.getItem('vr_modas_usuario')) ||
+               null;
+    }
+
+    function formatarEnderecoParaTexto(end) {
+        if (!end) return 'Retirada na Loja / A combinar';
+        if (typeof end === 'string') return end;
+        const rua = end.rua || end.logradouro || '';
+        const num = end.numero || 'S/N';
+        const bairro = end.bairro || '';
+        const cidade = end.cidade || '';
+        const cep = end.cep ? `(CEP: ${end.cep})` : '';
+        const partes = [rua ? `${rua}, Nº ${num}` : '', bairro, cidade, cep].filter(p => p.trim() !== '');
+        return partes.length > 0 ? partes.join(' - ') : 'Retirada na Loja / A combinar';
+    }
+
+    // ==========================================
+    // 6. SACOLA COM ENDEREÇO EDITÁVEL, CUPOM E WHATSAPP
     // ==========================================
     const carrinhoLateral = document.getElementById('carrinho-lateral');
     const btnAbrirCarrinho = document.getElementById('abrir-carrinho');
     const btnFecharCarrinho = document.getElementById('fechar-carrinho');
-    if (btnAbrirCarrinho) btnAbrirCarrinho.onclick = () => {
-        renderizarSacola();
-        carrinhoLateral.classList.add('aberto');
-    };
+    if (btnAbrirCarrinho) btnAbrirCarrinho.onclick = () => { renderizarSacola(); carrinhoLateral.classList.add('aberto'); };
     if (btnFecharCarrinho) btnFecharCarrinho.onclick = () => carrinhoLateral.classList.remove('aberto');
 
     const listaItens = document.getElementById('lista-itens');
@@ -476,18 +492,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let parcelaSelecionada = 1;
     let cupomAtivo = null;
 
-    // Função auxiliar para recuperar o cliente e endereço ativo
-    function obterDadosClienteAtivo() {
-        let cliente = JSON.parse(sessionStorage.getItem('vr_cliente_dados')) || null;
-        if (!cliente) {
-            const emailSessao = sessionStorage.getItem('vr_cliente_logado');
-            if (emailSessao) {
-                const usuarios = JSON.parse(localStorage.getItem('vr_modas_usuarios')) || [];
-                cliente = usuarios.find(u => u.email === emailSessao) || null;
-            }
-        }
-        return cliente;
-    }
+    // Estado do endereço de envio na sessão
+    let clienteAtual = obterClienteAtual();
+    let enderecoEntregaCustom = clienteAtual && clienteAtual.endereco ? formatarEnderecoParaTexto(clienteAtual.endereco) : '';
 
     function renderizarSacola() {
         if (!listaItens) return;
@@ -580,45 +587,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Recupera o cliente para o bloco de endereço
-        const clienteAtivo = obterDadosClienteAtivo();
-        let enderecoExibicao = "Nenhum endereço informado";
-        let temEnderecoPronto = false;
-
-        if (clienteAtivo && clienteAtivo.endereco) {
-            const end = clienteAtivo.endereco;
-            enderecoExibicao = `${end.rua || ''}, Nº ${end.numero || 'S/N'} - ${end.bairro || ''}, ${end.cidade || ''} (CEP: ${end.cep || ''})`;
-            temEnderecoPronto = true;
+        // Recupera dados do cliente logado no momento
+        clienteAtual = obterClienteAtual();
+        if (!enderecoEntregaCustom && clienteAtual && clienteAtual.endereco) {
+            enderecoEntregaCustom = formatarEnderecoParaTexto(clienteAtual.endereco);
         }
 
+        const enderecoExibicao = enderecoEntregaCustom || 'Retirada na Loja / A combinar';
+        const nomeClienteExibicao = clienteAtual ? clienteAtual.nome : 'Visitante';
+
         const htmlPagamento = `
-            <div id="bloco-pagamento-sacola" style="background: #111; padding: 12px; border-radius: 8px; border: 1px solid #2a2a2a; margin-bottom: 12px; font-size: 12px;">
+            <div id="bloco-pagamento-sacola" style="background: #111; padding: 12px; border-radius: 8px; border: 1px solid #2a2a2a; margin-bottom: 12px;">
                 
-                <!-- BLOCO DINÂMICO DE ENTREGA / ENDEREÇO -->
-                <div style="background: #161616; border: 1px solid #262626; border-radius: 6px; padding: 10px; margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <!-- BLOCO DE ENDEREÇO DE ENTREGA DO CLIENTE -->
+                <div style="background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #292929; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                         <span style="font-size: 11px; font-weight: 700; color: var(--dourado); text-transform: uppercase;">📍 Endereço de Entrega</span>
-                        <button type="button" id="btn-toggle-editar-endereco" style="background: none; border: none; color: #4dabf7; font-size: 11px; cursor: pointer; text-decoration: underline;">
-                            ${temEnderecoPronto ? 'Alterar' : 'Cadastrar'}
-                        </button>
+                        <button type="button" id="btn-editar-endereco-sacola" style="background: none; border: none; color: #4fc3f7; font-size: 11px; cursor: pointer; text-decoration: underline;">Alterar</button>
                     </div>
+                    <p id="texto-endereco-sacola" style="font-size: 11px; color: #ccc; margin: 0; line-height: 1.4;">${enderecoExibicao}</p>
+                    <small style="font-size: 10px; color: #777;">Cliente: ${nomeClienteExibicao}</small>
 
-                    <div id="resumo-endereco-sacola" style="color: #ccc; font-size: 11px; line-height: 1.4;">
-                        ${enderecoExibicao}
-                    </div>
-
-                    <!-- Campos para Edição / Preenchimento no Carrinho -->
-                    <div id="form-edicao-endereco-sacola" style="display: none; margin-top: 8px; border-top: 1px dashed #333; padding-top: 8px;">
-                        <input type="text" id="sacola-end-cep" placeholder="CEP (00000-000)" value="${clienteAtivo?.endereco?.cep || ''}" style="width: 100%; box-sizing: border-box; background: #0b0b0b; border: 1px solid #333; color: #fff; padding: 6px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 5px;">
-                        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
-                            <input type="text" id="sacola-end-rua" placeholder="Rua / Logradouro" value="${clienteAtivo?.endereco?.rua || ''}" style="flex: 2; background: #0b0b0b; border: 1px solid #333; color: #fff; padding: 6px 8px; border-radius: 4px; font-size: 11px;">
-                            <input type="text" id="sacola-end-numero" placeholder="Nº" value="${clienteAtivo?.endereco?.numero || ''}" style="flex: 1; background: #0b0b0b; border: 1px solid #333; color: #fff; padding: 6px 8px; border-radius: 4px; font-size: 11px;">
+                    <!-- Formulário rápido para alterar/inserir endereço -->
+                    <div id="form-alterar-endereco" style="display: none; margin-top: 8px; border-top: 1px dashed #333; padding-top: 8px;">
+                        <input type="text" id="input-novo-endereco" placeholder="Rua, Nº, Bairro, Cidade ou 'Retirar na Loja'" value="${enderecoEntregaCustom}" style="width: 100%; box-sizing: border-box; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px; border-radius: 4px; font-size: 11px; margin-bottom: 6px;">
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" id="btn-salvar-novo-endereco" style="flex: 1; background: var(--dourado); color: #000; border: none; padding: 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">Salvar</button>
+                            <button type="button" id="btn-cancelar-novo-endereco" style="background: #333; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">Cancelar</button>
                         </div>
-                        <div style="display: flex; gap: 5px; margin-bottom: 6px;">
-                            <input type="text" id="sacola-end-bairro" placeholder="Bairro" value="${clienteAtivo?.endereco?.bairro || ''}" style="flex: 1; background: #0b0b0b; border: 1px solid #333; color: #fff; padding: 6px 8px; border-radius: 4px; font-size: 11px;">
-                            <input type="text" id="sacola-end-cidade" placeholder="Cidade / UF" value="${clienteAtivo?.endereco?.cidade || ''}" style="flex: 1; background: #0b0b0b; border: 1px solid #333; color: #fff; padding: 6px 8px; border-radius: 4px; font-size: 11px;">
-                        </div>
-                        <button type="button" id="btn-salvar-endereco-sacola" style="width: 100%; background: #222; border: 1px solid #444; color: #fff; padding: 6px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: 700;">Salvar Este Endereço</button>
                     </div>
                 </div>
 
@@ -657,35 +653,27 @@ document.addEventListener('DOMContentLoaded', () => {
             valorEl.innerText = totalFinalCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
-        // Lógica de alternar e salvar edição de endereço direto no carrinho
-        const btnToggleEnd = document.getElementById('btn-toggle-editar-endereco');
-        const formEdicaoEnd = document.getElementById('form-edicao-endereco-sacola');
-        if (btnToggleEnd && formEdicaoEnd) {
-            btnToggleEnd.onclick = () => {
-                formEdicaoEnd.style.display = (formEdicaoEnd.style.display === 'none') ? 'block' : 'none';
-            };
+        // Ações do Endereço
+        const btnEditarEnd = document.getElementById('btn-editar-endereco-sacola');
+        const formAltEnd = document.getElementById('form-alterar-endereco');
+        const btnSalvarEnd = document.getElementById('btn-salvar-novo-endereco');
+        const btnCancEnd = document.getElementById('btn-cancelar-novo-endereco');
+        const inputNovoEnd = document.getElementById('input-novo-endereco');
+
+        if (btnEditarEnd && formAltEnd) {
+            btnEditarEnd.onclick = () => { formAltEnd.style.display = 'block'; inputNovoEnd?.focus(); };
         }
-
-        const btnSalvarEndSacola = document.getElementById('btn-salvar-endereco-sacola');
-        if (btnSalvarEndSacola) {
-            btnSalvarEndSacola.onclick = () => {
-                const cep = document.getElementById('sacola-end-cep').value.trim();
-                const rua = document.getElementById('sacola-end-rua').value.trim();
-                const num = document.getElementById('sacola-end-numero').value.trim();
-                const bairro = document.getElementById('sacola-end-bairro').value.trim();
-                const cidade = document.getElementById('sacola-end-cidade').value.trim();
-
-                if (!rua || !cidade) {
-                    alert("Por favor, preencha pelo menos a rua e a cidade.");
-                    return;
-                }
-
-                let sessao = obterDadosClienteAtivo() || { nome: "Cliente Visitante", whatsapp: "" };
-                sessao.endereco = { cep, rua, numero: num, bairro, cidade };
-                sessionStorage.setItem('vr_cliente_dados', JSON.stringify(sessao));
-
-                renderizarOpcoesPagamento();
-                if (typeof mostrarToast === 'function') mostrarToast("Endereço salvo com sucesso!");
+        if (btnCancEnd && formAltEnd) {
+            btnCancEnd.onclick = () => { formAltEnd.style.display = 'none'; };
+        }
+        if (btnSalvarEnd && formAltEnd && inputNovoEnd) {
+            btnSalvarEnd.onclick = () => {
+                const digitado = inputNovoEnd.value.trim();
+                enderecoEntregaCustom = digitado || 'Retirada na Loja / A combinar';
+                formAltEnd.style.display = 'none';
+                const txtEl = document.getElementById('texto-endereco-sacola');
+                if (txtEl) txtEl.innerText = enderecoEntregaCustom;
+                if (typeof mostrarToast === 'function') mostrarToast("Endereço de entrega atualizado!");
             };
         }
 
@@ -806,7 +794,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 6. FINALIZAR COMPRA & CHECKOUT
+    // 7. FINALIZAR COMPRA (PEDIDO + WHATSAPP OFICIAL)
     // ==========================================
     const btnFinalizarCompra = document.getElementById('btn-finalizar-compra') || document.querySelector('.btn-finalizar');
     if (btnFinalizarCompra) {
@@ -816,16 +804,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const clienteSessao = obterDadosClienteAtivo();
+            // Identifica cliente ativo na loja
+            const clienteSessao = obterClienteAtual();
             const clienteNome = clienteSessao ? clienteSessao.nome : "Cliente Visitante";
-            const clienteWhats = clienteSessao ? (clienteSessao.whatsapp || clienteSessao.telefone) : "Não informado";
+            const clienteWhats = (clienteSessao && (clienteSessao.whatsapp || clienteSessao.telefone)) ? (clienteSessao.whatsapp || clienteSessao.telefone) : "Não informado";
             
-            // Montagem correta e limpa do endereço cadastrado
-            let clienteEndereco = "Retirada na Loja / A combinar";
-            if (clienteSessao && clienteSessao.endereco) {
-                const e = clienteSessao.endereco;
-                clienteEndereco = `${e.rua || ''}, Nº ${e.numero || 'S/N'} - ${e.bairro || ''}, ${e.cidade || ''} (CEP: ${e.cep || ''})`;
-            }
+            // Endereço verificado e confirmado
+            const clienteEndereco = enderecoEntregaCustom || (clienteSessao && clienteSessao.endereco ? formatarEnderecoParaTexto(clienteSessao.endereco) : "Retirada na Loja / A combinar");
 
             const numeroPedido = `#VR-${Math.floor(1000 + Math.random() * 9000)}`;
             const agora = new Date();
@@ -844,6 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const totalComDesconto = Math.max(0, totalCarrinho - descFinal);
 
+            // Objeto completo com dados corretos de entrega
             const novoPedido = {
                 id: Date.now(),
                 codigo: numeroPedido,
@@ -860,39 +846,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: "Pendente"
             };
 
+            // Salva na lista do painel administrativo
             let pedidosAtuais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
             pedidosAtuais.unshift(novoPedido);
             localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
 
-            // Pergunta amigável se deseja enviar o pedido já formatado no WhatsApp
-            const configsGerais = JSON.parse(localStorage.getItem('vr_modas_config')) || {};
-            const whatsLoja = configsGerais.whatsapp || '5589999999999';
+            // Envio direto para o WhatsApp oficial configurado no Admin
+            const configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || { whatsapp: '5589999999999' };
+            const whatsLoja = (configLoja.whatsapp || '5589999999999').replace(/\D/g, '');
 
-            let textoZap = `*NOVO PEDIDO VR MODAS: ${numeroPedido}*\n\n`;
-            textoZap += `*Cliente:* ${clienteNome}\n`;
-            textoZap += `*WhatsApp:* ${clienteWhats}\n`;
-            textoZap += `*Endereço:* ${clienteEndereco}\n\n`;
-            textoZap += `*Itens do Pedido:*\n`;
-            itensNoCarrinhoData.forEach(it => {
-                textoZap += `• ${it.quantidade}x ${it.nome} (Tam: ${it.tamanho} | Cor: ${it.cor}) - ${(it.preco * it.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n`;
-            });
-            textoZap += `\n*Forma de Pagamento:* ${detalhePagamento}\n`;
-            if (cupomAtivo) textoZap += `*Cupom:* ${cupomAtivo.codigo} (-R$ ${descFinal.toFixed(2)})\n`;
-            textoZap += `*VALOR TOTAL:* ${totalComDesconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n\n`;
-            textoZap += `Olá! Acabei de registrar este pedido na loja virtual e gostaria de confirmar a entrega e o pagamento.`;
+            let textoItensWhats = novoPedido.itens.map(it => `• ${it.quantidade}x ${it.nome} (Tam: ${it.tamanho} | Cor: ${it.cor}) - ${(it.preco * it.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`).join('\n');
 
-            const linkZap = `https://wa.me/${whatsLoja}?text=${encodeURIComponent(textoZap)}`;
+            let msgWhats = `*NOVO PEDIDO VR MODAS* 🛍️\n\n`;
+            msgWhats += `*Pedido:* ${numeroPedido}\n`;
+            msgWhats += `*Data:* ${dataHora}\n`;
+            msgWhats += `*Cliente:* ${clienteNome}\n`;
+            msgWhats += `*Contato:* ${clienteWhats}\n`;
+            msgWhats += `*Entrega:* ${clienteEndereco}\n\n`;
+            msgWhats += `*Itens do Pedido:*\n${textoItensWhats}\n\n`;
+            if (novoPedido.cupom) msgWhats += `*Cupom:* ${novoPedido.cupom}\n`;
+            msgWhats += `*Forma de Pagamento:* ${detalhePagamento}\n`;
+            msgWhats += `*VALOR TOTAL:* ${totalComDesconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n\n`;
+            msgWhats += `Olá! Gostaria de confirmar meu pedido e combinar os detalhes da entrega/pagamento.`;
 
+            // Limpa a sacola após concluir
             itensNoCarrinhoData = [];
             cupomAtivo = null;
             renderizarSacola();
             if (carrinhoLateral) carrinhoLateral.classList.remove('aberto');
 
-            if (confirm(`🎉 Pedido ${numeroPedido} registrado com sucesso!\n\nDeseja enviar os detalhes do pedido diretamente para o WhatsApp da VR Modas agora?`)) {
-                window.open(linkZap, '_blank');
-            }
-
             if (typeof mostrarToast === 'function') mostrarToast(`Pedido ${numeroPedido} registrado!`);
+
+            // Abre o WhatsApp com a mensagem pronta
+            const urlWhatsApp = `https://api.whatsapp.com/send?phone=${whatsLoja}&text=${encodeURIComponent(msgWhats)}`;
+            window.open(urlWhatsApp, '_blank');
         };
     }
 

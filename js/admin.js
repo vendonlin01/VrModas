@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lista.forEach(tam => {
             const checked = tamanhosSelecionados.includes(tam) ? 'checked' : '';
             containerTamanhos.insertAdjacentHTML('beforeend', `
-                <label style="margin-right: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                <label style="margin-right: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-size: 12px;">
                     <input type="checkbox" value="${tam}" class="check-tamanho" ${checked}> ${tam}
                 </label>
             `);
@@ -230,8 +230,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (vNormal > 0 && vPromo > 0 && vPromo < vNormal) {
             const perc = Math.round(((vNormal - vPromo) / vNormal) * 100);
+            const economia = (vNormal - vPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             avisoDesc.style.display = 'block';
-            avisoDesc.innerText = `✓ Desconto de ${perc}% aplicado (Economia de ${(vNormal - vPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`;
+            avisoDesc.innerText = `✓ Desconto de ${perc}% aplicado (Economia de ${economia})`;
         } else {
             avisoDesc.style.display = 'none';
         }
@@ -240,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inPreco) inPreco.addEventListener('input', atualizarCalculoDesconto);
     if (inPromo) inPromo.addEventListener('input', atualizarCalculoDesconto);
 
-    // Renderizar miniaturas com botão de exclusão individual
+    // Miniaturas com exclusão individual
     function renderizarPreviewFotos() {
         if (!previewContainer) return;
         previewContainer.innerHTML = '';
@@ -537,20 +538,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         pedidos.forEach(ped => {
             const totalFormatado = Number(ped.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            let resumoItens = ped.itens.map(it => `${it.quantidade}x ${it.nome} (${it.tamanho || 'Padrão'}/${it.cor || 'Padrão'})`).join('<br>');
-            const nomeCli = ped.cliente?.nome || "Cliente";
+            let resumoItens = ped.itens.map(it => `• <strong>${it.quantidade}x</strong> ${it.nome} <span style="color: #aaa; font-size: 11px;">(${it.tamanho || 'Padrão'} / ${it.cor || 'Padrão'})</span>`).join('<br>');
+            
+            const nomeCli = ped.cliente?.nome || "Cliente Visitante";
+            const whatsCli = ped.cliente?.whatsapp || "Não informado";
+            const endCli = ped.cliente?.endereco || "Retirada na Loja / A combinar";
 
             listaPedidosAdmin.insertAdjacentHTML('beforeend', `
                 <tr>
                     <td>
-                        <strong style="color: var(--dourado);">${ped.codigo}</strong><br>
-                        <small style="color: #aaa;">${nomeCli}</small>
+                        <strong style="color: var(--dourado); font-size: 13px;">${ped.codigo}</strong><br>
+                        <small style="color: #fff; font-weight: 600;">${nomeCli}</small><br>
+                        <small style="color: #888;">📱 ${whatsCli}</small>
                     </td>
-                    <td style="font-size: 13px; color: var(--cinza-texto);">${ped.data}</td>
-                    <td style="font-size: 13px; line-height: 1.4;">${resumoItens}</td>
-                    <td style="font-weight: 700; color: var(--branco);">${totalFormatado}</td>
+                    <td style="font-size: 12px; color: var(--cinza-texto); white-space: nowrap;">${ped.data}</td>
+                    <td style="font-size: 12.5px; line-height: 1.5;">${resumoItens}</td>
                     <td>
-                        <select class="select-status-pedido" data-id="${ped.id}" style="padding: 6px 10px; background: var(--preto); color: var(--branco); border: 1px solid #444; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                        <strong style="color: var(--branco); font-size: 13.5px;">${totalFormatado}</strong><br>
+                        <small style="color: var(--dourado); font-size: 10px;">${ped.formaPagamento || 'Pix'}</small>
+                    </td>
+                    <td>
+                        <select class="select-status-pedido" data-id="${ped.id}" style="padding: 6px 10px; background: #111; color: var(--branco); border: 1px solid #444; border-radius: 4px; font-size: 12px; cursor: pointer;">
                             <option value="Pendente" ${ped.status === 'Pendente' ? 'selected' : ''}>⏳ Pendente</option>
                             <option value="Pago" ${ped.status === 'Pago' ? 'selected' : ''}>✅ Pago</option>
                             <option value="Enviado" ${ped.status === 'Enviado' ? 'selected' : ''}>📦 Enviado</option>
@@ -558,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td>
                         <div style="display: flex; gap: 6px;">
-                            <button class="btn-imprimir-pedido" data-id="${ped.id}" style="background: var(--dourado); color: var(--preto); border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">🖨️ PDF</button>
+                            <button class="btn-imprimir-pedido" data-id="${ped.id}" style="background: var(--dourado); color: #000; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">🖨️ PDF</button>
                             <button class="btn-excluir-pedido" data-id="${ped.id}" style="background: transparent; color: #ff4444; border: 1px solid #ff4444; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">🗑️</button>
                         </div>
                     </td>
@@ -606,64 +614,78 @@ document.addEventListener('DOMContentLoaded', () => {
         const janela = window.open('', '_blank');
         const linhasItens = pedido.itens.map(it => `
             <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${it.nome} (Tam: ${it.tamanho} | Cor: ${it.cor})</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${it.quantidade}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">R$ ${Number(it.preco).toFixed(2)}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">R$ ${(Number(it.preco) * Number(it.quantidade)).toFixed(2)}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                    <strong>${it.nome}</strong><br>
+                    <span style="font-size: 11px; color: #666;">Tamanho: ${it.tamanho} | Cor: ${it.cor}</span>
+                </td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${it.quantidade}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${Number(it.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">${(Number(it.preco) * Number(it.quantidade)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             </tr>
         `).join('');
+
+        const endFormatado = pedido.cliente?.endereco || 'Retirada na Loja / A combinar';
 
         janela.document.write(`
             <!DOCTYPE html>
             <html lang="pt-BR">
             <head>
                 <meta charset="UTF-8">
-                <title>Pedido ${pedido.codigo} - VR Modas</title>
+                <title>Pedido ${pedido.codigo} | VR Modas</title>
                 <style>
-                    body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; margin: 30px; line-height: 1.5; }
-                    .topo { border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-                    .titulo-vr { font-size: 26px; font-weight: 900; margin: 0; }
-                    .dados-pedido { margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 6px; }
+                    body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; margin: 30px; line-height: 1.5; font-size: 13px; }
+                    .cabecalho { border-bottom: 2px solid #111; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+                    .titulo-vr { font-size: 24px; font-weight: 900; letter-spacing: 1px; margin: 0; }
+                    .dados-quadro { background: #fafafa; border: 1px solid #eaeaea; padding: 14px 18px; border-radius: 6px; margin-bottom: 20px; }
+                    .linha-dado { margin-bottom: 6px; }
+                    .rotulo { font-weight: 700; color: #444; text-transform: uppercase; font-size: 11px; display: inline-block; width: 140px; }
                     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                    th { background: #eee; padding: 8px; text-align: left; font-size: 13px; }
-                    .total { font-size: 18px; font-weight: bold; text-align: right; margin-top: 20px; }
-                    @media print { body { margin: 0; } button { display: none; } }
+                    th { background: #f0f0f0; padding: 9px 10px; text-align: left; font-size: 11px; text-transform: uppercase; color: #333; }
+                    .total-box { margin-top: 25px; text-align: right; padding: 14px; background: #fafafa; border-radius: 6px; border: 1px solid #eaeaea; }
+                    .total-destaque { font-size: 19px; font-weight: 900; color: #000; }
+                    @media print { body { margin: 15px; } button { display: none; } }
                 </style>
             </head>
             <body>
-                <div class="topo">
+                <div class="cabecalho">
                     <div>
                         <h1 class="titulo-vr">VR MODAS</h1>
-                        <p style="margin: 0; font-size: 13px; color: #555;">Comprovativo de Pedido</p>
+                        <p style="margin: 0; font-size: 12px; color: #666;">Comprovativo de Pedido & Expedição</p>
                     </div>
                     <div style="text-align: right;">
-                        <h2 style="margin: 0; color: #d4af37;">${pedido.codigo}</h2>
-                        <span style="font-size: 12px; color: #777;">${pedido.data}</span>
+                        <h2 style="margin: 0; color: #b89329; font-size: 18px;">${pedido.codigo}</h2>
+                        <span style="font-size: 11px; color: #777;">${pedido.data}</span>
                     </div>
                 </div>
-                <div class="dados-pedido">
-                    <strong>Cliente:</strong> ${pedido.cliente?.nome || 'Cliente'}<br>
-                    <strong>Contato:</strong> ${pedido.cliente?.whatsapp || 'Não informado'}<br>
-                    <strong>Entrega:</strong> ${pedido.cliente?.endereco || 'A combinar'}<br>
-                    <strong>Forma de Pagamento:</strong> ${pedido.formaPagamento || 'Pix à vista'}<br>
-                    <strong>Status:</strong> ${pedido.status}
+
+                <div class="dados-quadro">
+                    <div class="linha-dado"><span class="rotulo">Cliente:</span> <strong>${pedido.cliente?.nome || 'Cliente Visitante'}</strong></div>
+                    <div class="linha-dado"><span class="rotulo">WhatsApp:</span> ${pedido.cliente?.whatsapp || 'Não informado'}</div>
+                    <div class="linha-dado"><span class="rotulo">Endereço de Entrega:</span> <strong>${endFormatado}</strong></div>
+                    <div class="linha-dado"><span class="rotulo">Pagamento:</span> ${pedido.formaPagamento || 'Pix à vista'}</div>
+                    <div class="linha-dado"><span class="rotulo">Situação / Status:</span> <strong>${pedido.status}</strong></div>
+                    ${pedido.cupom ? `<div class="linha-dado"><span class="rotulo">Cupom Aplicado:</span> ${pedido.cupom}</div>` : ''}
                 </div>
+
                 <table>
                     <thead>
                         <tr>
-                            <th>Produto</th>
+                            <th>Produto / Detalhes</th>
                             <th style="text-align: center;">Qtd</th>
-                            <th style="text-align: right;">Preço Unit.</th>
+                            <th style="text-align: right;">Valor Unit.</th>
                             <th style="text-align: right;">Subtotal</th>
                         </tr>
                     </thead>
                     <tbody>${linhasItens}</tbody>
                 </table>
-                <div class="total">
-                    TOTAL: ${Number(pedido.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+
+                <div class="total-box">
+                    <span style="font-size: 13px; color: #555;">Total a Pagar / Recebido:</span><br>
+                    <span class="total-destaque">${Number(pedido.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                 </div>
-                <div style="margin-top: 40px; text-align: center;">
-                    <button onclick="window.print()" style="background: #111; color: #fff; border: none; padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 4px;">🖨️ Imprimir / Guardar como PDF</button>
+
+                <div style="margin-top: 35px; text-align: center;">
+                    <button onclick="window.print()" style="background: #111; color: #fff; border: none; padding: 10px 22px; font-size: 13px; font-weight: bold; cursor: pointer; border-radius: 4px;">🖨️ Imprimir / Guardar como PDF</button>
                 </div>
             </body>
             </html>
