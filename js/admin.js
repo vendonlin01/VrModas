@@ -206,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 5. CADASTRO E EDIÇÃO DE PRODUTOS
+    // 5. CADASTRO E EDIÇÃO DE PRODUTOS & CORES DINÂMICAS
     // ==========================================
     const formAdmin = document.getElementById('form-cadastro-produto');
     const inputFoto = document.getElementById('foto-produto');
@@ -221,6 +221,87 @@ document.addEventListener('DOMContentLoaded', () => {
     const avisoDesc = document.getElementById('aviso-desconto');
 
     let fotosAtuais = [];
+    let listaCoresCadastradas = []; // Formato: [{ cor: 'Azul', qtd: 5 }, { cor: 'Preto', qtd: 10 }]
+
+    // Elementos do Gerenciador de Cores
+    const inputNomeCor = document.getElementById('input-nome-cor');
+    const inputQtdCor = document.getElementById('input-qtd-cor');
+    const btnAdicionarCor = document.getElementById('btn-adicionar-cor');
+    const containerListaCores = document.getElementById('lista-cores-adicionadas');
+    const inTotalEstoque = document.getElementById('estoque-produto');
+    const inCoresOculto = document.getElementById('cores-produto');
+    const inEstoqueCorOculto = document.getElementById('estoque-por-cor-produto');
+
+    function renderizarTagsCores() {
+        if (!containerListaCores) return;
+        containerListaCores.innerHTML = '';
+
+        if (listaCoresCadastradas.length === 0) {
+            containerListaCores.innerHTML = '<span style="color: #666; font-size: 11.5px; font-style: italic;">Nenhuma cor adicionada ainda. Digite o nome, quantidade e aperte (+).</span>';
+            if (inTotalEstoque) inTotalEstoque.value = 0;
+            if (inCoresOculto) inCoresOculto.value = '';
+            if (inEstoqueCorOculto) inEstoqueCorOculto.value = '';
+            return;
+        }
+
+        let totalSoma = 0;
+        const nomesCores = [];
+        const resumoEstoque = [];
+
+        listaCoresCadastradas.forEach((item, index) => {
+            totalSoma += item.qtd;
+            nomesCores.push(item.cor);
+            resumoEstoque.push(`${item.cor}: ${item.qtd}`);
+
+            const chip = document.createElement('div');
+            chip.style.cssText = "display: inline-flex; align-items: center; gap: 8px; background: #1a1a1a; border: 1px solid #333; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #fff;";
+            chip.innerHTML = `
+                <span style="font-weight: 700; color: var(--dourado);">${item.cor}</span>
+                <span style="background: #2b2b2b; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold;">${item.qtd} un</span>
+                <button type="button" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; padding: 0 2px;" title="Remover cor" onclick="removerCorItem(${index})">✕</button>
+            `;
+            containerListaCores.appendChild(chip);
+        });
+
+        if (inTotalEstoque) inTotalEstoque.value = totalSoma;
+        if (inCoresOculto) inCoresOculto.value = nomesCores.join(', ');
+        if (inEstoqueCorOculto) inEstoqueCorOculto.value = resumoEstoque.join(', ');
+    }
+
+    window.removerCorItem = function(index) {
+        listaCoresCadastradas.splice(index, 1);
+        renderizarTagsCores();
+    };
+
+    if (btnAdicionarCor) {
+        btnAdicionarCor.onclick = function() {
+            const nome = inputNomeCor.value.trim();
+            const qtd = parseInt(inputQtdCor.value);
+
+            if (!nome) {
+                alert("Digite o nome da cor!");
+                inputNomeCor.focus();
+                return;
+            }
+            if (isNaN(qtd) || qtd <= 0) {
+                alert("Informe uma quantidade válida para esta cor!");
+                inputQtdCor.focus();
+                return;
+            }
+
+            const corExistente = listaCoresCadastradas.find(c => c.cor.toLowerCase() === nome.toLowerCase());
+            if (corExistente) {
+                corExistente.qtd += qtd;
+            } else {
+                listaCoresCadastradas.push({ cor: nome, qtd: qtd });
+            }
+
+            inputNomeCor.value = '';
+            inputQtdCor.value = '';
+            inputNomeCor.focus();
+            renderizarTagsCores();
+        };
+    }
 
     // Cálculo automático de desconto
     function atualizarCalculoDesconto() {
@@ -286,13 +367,14 @@ document.addEventListener('DOMContentLoaded', () => {
         fotosAtuais = [];
         renderizarPreviewFotos();
 
+        listaCoresCadastradas = [];
+        renderizarTagsCores();
+
         const checkPromo = document.getElementById('destaque-promocao');
         if (checkPromo) checkPromo.checked = false;
 
         if (inPromo) inPromo.value = '';
         if (avisoDesc) avisoDesc.style.display = 'none';
-        const estoquePorCor = document.getElementById('estoque-por-cor-produto');
-        if (estoquePorCor) estoquePorCor.value = '';
 
         if (document.getElementById('max-parcelas')) document.getElementById('max-parcelas').value = "3";
         if (document.getElementById('parcelas-sem-juros')) document.getElementById('parcelas-sem-juros').value = "3";
@@ -312,13 +394,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const preco = parseFloat(document.getElementById('preco-produto').value);
             const precoPromocionalRaw = document.getElementById('preco-promocional-produto').value;
             const precoPromocional = precoPromocionalRaw ? parseFloat(precoPromocionalRaw) : null;
-            const estoquePorCor = document.getElementById('estoque-por-cor-produto')?.value.trim() || '';
-
+            
             const categoria = document.getElementById('categoria-produto').value;
-            const estoque = parseInt(document.getElementById('estoque-produto').value);
+            const estoque = parseInt(document.getElementById('estoque-produto').value) || 0;
             const isPromocao = document.getElementById('destaque-promocao')?.checked || (precoPromocional !== null);
-            const cores = document.getElementById('cores-produto').value.trim();
+            
+            const cores = inCoresOculto ? inCoresOculto.value.trim() : (document.getElementById('cores-produto')?.value.trim() || '');
+            const estoquePorCor = inEstoqueCorOculto ? inEstoqueCorOculto.value.trim() : (document.getElementById('estoque-por-cor-produto')?.value.trim() || '');
             const descricao = document.getElementById('descricao-produto').value.trim();
+            
             const tamanhos = [];
             document.querySelectorAll('.check-tamanho:checked').forEach(cb => tamanhos.push(cb.value));
 
@@ -492,8 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('nome-produto').value = produto.nome;
         document.getElementById('preco-produto').value = produto.preco;
         document.getElementById('preco-promocional-produto').value = produto.precoPromocional || '';
-        document.getElementById('estoque-por-cor-produto').value = produto.estoquePorCor || '';
-
+        
         atualizarCalculoDesconto();
 
         document.getElementById('categoria-produto').value = produto.categoria || '';
@@ -501,6 +584,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('estoque-produto').value = produto.estoque || 0;
         
+        // Reconstrói as cores e tags adicionadas
+        listaCoresCadastradas = [];
+        if (produto.estoquePorCor) {
+            produto.estoquePorCor.split(',').forEach(item => {
+                const partes = item.split(':');
+                if (partes.length === 2) {
+                    listaCoresCadastradas.push({ cor: partes[0].trim(), qtd: parseInt(partes[1].trim()) || 1 });
+                }
+            });
+        } else if (produto.cores) {
+            produto.cores.split(',').forEach(c => {
+                if (c.trim()) listaCoresCadastradas.push({ cor: c.trim(), qtd: 1 });
+            });
+        }
+        renderizarTagsCores();
+
         const checkPromo = document.getElementById('destaque-promocao');
         if (checkPromo) checkPromo.checked = !!produto.promocao;
 
@@ -510,7 +609,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('taxa-juros')) document.getElementById('taxa-juros').value = produto.pagamento.taxaJuros ?? 2.99;
         }
 
-        document.getElementById('cores-produto').value = produto.cores || '';
         document.getElementById('descricao-produto').value = produto.descricao || '';
 
         fotosAtuais = produto.imagens ? [...produto.imagens] : (produto.imagem ? [produto.imagem] : ['img/produto1.jpg']);

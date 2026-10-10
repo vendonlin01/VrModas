@@ -34,22 +34,27 @@
             }
         }
 
-       .admin-nav button.nav-btn {
+        .admin-nav button.nav-btn {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            width: auto; /* Permite ficar do tamanho exato da palavra */
+            width: auto;
+            /* Permite ficar do tamanho exato da palavra */
             background: #181818;
             border: 1px solid #2e2e2e;
             color: var(--cinza-texto, #aaa);
-            padding: 6px 12px; /* Bem mais compacto */
-            font-size: 11px; /* Letra menor e discreta */
+            padding: 6px 12px;
+            /* Bem mais compacto */
+            font-size: 11px;
+            /* Letra menor e discreta */
             font-weight: 700;
             font-family: 'Montserrat', sans-serif;
             text-align: center;
             cursor: pointer;
-            border-radius: 16px; /* Bordas arredondadas estilo pílula */
-            flex-shrink: 0; /* Impede de esmagar */
+            border-radius: 16px;
+            /* Bordas arredondadas estilo pílula */
+            flex-shrink: 0;
+            /* Impede de esmagar */
             transition: all 0.2s ease;
             white-space: nowrap;
         }
@@ -161,7 +166,7 @@
 
     <div class="admin-layout">
 
-       <!-- Menu Lateral / Topo Mobile com Botão de Voltar -->
+        <!-- Menu Lateral / Topo Mobile com Botão de Voltar -->
         <aside class="admin-sidebar">
             <div class="admin-logo">
                 <div>
@@ -306,40 +311,57 @@
                             </div>
                         </div>
 
-                        <!-- BLOCO 3: ESTOQUE, CORES E TAMANHOS -->
+                        <!-- BLOCO 3: ESTOQUE, TAMANHOS & CORES DINÂMICAS -->
                         <div class="bloco-cadastro">
                             <h3 class="titulo-bloco">📦 3. Estoque, Tamanhos & Variações</h3>
+
                             <div class="linha-inputs">
                                 <div class="grupo-input">
-                                    <label>Qtd. Total Geral em Estoque *</label>
-                                    <input type="number" id="estoque-produto" min="0" placeholder="Ex: 25" required>
-                                </div>
-                                <div class="grupo-input">
-                                    <label>Cores Disponíveis (separadas por vírgula)</label>
-                                    <input type="text" id="cores-produto"
-                                        placeholder="Ex: preto, azul marinho, dourado">
+                                    <label for="estoque-produto">Qtd. Total Geral em Estoque *</label>
+                                    <input type="number" id="estoque-produto" placeholder="Ex: 25" min="0" required
+                                        readonly style="background: #181818; color: var(--dourado); font-weight: bold;">
+                                    <small style="color: #777; font-size: 11px;">Calculado automaticamente pela soma das
+                                        cores abaixo.</small>
                                 </div>
                             </div>
 
-                            <div class="grupo-input"
-                                style="background: #0f0f0f; padding: 12px; border-radius: 6px; border: 1px solid #2a2a2a; margin-top: 14px;">
-                                <label style="color: var(--dourado); font-weight: 700;">🔒 Controle Interno: Quantidades
-                                    por Cor (Lojista)</label>
-                                <input type="text" id="estoque-por-cor-produto"
-                                    placeholder="Ex: Azul: 10, Preto: 10, Dourado: 5">
-                                <small style="color: #888; font-size: 11px; display: block; margin-top: 4px;">Organize o
-                                    saldo por cor para sua gestão interna de armazém.</small>
+                            <!-- GERENCIADOR DE CORES COM BOTÃO (+) -->
+                            <div
+                                style="margin-top: 14px; background: #0a0a0a; border: 1px solid #282828; padding: 14px; border-radius: 6px;">
+                                <label
+                                    style="font-size: 12px; font-weight: 700; color: var(--dourado); display: block; margin-bottom: 8px; text-transform: uppercase;">Adicionar
+                                    Cores & Estoque por Cor</label>
+
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <input type="text" id="input-nome-cor" placeholder="Ex: Azul, Preto, Rosa..."
+                                        style="flex: 2; background: #141414; border: 1px solid #333; color: #fff; padding: 9px 12px; border-radius: 4px; font-size: 13px;">
+                                    <input type="number" id="input-qtd-cor" placeholder="Qtd (ex: 5)" min="1"
+                                        style="flex: 1; background: #141414; border: 1px solid #333; color: #fff; padding: 9px 12px; border-radius: 4px; font-size: 13px;">
+                                    <button type="button" id="btn-adicionar-cor"
+                                        style="background: var(--dourado); color: #000; border: none; padding: 9px 16px; border-radius: 4px; font-weight: 900; font-size: 16px; cursor: pointer;"
+                                        title="Adicionar Cor">+</button>
+                                </div>
+
+                                <!-- Lista de cores adicionadas em etiquetas -->
+                                <div id="lista-cores-adicionadas"
+                                    style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 25px;">
+                                    <span style="color: #666; font-size: 11.5px; font-style: italic;">Nenhuma cor
+                                        adicionada ainda. Digite o nome, quantidade e aperte (+).</span>
+                                </div>
                             </div>
 
-                            <div class="grupo-input" style="margin-top: 14px;">
-                                <label>Tamanhos Disponíveis</label>
-                                <div class="checkbox-group" id="container-tamanhos-dinamicos">
+                            <!-- Campo oculto para compatibilidade com o banco local -->
+                            <input type="hidden" id="cores-produto">
+                            <input type="hidden" id="estoque-por-cor-produto">
+
+                            <div class="grupo-input" style="margin-top: 15px;">
+                                <label>Tamanhos Disponíveis:</label>
+                                <div id="container-tamanhos-dinamicos" style="padding-top: 5px;">
                                     <span style="color: #777; font-size: 12px;">Selecione primeiro uma categoria acima
                                         para carregar a grade.</span>
                                 </div>
                             </div>
                         </div>
-
                         <!-- BLOCO 4: PARCELAMENTO E CARTÃO -->
                         <div class="bloco-cadastro">
                             <h3 class="titulo-bloco">💳 4. Opções de Pagamento & Cartão</h3>

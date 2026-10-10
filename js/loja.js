@@ -475,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 6. SACOLA COM ENDEREÇO EDITÁVEL, CUPOM E WHATSAPP
+    // 6. SACOLA COM ENVIO (CASA OU RETIRADA), CUPOM E PARCELAS
     // ==========================================
     const carrinhoLateral = document.getElementById('carrinho-lateral');
     const btnAbrirCarrinho = document.getElementById('abrir-carrinho');
@@ -492,7 +492,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let parcelaSelecionada = 1;
     let cupomAtivo = null;
 
-    // Estado do endereço de envio na sessão
+    // Estado do Envio: 'entrega' (Receber em Casa) ou 'retirada' (Retirar na Loja)
+    let tipoEnvioSelecionado = 'entrega';
+
     let clienteAtual = obterClienteAtual();
     let enderecoEntregaCustom = clienteAtual && clienteAtual.endereco ? formatarEnderecoParaTexto(clienteAtual.endereco) : '';
 
@@ -587,35 +589,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Recupera dados do cliente logado no momento
         clienteAtual = obterClienteAtual();
         if (!enderecoEntregaCustom && clienteAtual && clienteAtual.endereco) {
             enderecoEntregaCustom = formatarEnderecoParaTexto(clienteAtual.endereco);
         }
 
-        const enderecoExibicao = enderecoEntregaCustom || 'Retirada na Loja / A combinar';
+        const enderecoExibicao = enderecoEntregaCustom || 'Nenhum endereço cadastrado';
         const nomeClienteExibicao = clienteAtual ? clienteAtual.nome : 'Visitante';
 
         const htmlPagamento = `
             <div id="bloco-pagamento-sacola" style="background: #111; padding: 12px; border-radius: 8px; border: 1px solid #2a2a2a; margin-bottom: 12px;">
                 
-                <!-- BLOCO DE ENDEREÇO DE ENTREGA DO CLIENTE -->
-                <div style="background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #292929; margin-bottom: 10px;">
+                <!-- SELETOR DE MODALIDADE DE ENVIO -->
+                <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado); font-weight: 700; display: block; margin-bottom: 8px;">Como deseja receber seu pedido?</label>
+                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <button type="button" id="btn-opcao-entrega" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${tipoEnvioSelecionado === 'entrega' ? 'var(--dourado)' : '#1a1a1a'}; color: ${tipoEnvioSelecionado === 'entrega' ? '#000' : '#fff'}; cursor: pointer;">🏠 Receber em Casa</button>
+                    <button type="button" id="btn-opcao-retirada" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${tipoEnvioSelecionado === 'retirada' ? 'var(--dourado)' : '#1a1a1a'}; color: ${tipoEnvioSelecionado === 'retirada' ? '#000' : '#fff'}; cursor: pointer;">🏬 Retirar na Loja</button>
+                </div>
+
+                <!-- ENDEREÇO DE ENTREGA (SÓ EXIBE SE FOR RECEBER EM CASA) -->
+                <div id="painel-endereco-casa" style="display: ${tipoEnvioSelecionado === 'entrega' ? 'block' : 'none'}; background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #292929; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                         <span style="font-size: 11px; font-weight: 700; color: var(--dourado); text-transform: uppercase;">📍 Endereço de Entrega</span>
                         <button type="button" id="btn-editar-endereco-sacola" style="background: none; border: none; color: #4fc3f7; font-size: 11px; cursor: pointer; text-decoration: underline;">Alterar</button>
                     </div>
                     <p id="texto-endereco-sacola" style="font-size: 11px; color: #ccc; margin: 0; line-height: 1.4;">${enderecoExibicao}</p>
-                    <small style="font-size: 10px; color: #777;">Cliente: ${nomeClienteExibicao}</small>
+                    <small style="font-size: 10px; color: #777;">Destinatário: ${nomeClienteExibicao}</small>
 
-                    <!-- Formulário rápido para alterar/inserir endereço -->
                     <div id="form-alterar-endereco" style="display: none; margin-top: 8px; border-top: 1px dashed #333; padding-top: 8px;">
-                        <input type="text" id="input-novo-endereco" placeholder="Rua, Nº, Bairro, Cidade ou 'Retirar na Loja'" value="${enderecoEntregaCustom}" style="width: 100%; box-sizing: border-box; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px; border-radius: 4px; font-size: 11px; margin-bottom: 6px;">
+                        <input type="text" id="input-novo-endereco" placeholder="Rua, Nº, Bairro, Cidade (CEP)" value="${enderecoEntregaCustom}" style="width: 100%; box-sizing: border-box; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px; border-radius: 4px; font-size: 11px; margin-bottom: 6px;">
                         <div style="display: flex; gap: 6px;">
                             <button type="button" id="btn-salvar-novo-endereco" style="flex: 1; background: var(--dourado); color: #000; border: none; padding: 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">Salvar</button>
                             <button type="button" id="btn-cancelar-novo-endereco" style="background: #333; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">Cancelar</button>
                         </div>
                     </div>
+                </div>
+
+                <!-- AVISO DE RETIRADA NA LOJA -->
+                <div id="painel-aviso-retirada" style="display: ${tipoEnvioSelecionado === 'retirada' ? 'block' : 'none'}; background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #292929; margin-bottom: 10px;">
+                    <span style="font-size: 11px; font-weight: 700; color: var(--dourado);">🏬 Retirada Gratuita no Ponto Físico</span>
+                    <p style="font-size: 11px; color: #aaa; margin: 4px 0 0 0;">Você retira pessoalmente na loja oficial da VR Modas após confirmação via WhatsApp.</p>
                 </div>
 
                 <!-- CUPOM DE DESCONTO -->
@@ -653,7 +666,21 @@ document.addEventListener('DOMContentLoaded', () => {
             valorEl.innerText = totalFinalCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
-        // Ações do Endereço
+        // Alternância de botões Receber em Casa vs Retirar na Loja
+        const btnOptEntrega = document.getElementById('btn-opcao-entrega');
+        const btnOptRetirada = document.getElementById('btn-opcao-retirada');
+        if (btnOptEntrega && btnOptRetirada) {
+            btnOptEntrega.onclick = () => {
+                tipoEnvioSelecionado = 'entrega';
+                renderizarOpcoesPagamento();
+            };
+            btnOptRetirada.onclick = () => {
+                tipoEnvioSelecionado = 'retirada';
+                renderizarOpcoesPagamento();
+            };
+        }
+
+        // Ações de alteração do Endereço
         const btnEditarEnd = document.getElementById('btn-editar-endereco-sacola');
         const formAltEnd = document.getElementById('form-alterar-endereco');
         const btnSalvarEnd = document.getElementById('btn-salvar-novo-endereco');
@@ -804,13 +831,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Identifica cliente ativo na loja
             const clienteSessao = obterClienteAtual();
             const clienteNome = clienteSessao ? clienteSessao.nome : "Cliente Visitante";
             const clienteWhats = (clienteSessao && (clienteSessao.whatsapp || clienteSessao.telefone)) ? (clienteSessao.whatsapp || clienteSessao.telefone) : "Não informado";
             
-            // Endereço verificado e confirmado
-            const clienteEndereco = enderecoEntregaCustom || (clienteSessao && clienteSessao.endereco ? formatarEnderecoParaTexto(clienteSessao.endereco) : "Retirada na Loja / A combinar");
+            // Define o endereço correto baseado na opção escolhida (Entrega vs Retirada)
+            let clienteEndereco = "";
+            if (tipoEnvioSelecionado === 'retirada') {
+                clienteEndereco = "🏬 Retirada na Loja Física (Sem frete)";
+            } else {
+                clienteEndereco = enderecoEntregaCustom || (clienteSessao && clienteSessao.endereco ? formatarEnderecoParaTexto(clienteSessao.endereco) : "A combinar na entrega");
+            }
 
             const numeroPedido = `#VR-${Math.floor(1000 + Math.random() * 9000)}`;
             const agora = new Date();
@@ -829,7 +860,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const totalComDesconto = Math.max(0, totalCarrinho - descFinal);
 
-            // Objeto completo com dados corretos de entrega
             const novoPedido = {
                 id: Date.now(),
                 codigo: numeroPedido,
@@ -846,12 +876,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: "Pendente"
             };
 
-            // Salva na lista do painel administrativo
             let pedidosAtuais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
             pedidosAtuais.unshift(novoPedido);
             localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
 
-            // Envio direto para o WhatsApp oficial configurado no Admin
             const configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || { whatsapp: '5589999999999' };
             const whatsLoja = (configLoja.whatsapp || '5589999999999').replace(/\D/g, '');
 
@@ -862,14 +890,13 @@ document.addEventListener('DOMContentLoaded', () => {
             msgWhats += `*Data:* ${dataHora}\n`;
             msgWhats += `*Cliente:* ${clienteNome}\n`;
             msgWhats += `*Contato:* ${clienteWhats}\n`;
-            msgWhats += `*Entrega:* ${clienteEndereco}\n\n`;
+            msgWhats += `*Forma de Recebimento:* ${clienteEndereco}\n\n`;
             msgWhats += `*Itens do Pedido:*\n${textoItensWhats}\n\n`;
             if (novoPedido.cupom) msgWhats += `*Cupom:* ${novoPedido.cupom}\n`;
             msgWhats += `*Forma de Pagamento:* ${detalhePagamento}\n`;
             msgWhats += `*VALOR TOTAL:* ${totalComDesconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n\n`;
-            msgWhats += `Olá! Gostaria de confirmar meu pedido e combinar os detalhes da entrega/pagamento.`;
+            msgWhats += `Olá! Gostaria de confirmar meu pedido e os detalhes de finalização.`;
 
-            // Limpa a sacola após concluir
             itensNoCarrinhoData = [];
             cupomAtivo = null;
             renderizarSacola();
@@ -877,7 +904,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (typeof mostrarToast === 'function') mostrarToast(`Pedido ${numeroPedido} registrado!`);
 
-            // Abre o WhatsApp com a mensagem pronta
             const urlWhatsApp = `https://api.whatsapp.com/send?phone=${whatsLoja}&text=${encodeURIComponent(msgWhats)}`;
             window.open(urlWhatsApp, '_blank');
         };

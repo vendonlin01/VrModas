@@ -615,3 +615,52 @@ body {
         padding: 8px !important;
     }
 }
+/* =====================================================
+   6. COMPLEMENTOS: TAGS DE CORES & CARDS DE PEDIDO
+   ===================================================== */
+
+/* Tags de cores geradas dinamicamente no cadastro */
+#lista-cores-adicionadas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+#lista-cores-adicionadas > div {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #fff;
+    transition: border-color 0.2s ease;
+}
+
+#lista-cores-adicionadas > div:hover {
+    border-color: var(--dourado);
+}
+
+/* Indicador de entrega/retirada na tabela e cards de pedidos */
+.badge-retirada {
+    background: rgba(33, 150, 243, 0.15);
+    color: #2196f3;
+    border: 1px solid #2196f3;
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.badge-entrega {
+    background: rgba(76, 175, 80, 0.15);
+    color: #4caf50;
+    border: 1px solid #4caf50;
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+}
