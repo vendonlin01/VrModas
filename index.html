@@ -2,10 +2,172 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=home.html">
-    <title>VR Modas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>VR Modas | Bem-vindo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #080808;
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+            height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Efeito de brilho radial dourado suave */
+        .brilho-fundo {
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: pulsarLuz 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulsarLuz {
+            from { transform: scale(0.9); opacity: 0.6; }
+            to { transform: scale(1.2); opacity: 1; }
+        }
+
+        .splash-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 24px;
+            z-index: 2;
+            animation: surgirSuave 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes surgirSuave {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Logotipo VR MODAS */
+        .splash-logo {
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-vr {
+            color: #d4af37;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .logo-modas {
+            color: #ffffff;
+            font-weight: 300;
+            letter-spacing: 6px;
+        }
+
+        .splash-subtitulo {
+            font-size: 11px;
+            color: #888888;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 35px;
+        }
+
+        /* Barra de carregamento fina em dourado */
+        .carregador-container {
+            width: 180px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .carregador-barra {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #b89329, #d4af37, #ffe082);
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.7);
+            animation: preencherBarra 3.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes preencherBarra {
+            0% { width: 0%; }
+            40% { width: 45%; }
+            80% { width: 85%; }
+            100% { width: 100%; }
+        }
+
+        .texto-carregando {
+            margin-top: 14px;
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Efeito de saída suave */
+        .desaparecer {
+            opacity: 0;
+            transform: scale(1.05);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
 </head>
 <body>
-    <script>window.location.href = "home.html";</script>
+
+    <div class="brilho-fundo"></div>
+
+    <main class="splash-card" id="splash-card">
+        <div class="splash-logo">
+            <span class="logo-vr">VR</span>
+            <span class="logo-modas">MODAS</span>
+        </div>
+        <p class="splash-subtitulo">Exclusividade & Estilo</p>
+
+        <div class="carregador-container">
+            <div class="carregador-barra"></div>
+        </div>
+        <span class="texto-carregando">A carregar coleção...</span>
+    </main>
+
+    <script>
+        // Inicia a transição de fade-out aos 3,3 segundos
+        setTimeout(() => {
+            const card = document.getElementById('splash-card');
+            if (card) {
+                card.classList.add('desaparecer');
+            }
+        }, 3300);
+
+        // Redireciona para home.html aos 3,8 segundos
+        setTimeout(() => {
+            window.location.href = "home.html";
+        }, 3800);
+    </script>
 </body>
 </html>
