@@ -215,39 +215,90 @@ document.addEventListener('DOMContentLoaded', () => {
     const tituloFormProduto = document.getElementById('titulo-form-produto');
     const btnSubmitProduto = document.getElementById('btn-submit-produto');
     const btnCancelarEdicao = document.getElementById('btn-cancelar-edicao');
-    let fotosEmEdicao = [];
 
-    if (inputFoto && previewContainer) {
+    const inPreco = document.getElementById('preco-produto');
+    const inPromo = document.getElementById('preco-promocional-produto');
+    const avisoDesc = document.getElementById('aviso-desconto');
+
+    let fotosAtuais = [];
+
+    // Cálculo automático de desconto
+    function atualizarCalculoDesconto() {
+        if (!inPreco || !inPromo || !avisoDesc) return;
+        const vNormal = parseFloat(inPreco.value) || 0;
+        const vPromo = parseFloat(inPromo.value) || 0;
+
+        if (vNormal > 0 && vPromo > 0 && vPromo < vNormal) {
+            const perc = Math.round(((vNormal - vPromo) / vNormal) * 100);
+            avisoDesc.style.display = 'block';
+            avisoDesc.innerText = `✓ Desconto de ${perc}% aplicado (Economia de ${(vNormal - vPromo).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`;
+        } else {
+            avisoDesc.style.display = 'none';
+        }
+    }
+
+    if (inPreco) inPreco.addEventListener('input', atualizarCalculoDesconto);
+    if (inPromo) inPromo.addEventListener('input', atualizarCalculoDesconto);
+
+    // Renderizar miniaturas com botão de exclusão individual
+    function renderizarPreviewFotos() {
+        if (!previewContainer) return;
+        previewContainer.innerHTML = '';
+        fotosAtuais.forEach((foto, index) => {
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            div.innerHTML = `
+                <img src="${foto}" alt="Foto ${index + 1}">
+                <button type="button" class="btn-del-preview" data-index="${index}" title="Remover foto">✕</button>
+            `;
+            previewContainer.appendChild(div);
+        });
+
+        previewContainer.querySelectorAll('.btn-del-preview').forEach(btn => {
+            btn.onclick = function() {
+                const idx = parseInt(this.getAttribute('data-index'));
+                fotosAtuais.splice(idx, 1);
+                renderizarPreviewFotos();
+            };
+        });
+    }
+
+    if (inputFoto) {
         inputFoto.onchange = function() {
-            previewContainer.innerHTML = '';
-            fotosEmEdicao = [];
+            if (!this.files || this.files.length === 0) return;
             Array.from(this.files).forEach(file => {
                 comprimirImagem(file, (imgComprimida) => {
-                    previewContainer.innerHTML += `<img src="${imgComprimida}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 2px solid #d4af37;">`;
+                    fotosAtuais.push(imgComprimida);
+                    renderizarPreviewFotos();
                 });
             });
+            this.value = '';
         };
     }
 
     function resetarModoEdicao() {
         if (editandoIdInput) editandoIdInput.value = "";
         if (tituloFormProduto) tituloFormProduto.innerText = "➕ Cadastrar Nova Peça";
-        if (btnSubmitProduto) btnSubmitProduto.innerText = "Salvar Peça no Catálogo";
+        if (btnSubmitProduto) btnSubmitProduto.innerText = "💾 Salvar Peça no Catálogo";
         if (btnCancelarEdicao) btnCancelarEdicao.style.display = "none";
-        if (previewContainer) previewContainer.innerHTML = '';
+        
+        fotosAtuais = [];
+        renderizarPreviewFotos();
+
         const checkPromo = document.getElementById('destaque-promocao');
         if (checkPromo) checkPromo.checked = false;
 
-        document.getElementById('preco-promocional-produto').value = '';
-        document.getElementById('estoque-por-cor-produto').value = '';
+        if (inPromo) inPromo.value = '';
+        if (avisoDesc) avisoDesc.style.display = 'none';
+        const estoquePorCor = document.getElementById('estoque-por-cor-produto');
+        if (estoquePorCor) estoquePorCor.value = '';
 
         if (document.getElementById('max-parcelas')) document.getElementById('max-parcelas').value = "3";
         if (document.getElementById('parcelas-sem-juros')) document.getElementById('parcelas-sem-juros').value = "3";
         if (document.getElementById('taxa-juros')) document.getElementById('taxa-juros').value = "2.99";
 
-        fotosEmEdicao = [];
         if (formAdmin) formAdmin.reset();
-        if (containerTamanhos) containerTamanhos.innerHTML = '<span style="color: #777; font-size: 12px;">Selecione primeiro uma categoria acima.</span>';
+        if (containerTamanhos) containerTamanhos.innerHTML = '<span style="color: #777; font-size: 12px;">Selecione primeiro uma categoria acima para carregar a grade.</span>';
     }
 
     if (btnCancelarEdicao) btnCancelarEdicao.onclick = resetarModoEdicao;
@@ -260,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const preco = parseFloat(document.getElementById('preco-produto').value);
             const precoPromocionalRaw = document.getElementById('preco-promocional-produto').value;
             const precoPromocional = precoPromocionalRaw ? parseFloat(precoPromocionalRaw) : null;
-            const estoquePorCor = document.getElementById('estoque-por-cor-produto').value.trim();
+            const estoquePorCor = document.getElementById('estoque-por-cor-produto')?.value.trim() || '';
 
             const categoria = document.getElementById('categoria-produto').value;
             const estoque = parseInt(document.getElementById('estoque-produto').value);
@@ -274,6 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const parcelasSemJuros = parseInt(document.getElementById('parcelas-sem-juros')?.value || '3');
             const taxaJuros = parseFloat(document.getElementById('taxa-juros')?.value || '0');
 
+            const imagensFinais = (fotosAtuais.length > 0) ? fotosAtuais : ["img/produto1.jpg"];
+
             const dadosComuns = { 
                 nome, 
                 preco, 
@@ -285,6 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cores, 
                 tamanhos, 
                 descricao,
+                imagens: imagensFinais,
                 pagamento: {
                     maxParcelas,
                     parcelasSemJuros,
@@ -292,16 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            if (inputFoto.files && inputFoto.files.length > 0) {
-                Promise.all(Array.from(inputFoto.files).map(file => new Promise(res => {
-                    comprimirImagem(file, res);
-                }))).then(imagensComprimidas => {
-                    salvarOuAtualizarProduto(idEditando, { ...dadosComuns, imagens: imagensComprimidas });
-                });
-            } else {
-                const imagensFinais = (fotosEmEdicao.length > 0) ? fotosEmEdicao : ["img/produto1.jpg"];
-                salvarOuAtualizarProduto(idEditando, { ...dadosComuns, imagens: imagensFinais });
-            }
+            salvarOuAtualizarProduto(idEditando, dadosComuns);
         };
 
         function salvarOuAtualizarProduto(idEditando, dados) {
@@ -448,6 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('preco-promocional-produto').value = produto.precoPromocional || '';
         document.getElementById('estoque-por-cor-produto').value = produto.estoquePorCor || '';
 
+        atualizarCalculoDesconto();
+
         document.getElementById('categoria-produto').value = produto.categoria || '';
         renderizarTamanhosPorCategoria(produto.categoria || '', produto.tamanhos || []);
 
@@ -465,13 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cores-produto').value = produto.cores || '';
         document.getElementById('descricao-produto').value = produto.descricao || '';
 
-        fotosEmEdicao = produto.imagens || (produto.imagem ? [produto.imagem] : ['img/produto1.jpg']);
-        if (previewContainer) {
-            previewContainer.innerHTML = '';
-            fotosEmEdicao.forEach(f => {
-                previewContainer.innerHTML += `<img src="${f}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 6px; border: 2px solid #d4af37;">`;
-            });
-        }
+        fotosAtuais = produto.imagens ? [...produto.imagens] : (produto.imagem ? [produto.imagem] : ['img/produto1.jpg']);
+        renderizarPreviewFotos();
 
         if (tituloFormProduto) tituloFormProduto.innerText = `✏️ Editando: ${produto.nome}`;
         if (btnSubmitProduto) btnSubmitProduto.innerText = "Atualizar Peça no Catálogo";

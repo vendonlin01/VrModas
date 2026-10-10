@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Lojista - VR Modas</title>
-    
+
     <link rel="stylesheet" href="./css/global.css">
     <link rel="stylesheet" href="./css/admin.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
-    
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -22,8 +23,15 @@
         }
 
         @keyframes surgirAba {
-            from { opacity: 0; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .admin-nav button.nav-btn {
@@ -134,29 +142,32 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="admin-layout">
-        
-        <!-- Menu Lateral Estruturado em Abas -->
+
+       <!-- Menu Lateral / Topo Mobile com Botão de Voltar -->
         <aside class="admin-sidebar">
             <div class="admin-logo">
-                <span class="logo-vr">VR</span> <span class="logo-modas">PAINEL</span>
+                <div>
+                    <span class="logo-vr">VR</span> <span class="logo-modas">PAINEL</span>
+                </div>
+                <!-- Botão Voltar visível tanto no PC quanto no Celular -->
+                <a href="home.html" class="btn-voltar-loja-topo">⬅ Ver Loja</a>
             </div>
             <nav class="admin-nav" id="sidebar-nav">
-                <button type="button" class="nav-btn ativo" data-alvo="secao-dashboard">📊 Dashboard & Vendas</button>
-                <button type="button" class="nav-btn" data-alvo="secao-cadastro">➕ Cadastrar Nova Peça</button>
-                <button type="button" class="nav-btn" data-alvo="secao-catalogo">📦 Catálogo & Estoque</button>
-                <button type="button" class="nav-btn" data-alvo="secao-pedidos">🛍️ Pedidos Recebidos</button>
-                <button type="button" class="nav-btn" data-alvo="secao-banners">🎨 Banners da Home</button>
-                <button type="button" class="nav-btn" data-alvo="secao-config">⚙️ Configurações & Backup</button>
-                <a href="home.html" class="link-voltar" style="margin-top: 20px; display: block; padding: 12px 18px; color: var(--dourado); text-decoration: none; font-size: 13px; font-weight: 700;">⬅️ Ver Loja Ao Vivo</a>
+                <button type="button" class="nav-btn ativo" data-alvo="secao-dashboard">📊 Dashboard</button>
+                <button type="button" class="nav-btn" data-alvo="secao-cadastro">➕ Nova Peça</button>
+                <button type="button" class="nav-btn" data-alvo="secao-catalogo">📦 Catálogo</button>
+                <button type="button" class="nav-btn" data-alvo="secao-pedidos">🛍️ Pedidos</button>
+                <button type="button" class="nav-btn" data-alvo="secao-banners">🎨 Banners</button>
+                <button type="button" class="nav-btn" data-alvo="secao-config">⚙️ Configurações</button>
             </nav>
         </aside>
-
         <!-- Área Central de Conteúdo -->
         <main class="admin-conteudo">
-            
+
             <header class="admin-header">
                 <h1 id="titulo-secao-atual">Dashboard & Vendas</h1>
                 <p id="subtitulo-secao-atual">Visão geral do faturamento, pedidos e relatórios de desempenho.</p>
@@ -177,7 +188,7 @@
                     </div>
                     <div class="dash-card borda-vermelha">
                         <h3>Estoque Baixo (< 5 un)</h3>
-                        <p id="dash-estoque-baixo">0</p>
+                                <p id="dash-estoque-baixo">0</p>
                     </div>
                     <div class="dash-card borda-verde">
                         <h3>Total de Produtos</h3>
@@ -206,139 +217,175 @@
                  ==================================================== -->
             <section id="secao-cadastro" class="secao-admin">
                 <div class="admin-card">
-                    <h2 id="titulo-form-produto">➕ Cadastrar Nova Peça</h2>
-                    
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #2a2a2a; padding-bottom: 12px;">
+                        <div>
+                            <h2 id="titulo-form-produto" style="margin: 0; font-size: 20px;">➕ Cadastrar Nova Peça</h2>
+                            <p class="subtexto-card" style="margin: 4px 0 0 0;">Preencha os detalhes organizados por
+                                etapas para cadastrar no catálogo.</p>
+                        </div>
+                    </div>
+
                     <form id="form-cadastro-produto" class="form-admin">
                         <input type="hidden" id="editando-id" value="">
 
-                        <div class="linha-inputs">
+                        <!-- BLOCO 1: INFORMAÇÕES BÁSICAS -->
+                        <div class="bloco-cadastro">
+                            <h3 class="titulo-bloco">📝 1. Informações Básicas</h3>
+                            <div class="linha-inputs">
+                                <div class="grupo-input">
+                                    <label>Nome do Produto *</label>
+                                    <input type="text" id="nome-produto" placeholder="Ex: Vestido Midi Seda Dourada"
+                                        required>
+                                </div>
+                                <div class="grupo-input">
+                                    <label>Categoria / Departamento *</label>
+                                    <select id="categoria-produto" required>
+                                        <option value="" disabled selected>Selecione a Categoria</option>
+                                        <optgroup label="Feminino">
+                                            <option value="vestidos">👗 Vestidos</option>
+                                            <option value="conjuntos">✨ Conjuntos</option>
+                                            <option value="calcas">👖 Calças & Saias</option>
+                                        </optgroup>
+                                        <optgroup label="Masculino">
+                                            <option value="camisas">👔 Camisas</option>
+                                            <option value="bermudas">🩳 Bermudas & Calças</option>
+                                        </optgroup>
+                                        <optgroup label="Acessórios">
+                                            <option value="bolsas">👜 Bolsas & Carteiras</option>
+                                            <option value="cintos">🎗️ Cintos</option>
+                                            <option value="joias">💍 Joias & Bijuterias</option>
+                                            <option value="acessorios">🕶️ Outros Acessórios</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grupo-input" style="margin-top: 12px;">
+                                <label>Descrição Detalhada da Peça</label>
+                                <textarea id="descricao-produto" rows="3"
+                                    placeholder="Tecido, modelagem, caimento e detalhes exclusivos..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- BLOCO 2: PREÇO E PROMOÇÃO -->
+                        <div class="bloco-cadastro">
+                            <h3 class="titulo-bloco">💰 2. Preço & Condições Promocionais</h3>
+                            <div class="linha-inputs">
+                                <div class="grupo-input">
+                                    <label>Preço Normal (R$) *</label>
+                                    <input type="number" id="preco-produto" step="0.01" min="0" placeholder="Ex: 199.90"
+                                        required>
+                                </div>
+                                <div class="grupo-input">
+                                    <label style="color: var(--dourado);">Preço Promocional (R$) (Opcional)</label>
+                                    <input type="number" id="preco-promocional-produto" step="0.01" min="0"
+                                        placeholder="Ex: 149.90">
+                                    <small id="aviso-desconto"
+                                        style="color: #4caf50; font-size: 11px; margin-top: 3px; font-weight: bold; display: none;"></small>
+                                </div>
+                            </div>
+
+                            <div class="campo-destaque-promocao" style="margin-top: 14px;">
+                                <input type="checkbox" id="destaque-promocao">
+                                <label for="destaque-promocao">🔥 Destacar este produto na aba de Ofertas</label>
+                            </div>
+                        </div>
+
+                        <!-- BLOCO 3: ESTOQUE, CORES E TAMANHOS -->
+                        <div class="bloco-cadastro">
+                            <h3 class="titulo-bloco">📦 3. Estoque, Tamanhos & Variações</h3>
+                            <div class="linha-inputs">
+                                <div class="grupo-input">
+                                    <label>Qtd. Total Geral em Estoque *</label>
+                                    <input type="number" id="estoque-produto" min="0" placeholder="Ex: 25" required>
+                                </div>
+                                <div class="grupo-input">
+                                    <label>Cores Disponíveis (separadas por vírgula)</label>
+                                    <input type="text" id="cores-produto"
+                                        placeholder="Ex: preto, azul marinho, dourado">
+                                </div>
+                            </div>
+
+                            <div class="grupo-input"
+                                style="background: #0f0f0f; padding: 12px; border-radius: 6px; border: 1px solid #2a2a2a; margin-top: 14px;">
+                                <label style="color: var(--dourado); font-weight: 700;">🔒 Controle Interno: Quantidades
+                                    por Cor (Lojista)</label>
+                                <input type="text" id="estoque-por-cor-produto"
+                                    placeholder="Ex: Azul: 10, Preto: 10, Dourado: 5">
+                                <small style="color: #888; font-size: 11px; display: block; margin-top: 4px;">Organize o
+                                    saldo por cor para sua gestão interna de armazém.</small>
+                            </div>
+
+                            <div class="grupo-input" style="margin-top: 14px;">
+                                <label>Tamanhos Disponíveis</label>
+                                <div class="checkbox-group" id="container-tamanhos-dinamicos">
+                                    <span style="color: #777; font-size: 12px;">Selecione primeiro uma categoria acima
+                                        para carregar a grade.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BLOCO 4: PARCELAMENTO E CARTÃO -->
+                        <div class="bloco-cadastro">
+                            <h3 class="titulo-bloco">💳 4. Opções de Pagamento & Cartão</h3>
+                            <div class="linha-inputs">
+                                <div class="grupo-input">
+                                    <label>Parcelamento Máximo</label>
+                                    <select id="max-parcelas">
+                                        <option value="1">1x (À vista)</option>
+                                        <option value="2">Até 2x</option>
+                                        <option value="3" selected>Até 3x</option>
+                                        <option value="4">Até 4x</option>
+                                        <option value="5">Até 5x</option>
+                                        <option value="6">Até 6x</option>
+                                        <option value="7">Até 7x</option>
+                                        <option value="8">Até 8x</option>
+                                        <option value="9">Até 9x</option>
+                                        <option value="10">Até 10x</option>
+                                        <option value="11">Até 11x</option>
+                                        <option value="12">Até 12x</option>
+                                    </select>
+                                </div>
+
+                                <div class="grupo-input">
+                                    <label>Parcelas SEM Juros</label>
+                                    <select id="parcelas-sem-juros">
+                                        <option value="1">1x sem juros</option>
+                                        <option value="2">Até 2x sem juros</option>
+                                        <option value="3" selected>Até 3x sem juros</option>
+                                        <option value="4">Até 4x sem juros</option>
+                                        <option value="5">Até 5x sem juros</option>
+                                        <option value="6">Até 6x sem juros</option>
+                                        <option value="12">Todas sem juros</option>
+                                    </select>
+                                </div>
+
+                                <div class="grupo-input">
+                                    <label>Taxa de Juros a.m. (%)</label>
+                                    <input type="number" id="taxa-juros" step="0.1" min="0" value="2.99"
+                                        placeholder="2.99">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BLOCO 5: FOTOS -->
+                        <div class="bloco-cadastro">
+                            <h3 class="titulo-bloco">📸 5. Fotos da Peça</h3>
                             <div class="grupo-input">
-                                <label>Nome do Produto *</label>
-                                <input type="text" id="nome-produto" placeholder="Ex: Vestido Midi Seda Dourada" required>
-                            </div>
-                            <div class="grupo-input">
-                                <label>Categoria / Departamento *</label>
-                                <select id="categoria-produto" required>
-                                    <option value="" disabled selected>Selecione a Categoria</option>
-                                    <optgroup label="Feminino">
-                                        <option value="vestidos">👗 Vestidos</option>
-                                        <option value="conjuntos">✨ Conjuntos</option>
-                                        <option value="calcas">👖 Calças & Saias</option>
-                                    </optgroup>
-                                    <optgroup label="Masculino">
-                                        <option value="camisas">👔 Camisas</option>
-                                        <option value="bermudas">🩳 Bermudas & Calças</option>
-                                    </optgroup>
-                                    <optgroup label="Acessórios">
-                                        <option value="bolsas">👜 Bolsas & Carteiras</option>
-                                        <option value="cintos">🎗️ Cintos</option>
-                                        <option value="joias">💍 Joias & Bijuterias</option>
-                                        <option value="acessorios">🕶️ Outros Acessórios</option>
-                                    </optgroup>
-                                </select>
+                                <label>Carregar Fotos (Selecione uma ou mais fotos do dispositivo)</label>
+                                <input type="file" id="foto-produto" accept="image/*" class="input-file" multiple>
+                                <div id="preview-fotos" class="container-previews"
+                                    style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;"></div>
                             </div>
                         </div>
 
-                        <!-- Preço Original, Desconto Individual e Stock Geral -->
-                        <div class="linha-inputs">
-                            <div class="grupo-input">
-                                <label>Preço Normal (R$) *</label>
-                                <input type="number" id="preco-produto" step="0.01" min="0" placeholder="Ex: 199.90" required>
-                            </div>
-                            <div class="grupo-input">
-                                <label style="color: var(--dourado);">Preço Promocional com Desconto (R$) (Opcional)</label>
-                                <input type="number" id="preco-promocional-produto" step="0.01" min="0" placeholder="Ex: 149.90">
-                                <small style="color: #777; font-size: 11px;">Se preenchido, o preço original surge riscado na loja.</small>
-                            </div>
-                            <div class="grupo-input">
-                                <label>Qtd. Total em Estoque *</label>
-                                <input type="number" id="estoque-produto" min="0" placeholder="Ex: 25" required>
-                            </div>
-                        </div>
-
-                        <!-- Stock Interno Detalhado por Cor (Visível apenas ao Admin) -->
-                        <div class="grupo-input" style="background: #141414; padding: 12px; border-radius: 6px; border: 1px solid #2a2a2a;">
-                            <label style="color: var(--dourado); font-weight: 700;">🔒 Controlo Interno: Estoque por Cor (Apenas para o Administrador)</label>
-                            <input type="text" id="estoque-por-cor-produto" placeholder="Ex: Azul: 10, Preto: 10, Dourado: 5">
-                            <small style="color: #888; font-size: 11px; display: block; margin-top: 4px;">Registe as quantidades separadas por cor para a sua gestão interna de armazém.</small>
-                        </div>
-
-                        <!-- Condições de Pagamento e Parcelamento -->
-                        <div class="linha-inputs" style="background: #141414; padding: 14px; border-radius: 6px; border: 1px solid #2a2a2a; margin-top: 15px;">
-                            <div class="grupo-input" style="flex: 1;">
-                                <label style="color: var(--dourado); font-weight: 700;">💳 Parcelamento Máximo no Cartão</label>
-                                <select id="max-parcelas" style="width: 100%; background: #0f0f0f; border: 1px solid #333; color: var(--branco); padding: 10px; border-radius: 6px; font-size: 13px;">
-                                    <option value="1">1x (À vista)</option>
-                                    <option value="2">Até 2x</option>
-                                    <option value="3" selected>Até 3x</option>
-                                    <option value="4">Até 4x</option>
-                                    <option value="5">Até 5x</option>
-                                    <option value="6">Até 6x</option>
-                                    <option value="7">Até 7x</option>
-                                    <option value="8">Até 8x</option>
-                                    <option value="9">Até 9x</option>
-                                    <option value="10">Até 10x</option>
-                                    <option value="11">Até 11x</option>
-                                    <option value="12">Até 12x</option>
-                                </select>
-                            </div>
-
-                            <div class="grupo-input" style="flex: 1;">
-                                <label style="color: var(--dourado); font-weight: 700;">✨ Parcelas SEM JUROS</label>
-                                <select id="parcelas-sem-juros" style="width: 100%; background: #0f0f0f; border: 1px solid #333; color: var(--branco); padding: 10px; border-radius: 6px; font-size: 13px;">
-                                    <option value="1">Apenas 1x sem juros</option>
-                                    <option value="2">Até 2x sem juros</option>
-                                    <option value="3" selected>Até 3x sem juros</option>
-                                    <option value="4">Até 4x sem juros</option>
-                                    <option value="5">Até 5x sem juros</option>
-                                    <option value="6">Até 6x sem juros</option>
-                                    <option value="7">Até 7x sem juros</option>
-                                    <option value="8">Até 8x sem juros</option>
-                                    <option value="9">Até 9x sem juros</option>
-                                    <option value="10">Até 10x sem juros</option>
-                                    <option value="11">Até 11x sem juros</option>
-                                    <option value="12">Todas sem juros</option>
-                                </select>
-                            </div>
-
-                            <div class="grupo-input" style="flex: 1;">
-                                <label style="color: #aaa; font-size: 12px;">Taxa de Juros a.m. (após sem juros)</label>
-                                <input type="number" id="taxa-juros" step="0.1" min="0" value="2.99" placeholder="Ex: 2.99" style="width: 100%; background: #0f0f0f; border: 1px solid #333; color: var(--branco); padding: 10px; border-radius: 6px; font-size: 13px;">
-                            </div>
-                        </div>
-
-                        <div class="campo-destaque-promocao">
-                            <input type="checkbox" id="destaque-promocao">
-                            <label for="destaque-promocao">🔥 Destacar este produto na aba de Ofertas</label>
-                        </div>
-
-                        <!-- Tamanhos Dinâmicos (Alternam Conforme a Categoria Escolhida) -->
-                        <div class="grupo-input" style="margin-top: 15px;">
-                            <label>Tamanhos Disponíveis (Adaptados à Categoria)</label>
-                            <div class="checkbox-group" id="container-tamanhos-dinamicos">
-                                <span style="color: #777; font-size: 12px;">Selecione primeiro uma categoria acima.</span>
-                            </div>
-                        </div>
-
-                        <div class="grupo-input">
-                            <label>Cores Disponíveis (separadas por vírgula)</label>
-                            <input type="text" id="cores-produto" placeholder="Ex: preto, azul, dourado, rosa">
-                        </div>
-
-                        <div class="grupo-input">
-                            <label>Fotos da Peça (Multi-upload otimizado)</label>
-                            <input type="file" id="foto-produto" accept="image/*" class="input-file" multiple>
-                            <div id="preview-fotos" class="container-previews"></div>
-                        </div>
-
-                        <div class="grupo-input">
-                            <label>Descrição Detalhada</label>
-                            <textarea id="descricao-produto" rows="4" placeholder="Fale sobre o tecido, caimento e detalhes da peça..."></textarea>
-                        </div>
-
-                        <div class="botoes-form">
-                            <button type="submit" id="btn-submit-produto" class="btn-salvar">Salvar Peça no Catálogo</button>
-                            <button type="button" id="btn-cancelar-edicao" class="btn-cancelar" style="display: none;">Cancelar Edição</button>
+                        <!-- BOTÕES DE AÇÃO -->
+                        <div class="botoes-form" style="margin-top: 15px;">
+                            <button type="submit" id="btn-submit-produto" class="btn-salvar" style="flex: 2;">💾 Salvar
+                                Peça no Catálogo</button>
+                            <button type="button" id="btn-cancelar-edicao" class="btn-cancelar"
+                                style="display: none; flex: 1;">✕ Cancelar Edição</button>
                         </div>
                     </form>
                 </div>
@@ -353,14 +400,23 @@
                     <p class="subtexto-card">Edite informações, preços ou remova peças organizadas por categoria.</p>
 
                     <div class="abas-categorias" id="abas-categorias-admin">
-                        <button type="button" class="btn-aba-cat ativo" data-cat="todos">Todos (<span id="cont-cat-todos">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="vestidos">Vestidos (<span id="cont-cat-vestidos">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="conjuntos">Conjuntos (<span id="cont-cat-conjuntos">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="calcas">Calças & Saias (<span id="cont-cat-calcas">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="camisas">Camisas (<span id="cont-cat-camisas">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="bermudas">Bermudas (<span id="cont-cat-bermudas">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="acessorios">Acessórios (<span id="cont-cat-acessorios">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="ofertas" style="color: var(--dourado, #d4af37);">🔥 Ofertas (<span id="cont-cat-ofertas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat ativo" data-cat="todos">Todos (<span
+                                id="cont-cat-todos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="vestidos">Vestidos (<span
+                                id="cont-cat-vestidos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="conjuntos">Conjuntos (<span
+                                id="cont-cat-conjuntos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="calcas">Calças & Saias (<span
+                                id="cont-cat-calcas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="camisas">Camisas (<span
+                                id="cont-cat-camisas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="bermudas">Bermudas (<span
+                                id="cont-cat-bermudas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="acessorios">Acessórios (<span
+                                id="cont-cat-acessorios">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="ofertas"
+                            style="color: var(--dourado, #d4af37);">🔥 Ofertas (<span
+                                id="cont-cat-ofertas">0</span>)</button>
                     </div>
 
                     <div class="tabela-container">
@@ -387,7 +443,8 @@
             <section id="secao-pedidos" class="secao-admin">
                 <div class="admin-card">
                     <h2>🛍️ Pedidos dos Clientes</h2>
-                    <p class="subtexto-card">Acompanhe compras geradas pela sacola, altere status e emita comprovantes em PDF.</p>
+                    <p class="subtexto-card">Acompanhe compras geradas pela sacola, altere status e emita comprovantes
+                        em PDF.</p>
 
                     <div class="tabela-container">
                         <table class="tabela-produtos">
@@ -414,27 +471,31 @@
                 <div class="admin-card">
                     <h2>🎨 Banners da Página Inicial</h2>
                     <p class="subtexto-card">Adicione fotos horizontais, frases de destaque e links para a vitrine.</p>
-                    
+
                     <form id="form-cadastro-banner" class="form-admin">
                         <div class="linha-inputs">
                             <div class="grupo-input">
                                 <label>Título Principal do Banner</label>
-                                <input type="text" id="titulo-banner" placeholder="Ex: Nova Coleção de Inverno" required>
+                                <input type="text" id="titulo-banner" placeholder="Ex: Nova Coleção de Inverno"
+                                    required>
                             </div>
                             <div class="grupo-input">
                                 <label>Subtítulo / Descrição Rápida</label>
-                                <input type="text" id="subtitulo-banner" placeholder="Ex: Elegância que aquece todos os momentos" required>
+                                <input type="text" id="subtitulo-banner"
+                                    placeholder="Ex: Elegância que aquece todos os momentos" required>
                             </div>
                         </div>
 
                         <div class="linha-inputs">
                             <div class="grupo-input">
                                 <label>Texto do Botão</label>
-                                <input type="text" id="btn-texto-banner" placeholder="Ex: Ver Coleção" value="Ver Coleção" required>
+                                <input type="text" id="btn-texto-banner" placeholder="Ex: Ver Coleção"
+                                    value="Ver Coleção" required>
                             </div>
                             <div class="grupo-input">
                                 <label>Link de Destino do Botão</label>
-                                <input type="text" id="btn-link-banner" placeholder="Ex: produtos.html ou #vitrine" value="#vitrine" required>
+                                <input type="text" id="btn-link-banner" placeholder="Ex: produtos.html ou #vitrine"
+                                    value="#vitrine" required>
                             </div>
                         </div>
 
@@ -460,14 +521,16 @@
             <section id="secao-config" class="secao-admin">
                 <div class="admin-card">
                     <h2>⚙️ Configurações de Atendimento & Suporte</h2>
-                    <p class="subtexto-card">Defina os canais oficiais de suporte. O chat e os links de contato da loja atualizarão automaticamente.</p>
+                    <p class="subtexto-card">Defina os canais oficiais de suporte. O chat e os links de contato da loja
+                        atualizarão automaticamente.</p>
 
                     <form id="form-config-loja" class="form-admin">
                         <div class="linha-inputs">
                             <div class="grupo-input">
                                 <label for="config-whatsapp">WhatsApp Oficial de Suporte (com DDD e 55) *</label>
                                 <input type="text" id="config-whatsapp" placeholder="Ex: 5589999999999" required>
-                                <small style="color: var(--cinza-texto); font-size: 11px;">Digite apenas números com código do país (55) e DDD.</small>
+                                <small style="color: var(--cinza-texto); font-size: 11px;">Digite apenas números com
+                                    código do país (55) e DDD.</small>
                             </div>
 
                             <div class="grupo-input">
@@ -490,7 +553,8 @@
                             <div class="linha-inputs">
                                 <div class="grupo-input">
                                     <label>Código do Cupom *</label>
-                                    <input type="text" id="cupom-codigo" placeholder="Ex: BEMVINDA10" style="text-transform: uppercase;" required>
+                                    <input type="text" id="cupom-codigo" placeholder="Ex: BEMVINDA10"
+                                        style="text-transform: uppercase;" required>
                                 </div>
                                 <div class="grupo-input">
                                     <label>Tipo de Desconto *</label>
@@ -501,10 +565,12 @@
                                 </div>
                                 <div class="grupo-input">
                                     <label>Valor do Desconto *</label>
-                                    <input type="number" id="cupom-valor" step="0.01" min="1" placeholder="Ex: 10" required>
+                                    <input type="number" id="cupom-valor" step="0.01" min="1" placeholder="Ex: 10"
+                                        required>
                                 </div>
                             </div>
-                            <button type="submit" class="btn-salvar" style="max-width: 220px; padding: 11px;">Cadastrar Cupom</button>
+                            <button type="submit" class="btn-salvar" style="max-width: 220px; padding: 11px;">Cadastrar
+                                Cupom</button>
                         </form>
 
                         <div class="tabela-container">
@@ -525,12 +591,15 @@
                     <!-- Cópia de Segurança e Restauro de Dados -->
                     <div style="margin-top: 35px; border-top: 1px solid #2a2a2a; padding-top: 20px;">
                         <h2 style="font-size: 17px; margin-top: 10px;">💾 Backup & Restauração de Dados</h2>
-                        <p class="subtexto-card">Guarde uma cópia de segurança de todos os produtos, pedidos e cupões para não perder nada.</p>
-                        
+                        <p class="subtexto-card">Guarde uma cópia de segurança de todos os produtos, pedidos e cupões
+                            para não perder nada.</p>
+
                         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
-                            <button type="button" id="btn-exportar-backup" class="btn-salvar" style="background: #1976d2; max-width: 240px;">⬇️ Baixar Backup (.JSON)</button>
-                            
-                            <label class="btn-salvar" style="background: #388e3c; max-width: 240px; text-align: center; cursor: pointer;">
+                            <button type="button" id="btn-exportar-backup" class="btn-salvar"
+                                style="background: #1976d2; max-width: 240px;">⬇️ Baixar Backup (.JSON)</button>
+
+                            <label class="btn-salvar"
+                                style="background: #388e3c; max-width: 240px; text-align: center; cursor: pointer;">
                                 ⬆️ Restaurar Backup
                                 <input type="file" id="input-restaurar-backup" accept=".json" style="display: none;">
                             </label>
@@ -546,4 +615,5 @@
     <script src="js/db.js"></script>
     <script src="js/admin.js"></script>
 </body>
+
 </html>
