@@ -1,34 +1,41 @@
 /* =========================================
-   BANNER PRINCIPAL (HERO / CARROSSEL)
+   BANNER PRINCIPAL (HERO / CARROSSEL CONTÍNUO)
    ========================================= */
 .carrossel-container {
     position: relative;
-    height: 60vh;
+    width: 100%;
+    height: 480px;
     overflow: hidden;
-    background-color: var(--preto-claro);
-    border-bottom: 2px solid var(--dourado);
+    background-color: var(--preto-claro, #111);
+    border-bottom: 2px solid var(--dourado, #d4af37);
+    touch-action: pan-y !important; /* Permite rolar a página verticalmente e deslizar o banner na horizontal */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
-.slide {
-    position: absolute;
-    top: 0; 
-    left: 0; 
-    width: 100%; 
+/* Fita contínua horizontal */
+.trilho-banners {
+    display: flex;
+    width: 100%;
     height: 100%;
-    opacity: 0;
-    transition: opacity 0.8s ease-in-out;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+}
+
+/* Cada banner fica lado a lado na fita */
+.slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
     background-size: cover;
     background-position: center;
+    background-repeat: no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     padding: 0 20px;
-}
-
-.slide.ativo { 
-    opacity: 1; 
-    z-index: 10; 
+    box-sizing: border-box;
 }
 
 .slide-content {
@@ -37,45 +44,106 @@
     align-items: center;
     gap: 15px;
     max-width: 800px;
+    z-index: 2;
 }
 
 .slide-content h1 { 
-    font-size: 54px; 
-    color: var(--dourado); 
+    font-size: clamp(26px, 4.5vw, 54px); 
+    color: var(--dourado, #d4af37); 
     text-transform: uppercase; 
     margin: 0;
     font-weight: 900;
     line-height: 1.1;
     text-shadow: 0 3px 12px rgba(0,0,0,0.8);
+    pointer-events: none; /* Não bloqueia o toque do dedo */
 }
 
 .slide-content p { 
-    font-size: 18px; 
-    color: var(--branco); 
+    font-size: clamp(13px, 2vw, 18px); 
+    color: var(--branco, #fff); 
     margin: 0; 
     background: rgba(0, 0, 0, 0.65); 
     padding: 8px 18px; 
     border-radius: 4px; 
     display: inline-block;
-    border-left: 3px solid var(--dourado);
+    border-left: 3px solid var(--dourado, #d4af37);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    pointer-events: none; /* Não bloqueia o toque do dedo */
 }
 
 .btn-dourado {
-    background-color: var(--dourado);
-    color: var(--preto);
+    background-color: var(--dourado, #d4af37);
+    color: var(--preto, #000);
     padding: 14px 35px;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 900;
     text-transform: uppercase;
     border-radius: 4px;
     transition: background-color 0.3s, transform 0.2s;
     text-decoration: none;
     display: inline-block;
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+    pointer-events: auto; /* Permite clicar no botão normalmente */
 }
 
 .btn-dourado:hover { 
     background-color: #b5952f; 
     transform: translateY(-2px);
+}
+
+/* SETAS DO COMPUTADOR / NOTEBOOK */
+.btn-banner-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    color: var(--dourado, #d4af37);
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+}
+
+.btn-banner-nav:hover {
+    background: rgba(0, 0, 0, 0.85);
+    border-color: var(--dourado, #d4af37);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.btn-banner-prev { left: 20px; }
+.btn-banner-next { right: 20px; }
+
+/* BOLINHAS INDICADORAS */
+.carrossel-indicadores {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.ponto-ind {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.ponto-ind.ativo {
+    background: var(--dourado, #d4af37);
+    width: 22px;
+    border-radius: 10px;
 }
 
 /* =========================================
@@ -88,7 +156,7 @@
 .produtos h2 {
     text-align: center;
     font-size: 32px;
-    color: var(--dourado);
+    color: var(--dourado, #d4af37);
     margin-bottom: 40px;
     font-weight: 900;
     text-transform: uppercase;
@@ -101,9 +169,8 @@
     gap: 25px;
 }
 
-/* Cards de produto na vitrine */
 .grid-produtos .card-produto {
-    background-color: var(--preto-claro);
+    background-color: var(--preto-claro, #111);
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid #222;
@@ -114,7 +181,7 @@
 
 .grid-produtos .card-produto:hover {
     transform: translateY(-4px);
-    border-color: var(--dourado);
+    border-color: var(--dourado, #d4af37);
 }
 
 /* =========================================
@@ -131,9 +198,9 @@
 }
 
 .toast {
-    background-color: var(--preto-claro);
-    color: var(--branco);
-    border-left: 5px solid var(--dourado);
+    background-color: var(--preto-claro, #111);
+    color: var(--branco, #fff);
+    border-left: 5px solid var(--dourado, #d4af37);
     padding: 14px 22px;
     border-radius: 4px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.8);
@@ -147,7 +214,7 @@
 }
 
 .toast span { 
-    color: var(--dourado); 
+    color: var(--dourado, #d4af37); 
     font-size: 18px; 
 }
 
@@ -160,10 +227,13 @@
    RESPONSIVIDADE (MOBILE / CELULARES)
    ========================================= */
 @media (max-width: 768px) {
-    /* Banner Hero no celular */
+    /* Banner Hero no celular com altura exata e setas ocultas */
     .carrossel-container {
-        height: 50vh;
-        min-height: 380px;
+        height: 340px;
+    }
+
+    .btn-banner-nav {
+        display: none !important;
     }
 
     .slide-content {
@@ -172,17 +242,17 @@
     }
 
     .slide-content h1 { 
-        font-size: 28px; 
+        font-size: 26px; 
     }
 
     .slide-content p { 
-        font-size: 14px; 
+        font-size: 13px; 
         padding: 6px 12px;
     }
 
     .btn-dourado {
-        padding: 12px 24px;
-        font-size: 14px;
+        padding: 10px 22px;
+        font-size: 13px;
     }
 
     /* Vitrine no celular */
@@ -195,13 +265,11 @@
         margin-bottom: 25px;
     }
 
-    /* Vitrine lado a lado em 2 colunas */
     .grid-produtos {
         grid-template-columns: repeat(2, 1fr); 
         gap: 12px; 
     }
 
-    /* Ajuste fino dos elementos internos do card no mobile */
     .grid-produtos .card-produto img.imagem-produto {
         height: 210px !important;
     }
@@ -227,147 +295,10 @@
         font-size: 12px !important;
     }
 
-    /* Toasts posicionados no rodapé em telas móveis */
     #toast-container { 
         top: auto; 
         bottom: 25px; 
         right: 12px; 
         left: 12px; 
     }
-}
-/* CONTAINER E ALTURA ELEGANTE DO BANNER */
-.carrossel-container {
-    position: relative;
-    width: 100%;
-    height: 480px; /* Altura ideal: não esmaga e não ocupa a tela inteira */
-    overflow: hidden;
-    background: #000;
-}
-
-.trilho-banners {
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-
-/* CADA SLIDE/BANNER */
-.carrossel-container .slide {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.6s ease-in-out, visibility 0.6s ease-in-out;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.carrossel-container .slide.ativo {
-    opacity: 1;
-    visibility: visible;
-    z-index: 2;
-}
-
-/* CONTEÚDO CENTRAL DO BANNER */
-.slide-content {
-    text-align: center;
-    max-width: 650px;
-    padding: 0 20px;
-    z-index: 3;
-}
-
-.slide-content h1 {
-    font-size: clamp(26px, 4.5vw, 44px);
-    font-weight: 900;
-    color: var(--dourado, #d4af37);
-    margin: 0 0 10px 0;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.8);
-}
-
-.slide-content p {
-    font-size: clamp(13px, 2vw, 16px);
-    color: #f0f0f0;
-    margin: 0 0 22px 0;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
-}
-
-.slide-content .btn-dourado {
-    display: inline-block;
-    background: var(--dourado, #d4af37);
-    color: #000;
-    font-weight: 800;
-    padding: 12px 28px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-size: 13px;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
-    transition: transform 0.2s, background 0.2s;
-}
-
-.slide-content .btn-dourado:hover {
-    transform: translateY(-2px);
-    background: #e5bd3b;
-}
-
-/* SETAS LATERAIS (DESKTOP) */
-.btn-banner-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(212, 175, 55, 0.4);
-    color: var(--dourado, #d4af37);
-    font-size: 20px;
-    cursor: pointer;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.25s ease;
-    user-select: none;
-}
-
-.btn-banner-nav:hover {
-    background: rgba(0, 0, 0, 0.85);
-    border-color: var(--dourado, #d4af37);
-    transform: translateY(-50%) scale(1.1);
-}
-
-.btn-banner-prev {
-    left: 20px;
-}
-
-.btn-banner-next {
-    right: 20px;
-}
-
-/* NO CELULAR: Ajusta a altura e esconde as setas para deslizar com o dedo */
-@media (max-width: 768px) {
-    .carrossel-container {
-        height: 380px;
-    }
-    .btn-banner-nav {
-        display: none !important;
-    }
-}
-.carrossel-container {
-    touch-action: pan-y !important; /* Liberta a rolagem vertical e permite arrastar na horizontal */
-    -webkit-user-select: none;
-    user-select: none;
-}
-
-.slide-content h1,
-.slide-content p {
-    pointer-events: none; /* Impede que o texto bloqueie o arrastar do dedo no telemóvel */
 }

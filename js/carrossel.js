@@ -1,6 +1,6 @@
 /* =====================================================
-   CARROSSEL DE BANNERS RESPONSIVO - VR MODAS
-   Automático + Setas (Desktop) + Deslize por Toque (Mobile)
+   CARROSSEL DE BANNERS - VR MODAS
+   Deslize Contínuo (Swipe) + 3s Automático + Setas Desktop
    ===================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,18 +8,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const trilho = document.getElementById('trilho-banners') || container;
     const btnPrev = document.getElementById('btn-banner-prev');
     const btnNext = document.getElementById('btn-banner-next');
+    const containerIndicadores = document.getElementById('carrossel-indicadores');
 
     if (!container) return;
 
+    let slideAtual = 0;
+    let timerAuto = null;
+    const TEMPO_ROTATIVO = 3000; // Passa sozinho a cada 3 segundos!
+
     const banners = JSON.parse(localStorage.getItem('vr_modas_banners')) || [];
 
-    // Renderiza se houver banners guardados no painel
+    // Se houver banners salvos no admin, desenha no trilho
     if (banners.length > 0) {
         trilho.innerHTML = '';
-        banners.forEach((banner, index) => {
-            const ativoClass = index === 0 ? 'ativo' : '';
+        banners.forEach(banner => {
             trilho.insertAdjacentHTML('beforeend', `
-                <div class="slide ${ativoClass}" style="background-image: linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)), url('${banner.imagem}');">
+                <div class="slide" style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('${banner.imagem}');">
                     <div class="slide-content">
                         <h1>${banner.titulo}</h1>
                         <p>${banner.subtitulo}</p>
@@ -30,47 +34,68 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const slides = trilho.querySelectorAll('.slide');
-    if (slides.length <= 1) {
+    let slides = trilho.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+
+    if (totalSlides <= 1) {
         if (btnPrev) btnPrev.style.display = 'none';
         if (btnNext) btnNext.style.display = 'none';
         return;
     }
 
-    let slideAtual = 0;
-    let timer = null;
-    const TEMPO_ROTATIVO = 5000;
-
-    function mostrarSlide(novoIndice) {
-        slides[slideAtual].classList.remove('ativo');
-        slideAtual = (novoIndice + slides.length) % slides.length;
-        slides[slideAtual].classList.add('ativo');
-    }
-
-    function proximo() {
-        mostrarSlide(slideAtual + 1);
-    }
-
-    function anterior() {
-        mostrarSlide(slideAtual - 1);
-    }
-
-    function iniciarAuto() {
-        pararAuto();
-        timer = setInterval(proximo, TEMPO_ROTATIVO);
-    }
-
-    function pararAuto() {
-        if (timer) {
-            clearInterval(timer);
-            timer = null;
+    // Cria as bolinhas indicadoras
+    if (containerIndicadores) {
+        containerIndicadores.innerHTML = '';
+        for (let i = 0; i < totalSlides; i++) {
+            const p = document.createElement('div');
+            p.className = `ponto-ind ${i === 0 ? 'ativo' : ''}`;
+            p.onclick = () => {
+                irPara(i);
+                iniciarAuto();
+            };
+            containerIndicadores.appendChild(p);
         }
     }
 
-    // Navegação por Setas no Computador
+    function atualizarIndicadores() {
+        if (!containerIndicadores) return;
+        const pontos = containerIndicadores.querySelectorAll('.ponto-ind');
+        pontos.forEach((p, idx) => {
+            p.classList.toggle('ativo', idx === slideAtual);
+        });
+    }
+
+    // Move fisicamente a fita para o lado
+    function irPara(indice) {
+        slideAtual = (indice + totalSlides) % totalSlides;
+        trilho.style.transform = `translateX(-${slideAtual * 100}%)`;
+        atualizarIndicadores();
+    }
+
+    function proximo() {
+        irPara(slideAtual + 1);
+    }
+
+    function anterior() {
+        irPara(slideAtual - 1);
+    }
+
+    // Automático de 3 segundos
+    function iniciarAuto() {
+        pararAuto();
+        timerAuto = setInterval(proximo, TEMPO_ROTATIVO);
+    }
+
+    function pararAuto() {
+        if (timerAuto) {
+            clearInterval(timerAuto);
+            timerAuto = null;
+        }
+    }
+
+    // Setas no Computador
     if (btnNext) {
         btnNext.onclick = (e) => {
-            e.preventDefault();
             e.stopPropagation();
             proximo();
             iniciarAuto();
@@ -79,19 +104,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnPrev) {
         btnPrev.onclick = (e) => {
-            e.preventDefault();
             e.stopPropagation();
             anterior();
             iniciarAuto();
         };
     }
 
-    // Pausa no hover para computador
+    // Pausa no hover para o notebook
     container.addEventListener('mouseenter', pararAuto);
     container.addEventListener('mouseleave', iniciarAuto);
 
     // ==========================================
-    // SISTEMA DE TOQUE / SWIPE (TELEMÓVEL)
+    // DESLIZE COM O DEDO NO CELULAR (SWIPE)
     // ==========================================
     let touchStartX = 0;
     let touchStartY = 0;
@@ -103,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         touchStartY = e.changedTouches[0].screenY;
         touchEndX = touchStartX;
         touchEndY = touchStartY;
-        pararAuto();
+        pararAuto(); // Se o cliente encostou o dedo para olhar, pausa o timer
     }, { passive: true });
 
     container.addEventListener('touchmove', (e) => {
@@ -111,27 +135,28 @@ document.addEventListener('DOMContentLoaded', () => {
         touchEndY = e.changedTouches[0].screenY;
     }, { passive: true });
 
-    function verificarGesto() {
+    container.addEventListener('touchend', () => {
         const diffX = touchStartX - touchEndX;
         const diffY = touchStartY - touchEndY;
-        const LIMIAR_MINIMO = 35; // Distância mínima do dedo em píxeis
+        const DISTANCIA_MINIMA = 35; // Sensibilidade do arrasto do dedo
 
-        // Confirma que o movimento foi horizontal e não vertical
-        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > LIMIAR_MINIMO) {
+        // Só aciona se o movimento foi horizontal (não atrapalha o scroll da página)
+        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > DISTANCIA_MINIMA) {
             if (diffX > 0) {
-                // Deslizou para a esquerda -> Avança para o próximo
+                // Passou o dedo para a esquerda -> próximo banner
                 proximo();
             } else {
-                // Deslizou para a direita -> Volta para o anterior
+                // Passou o dedo para a direita -> banner anterior
                 anterior();
             }
         }
-        iniciarAuto();
-    }
 
-    container.addEventListener('touchend', verificarGesto, { passive: true });
+        // Volta a rodar sozinho a cada 3 segundos a partir do banner que o cliente parou
+        iniciarAuto();
+    }, { passive: true });
+
     container.addEventListener('touchcancel', iniciarAuto, { passive: true });
 
-    // Inicia a rotação automática
+    // Inicia na abertura da página
     iniciarAuto();
 });
