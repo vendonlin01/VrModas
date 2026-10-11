@@ -18,6 +18,97 @@
             opacity: 1 !important;
         }
 
+        /* =========================================
+           BARRA SOCIAL: ESTRELAS + BOTÃO CORAÇÃO
+           ========================================= */
+        .barra-social-produto {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            width: 100% !important;
+            margin: 6px 0 14px 0 !important;
+            padding-bottom: 8px !important;
+            border-bottom: 1px solid #222 !important;
+        }
+
+        .bloco-estrelas-link {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            cursor: pointer !important;
+            user-select: none !important;
+        }
+
+        .estrelas-icones {
+            display: flex !important;
+            gap: 2px !important;
+            font-size: 16px !important;
+            line-height: 1 !important;
+        }
+
+        .estrelas-icones .est-item {
+            color: #444;
+            transition: color 0.2s;
+        }
+
+        .estrelas-icones .est-item.cheia {
+            color: var(--dourado, #d4af37) !important;
+        }
+
+        .texto-qtd-av {
+            font-size: 12px !important;
+            color: #aaa !important;
+            font-weight: 600 !important;
+        }
+
+        /* Botão Coração */
+        .btn-coracao-fav {
+            background: #181818 !important;
+            border: 1px solid #333 !important;
+            width: 40px !important;
+            height: 40px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            padding: 0 !important;
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .btn-coracao-fav:active {
+            transform: scale(0.9);
+        }
+
+        .btn-coracao-fav .svg-coracao {
+            width: 20px !important;
+            height: 20px !important;
+            fill: transparent !important;
+            stroke: var(--dourado, #d4af37) !important;
+            stroke-width: 2 !important;
+            pointer-events: none !important;
+            transition: fill 0.25s, stroke 0.25s;
+        }
+
+        .btn-coracao-fav.ativo {
+            background: rgba(255, 51, 75, 0.15) !important;
+            border-color: #ff334b !important;
+        }
+
+        .btn-coracao-fav.ativo .svg-coracao {
+            fill: #ff334b !important;
+            stroke: #ff334b !important;
+            animation: pulsoFav 0.3s ease-out;
+        }
+
+        @keyframes pulsoFav {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.35); }
+            100% { transform: scale(1); }
+        }
+
         /* Estilos do Modal de Medidas */
         .modal-backdrop {
             position: fixed;
@@ -236,26 +327,27 @@
             <div class="info-produto">
                 <h1 id="detalhe-nome">Carregando peça...</h1>
 
-                <!-- LINHA DE AVALIAÇÕES + CORAÇÃO DE FAVORITOS -->
-                <div class="linha-avaliacao-favorito">
-                    <div class="bloco-estrelas-produto" id="link-avaliacoes" title="Ver avaliações">
+                <!-- BARRA ELEGANTE LADO A LADO: ESTRELAS NA ESQUERDA, CORAÇÃO NA DIREITA -->
+                <div class="barra-social-produto">
+                    <div class="bloco-estrelas-link" id="link-avaliacoes" title="Ver avaliações">
                         <div class="estrelas-icones" id="detalhe-estrelas">
-                            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+                            <span class="est-item">★</span>
+                            <span class="est-item">★</span>
+                            <span class="est-item">★</span>
+                            <span class="est-item">★</span>
+                            <span class="est-item">★</span>
                         </div>
-                        <span class="qtd-avaliacoes" id="detalhe-qtd-avaliacoes">Sem avaliações</span>
+                        <span class="texto-qtd-av" id="detalhe-qtd-avaliacoes">Carregando...</span>
                     </div>
 
-                    <!-- Botão de Coração Funcional -->
-                    <button type="button" class="btn-favorito-detalhes" id="btn-favorito-detalhes"
-                        aria-label="Favoritar">
-                        <svg class="icone-coracao" viewBox="0 0 24 24" width="22" height="22">
-                            <path
-                                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                    <button type="button" class="btn-coracao-fav" id="btn-favorito-detalhes" aria-label="Favoritar peça">
+                        <svg viewBox="0 0 24 24" class="svg-coracao">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                         </svg>
                     </button>
                 </div>
+
                 <p class="preco" id="detalhe-preco">R$ 0,00</p>
-                <p class="descricao" id="detalhe-descricao"></p>
                 <p class="descricao" id="detalhe-descricao"></p>
 
                 <!-- Tamanhos e Guia de Medidas -->
@@ -290,7 +382,7 @@
         </section>
 
         <!-- Bloco Inferior: Avaliações -->
-        <section class="secao-avaliacoes">
+        <section class="secao-avaliacoes" id="secao-avaliacoes">
             <div class="topo-avaliacoes">
                 <div>
                     <h2>Avaliações dos Clientes</h2>
@@ -409,7 +501,7 @@
     <script src="js/favoritos.js"></script>
     <script src="js/sacola.js"></script>
 
-    <!-- SCRIPT GERAL DE INTERAÇÃO (PRODUTO, MODAL E AVALIAÇÕES) -->
+    <!-- SCRIPT GERAL DE INTERAÇÃO -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
@@ -422,6 +514,11 @@
                 prod = db.find(p => String(p.id).trim() === String(idUrl).trim());
             }
             if (!prod && db.length > 0) prod = db[0];
+
+            const prodIdFinal = prod ? String(prod.id) : (idUrl || '1');
+            const nomeFinal = prod ? prod.nome : 'Vestido Premium';
+            const precoFinal = prod ? (prod.precoPromocional || prod.preco) : 149.90;
+            let fotoFinal = 'img/produto1.jpg';
 
             if (prod) {
                 // Título e Preço
@@ -448,9 +545,10 @@
 
                 // Imagem Principal
                 let fotos = (prod.imagens && prod.imagens.length > 0) ? prod.imagens : [prod.imagem || 'img/produto1.jpg'];
+                fotoFinal = fotos[0];
                 const imgEl = document.getElementById('detalhe-img');
                 if (imgEl) {
-                    imgEl.src = fotos[0];
+                    imgEl.src = fotoFinal;
                     imgEl.onerror = () => { imgEl.src = 'img/produto1.jpg'; };
                 }
 
@@ -515,7 +613,190 @@
             }
 
             // ==========================================
-            // 1. MODAL DO GUIA DE MEDIDAS
+            // 1. SINCRONIZAÇÃO DAS ESTRELAS DO TOPO
+            // ==========================================
+            function atualizarEstrelasTopo(avaliacoes) {
+                const txtQtd = document.getElementById('detalhe-qtd-avaliacoes');
+                const estrelasSpans = document.querySelectorAll('#detalhe-estrelas .est-item');
+
+                if (avaliacoes.length > 0) {
+                    const soma = avaliacoes.reduce((acc, a) => acc + (Number(a.nota) || 5), 0);
+                    const media = Math.round(soma / avaliacoes.length);
+
+                    if (txtQtd) {
+                        txtQtd.innerHTML = `<strong>${media}.0</strong> (${avaliacoes.length} ${avaliacoes.length === 1 ? 'avaliação' : 'avaliações'})`;
+                        txtQtd.style.color = '#fff';
+                    }
+
+                    estrelasSpans.forEach((span, i) => {
+                        span.classList.toggle('cheia', i < media);
+                    });
+                } else {
+                    if (txtQtd) {
+                        txtQtd.innerText = 'Sem avaliações';
+                        txtQtd.style.color = '#777';
+                    }
+                    estrelasSpans.forEach(span => span.classList.remove('cheia'));
+                }
+            }
+
+            const linkAv = document.getElementById('link-avaliacoes');
+            if (linkAv) {
+                linkAv.onclick = () => {
+                    const sec = document.getElementById('secao-avaliacoes');
+                    if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+                };
+            }
+
+            // ==========================================
+            // 2. BOTÃO DO CORAÇÃO (FAVORITOS)
+            // ==========================================
+            const btnFav = document.getElementById('btn-favorito-detalhes');
+            function getFavoritos() {
+                try {
+                    return JSON.parse(localStorage.getItem('vr_modas_favoritos')) || [];
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function setFavoritos(lista) {
+                localStorage.setItem('vr_modas_favoritos', JSON.stringify(lista));
+                document.querySelectorAll('.contador-favoritos').forEach(el => el.innerText = lista.length);
+            }
+
+            if (btnFav) {
+                let favs = getFavoritos();
+                const estaFavoritado = favs.some(f => String(f.id) === prodIdFinal || f.nome === nomeFinal);
+                btnFav.classList.toggle('ativo', estaFavoritado);
+
+                btnFav.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    favs = getFavoritos();
+                    const idx = favs.findIndex(f => String(f.id) === prodIdFinal || f.nome === nomeFinal);
+
+                    if (idx !== -1) {
+                        favs.splice(idx, 1);
+                        btnFav.classList.remove('ativo');
+                    } else {
+                        favs.push({
+                            id: prodIdFinal,
+                            nome: nomeFinal,
+                            preco: precoFinal,
+                            imagem: fotoFinal
+                        });
+                        btnFav.classList.add('ativo');
+                    }
+
+                    setFavoritos(favs);
+                };
+            }
+
+            // ==========================================
+            // 3. CARREGAR E SALVAR AVALIAÇÕES
+            // ==========================================
+            const containerListaAv = document.getElementById('lista-avaliacoes-peca');
+            const formAv = document.getElementById('form-avaliacao-cliente');
+            const btnAbrirFormAv = document.getElementById('btn-abrir-form-avaliacao');
+            const btnCancelarFormAv = document.getElementById('btn-cancelar-av');
+            const estrelasEl = document.querySelectorAll('.estrela-opcao');
+            const inputNotaVal = document.getElementById('nota-avaliacao-val');
+
+            if (btnAbrirFormAv && formAv) {
+                btnAbrirFormAv.onclick = (e) => {
+                    e.preventDefault();
+                    formAv.style.display = (formAv.style.display === 'none' || formAv.style.display === '') ? 'block' : 'none';
+                };
+            }
+            if (btnCancelarFormAv && formAv) {
+                btnCancelarFormAv.onclick = (e) => {
+                    e.preventDefault();
+                    formAv.style.display = 'none';
+                };
+            }
+
+            estrelasEl.forEach(star => {
+                star.onclick = function () {
+                    const val = parseInt(this.getAttribute('data-valor'));
+                    if (inputNotaVal) inputNotaVal.value = val;
+                    estrelasEl.forEach((s, idx) => {
+                        s.classList.toggle('ativa', idx < val);
+                    });
+                };
+            });
+
+            function carregarAvaliacoes() {
+                if (!containerListaAv) return;
+                const todas = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
+                
+                // Filtra por ID ou Nome para conectar com comentários já existentes
+                const daPeca = todas.filter(a => 
+                    String(a.produtoId).trim() === prodIdFinal || 
+                    (a.produtoNome && a.produtoNome.toLowerCase() === nomeFinal.toLowerCase())
+                );
+
+                atualizarEstrelasTopo(daPeca);
+
+                containerListaAv.innerHTML = '';
+                if (daPeca.length === 0) {
+                    containerListaAv.innerHTML = `
+                        <div style="text-align: center; color: #777; padding: 25px 10px; font-size: 13px;">
+                            <p style="margin: 0 0 4px 0;">Esta peça ainda não possui avaliações.</p>
+                            <small>Seja a primeira pessoa a avaliar após sua compra!</small>
+                        </div>
+                    `;
+                    return;
+                }
+
+                daPeca.forEach(av => {
+                    const textoComentario = av.texto || av.comentario || '';
+                    const estrelasTxt = '★'.repeat(av.nota) + '☆'.repeat(5 - av.nota);
+                    containerListaAv.insertAdjacentHTML('beforeend', `
+                        <div class="card-avaliacao-item">
+                            <div class="estrelas-card">${estrelasTxt}</div>
+                            <p class="comentario-card">"${textoComentario}"</p>
+                            <small class="autor-card">— ${av.autor} <span class="badge-verificado">✓ Compra Verificada</span></small>
+                        </div>
+                    `);
+                });
+            }
+
+            carregarAvaliacoes();
+
+            if (formAv) {
+                formAv.onsubmit = function (e) {
+                    e.preventDefault();
+                    const autor = document.getElementById('autor-avaliacao').value.trim();
+                    const texto = document.getElementById('texto-avaliacao').value.trim();
+                    const nota = parseInt(inputNotaVal?.value || '5');
+
+                    if (!autor || !texto) return;
+
+                    const nova = {
+                        id: Date.now(),
+                        produtoId: prodIdFinal,
+                        produtoNome: nomeFinal,
+                        autor,
+                        texto,
+                        nota,
+                        data: new Date().toLocaleDateString('pt-BR')
+                    };
+
+                    const todas = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
+                    todas.unshift(nova);
+                    localStorage.setItem('vr_modas_avaliacoes', JSON.stringify(todas));
+
+                    formAv.reset();
+                    formAv.style.display = 'none';
+                    carregarAvaliacoes();
+                    alert("Obrigada pela sua avaliação! Ela já está visível para todas as clientes.");
+                };
+            }
+
+            // ==========================================
+            // 4. MODAL DO GUIA DE MEDIDAS
             // ==========================================
             const modalGuia = document.getElementById('modal-guia-medidas');
             const btnAbrirGuia = document.getElementById('btn-abrir-guia-medidas');
@@ -537,106 +818,15 @@
                     if (e.target === modalGuia) modalGuia.style.display = 'none';
                 };
             }
-
-            // ==========================================
-            // 2. SISTEMA DE AVALIAÇÕES
-            // ==========================================
-            const produtoIdAtual = prod ? prod.id : (idUrl || 1);
-            const containerListaAv = document.getElementById('lista-avaliacoes-peca');
-            const formAv = document.getElementById('form-avaliacao-cliente');
-            const btnAbrirFormAv = document.getElementById('btn-abrir-form-avaliacao');
-            const btnCancelarFormAv = document.getElementById('btn-cancelar-av');
-            const estrelasEl = document.querySelectorAll('.estrela-opcao');
-            const inputNotaVal = document.getElementById('nota-avaliacao-val');
-
-            // Abrir / Fechar Formulário
-            if (btnAbrirFormAv && formAv) {
-                btnAbrirFormAv.onclick = (e) => {
-                    e.preventDefault();
-                    formAv.style.display = (formAv.style.display === 'none' || formAv.style.display === '') ? 'block' : 'none';
-                };
-            }
-            if (btnCancelarFormAv && formAv) {
-                btnCancelarFormAv.onclick = (e) => {
-                    e.preventDefault();
-                    formAv.style.display = 'none';
-                };
-            }
-
-            // Seleção de Estrelas (1 a 5)
-            estrelasEl.forEach(star => {
-                star.onclick = function () {
-                    const val = parseInt(this.getAttribute('data-valor'));
-                    if (inputNotaVal) inputNotaVal.value = val;
-                    estrelasEl.forEach((s, idx) => {
-                        if (idx < val) s.classList.add('ativa');
-                        else s.classList.remove('ativa');
-                    });
-                };
-            });
-
-            // Carregar Avaliações Salvas
-            function carregarAvaliacoes() {
-                if (!containerListaAv) return;
-                const todas = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
-                const daPeca = todas.filter(a => String(a.produtoId) === String(produtoIdAtual));
-
-                containerListaAv.innerHTML = '';
-                if (daPeca.length === 0) {
-                    containerListaAv.innerHTML = `
-                        <div style="text-align: center; color: #777; padding: 25px 10px; font-size: 13px;">
-                            <p style="margin: 0 0 4px 0;">Esta peça ainda não possui avaliações.</p>
-                            <small>Seja a primeira pessoa a avaliar após sua compra!</small>
-                        </div>
-                    `;
-                    return;
-                }
-
-                daPeca.forEach(av => {
-                    const estrelasTxt = '★'.repeat(av.nota) + '☆'.repeat(5 - av.nota);
-                    containerListaAv.insertAdjacentHTML('beforeend', `
-                        <div class="card-avaliacao-item">
-                            <div class="estrelas-card">${estrelasTxt}</div>
-                            <p class="comentario-card">"${av.texto}"</p>
-                            <small class="autor-card">— ${av.autor} <span class="badge-verificado">✓ Compra Verificada</span></small>
-                        </div>
-                    `);
-                });
-            }
-
-            carregarAvaliacoes();
-
-            // Salvar Nova Avaliação
-            if (formAv) {
-                formAv.onsubmit = function (e) {
-                    e.preventDefault();
-                    const autor = document.getElementById('autor-avaliacao').value.trim();
-                    const texto = document.getElementById('texto-avaliacao').value.trim();
-                    const nota = parseInt(inputNotaVal?.value || '5');
-
-                    if (!autor || !texto) return;
-
-                    const nova = {
-                        id: Date.now(),
-                        produtoId: produtoIdAtual,
-                        autor,
-                        texto,
-                        nota,
-                        data: new Date().toLocaleDateString('pt-BR')
-                    };
-
-                    const todas = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
-                    todas.unshift(nova);
-                    localStorage.setItem('vr_modas_avaliacoes', JSON.stringify(todas));
-
-                    formAv.reset();
-                    formAv.style.display = 'none';
-                    carregarAvaliacoes();
-                    alert("Obrigada pela sua avaliação! Ela já está visível para todas as clientes.");
-                };
-            }
         });
     </script>
+    <!-- Scripts Modulares -->
+    <script src="js/db.js"></script>
+    <script src="js/favoritos.js"></script>
+    <script src="js/sacola.js"></script>
+    <script src="js/detalhes.js"></script>
+</body>
+</html>
 </body>
 
 </html>

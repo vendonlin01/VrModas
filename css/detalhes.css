@@ -67,7 +67,7 @@
 }
 
 .miniatura-foto:hover {
-    border-color: var(--dourado);
+    border-color: var(--dourado, #d4af37);
     transform: translateY(-2px);
 }
 
@@ -82,7 +82,7 @@
 
 .info-produto h1 {
     font-size: 34px;
-    color: var(--branco);
+    color: var(--branco, #fff);
     margin: 0 0 6px 0;
     font-weight: 900;
     line-height: 1.25;
@@ -91,99 +91,135 @@
 }
 
 /* =====================================================
-   ESTRELAS DE AVALIAÇÃO + CORAÇÃO DE FAVORITOS
+   ESTRELAS DE AVALIAÇÃO + CORAÇÃO DE FAVORITOS (UNIFICADO)
    ===================================================== */
-.linha-avaliacao-favorito {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 4px 0 16px 0;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+.linha-avaliacao-favorito,
+.barra-social-produto {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    margin: 6px 0 14px 0 !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-sizing: border-box !important;
 }
 
-.bloco-estrelas-produto {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    user-select: none;
+.bloco-estrelas-produto,
+.bloco-estrelas-link {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    user-select: none !important;
 }
 
 .estrelas-icones {
-    color: var(--dourado);
-    font-size: 15px;
-    letter-spacing: 1px;
-    line-height: 1;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
 }
 
-.nota-media {
-    color: var(--branco);
-    font-size: 13px;
-    font-weight: 700;
+.estrelas-icones span,
+.estrelas-icones .est-item {
+    color: #444;
+    transition: color 0.2s ease;
 }
 
-.qtd-avaliacoes {
-    color: var(--cinza-texto);
-    font-size: 12px;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+.estrelas-icones span.cheia,
+.estrelas-icones .est-item.cheia {
+    color: var(--dourado, #d4af37) !important;
 }
 
-/* Botão de Coração */
-.btn-favorito-detalhes {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    padding: 0;
+.qtd-avaliacoes,
+.texto-qtd-av {
+    color: #aaa !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
 }
 
-.btn-favorito-detalhes:hover {
-    background: rgba(255, 255, 255, 0.12);
-    transform: scale(1.08);
+/* Botão de Coração (Favoritos) */
+.btn-favorito-detalhes,
+.btn-coracao-fav {
+    background: #181818 !important;
+    border: 1px solid #333 !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    outline: none !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    z-index: 10 !important;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
 }
 
-.btn-favorito-detalhes .icone-coracao {
-    fill: transparent;
-    stroke: var(--dourado);
-    stroke-width: 2;
-    transition: all 0.25s ease;
+.btn-favorito-detalhes:hover,
+.btn-coracao-fav:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    transform: scale(1.05);
 }
 
-/* Quando está favoritado */
-.btn-favorito-detalhes.ativo {
-    background: rgba(212, 175, 55, 0.15);
-    border-color: var(--dourado);
+.btn-favorito-detalhes:active,
+.btn-coracao-fav:active {
+    transform: scale(0.9);
 }
 
-.btn-favorito-detalhes.ativo .icone-coracao {
-    fill: #ff334b;
-    stroke: #ff334b;
-    animation: pulsoCoracao 0.3s ease;
+.btn-favorito-detalhes svg,
+.btn-favorito-detalhes path,
+.btn-coracao-fav svg,
+.btn-coracao-fav path {
+    pointer-events: none !important;
 }
 
-@keyframes pulsoCoracao {
+.btn-favorito-detalhes .icone-coracao,
+.btn-coracao-fav .svg-coracao {
+    width: 20px !important;
+    height: 20px !important;
+    fill: transparent !important;
+    stroke: var(--dourado, #d4af37) !important;
+    stroke-width: 2 !important;
+    transition: fill 0.25s ease, stroke 0.25s ease;
+}
+
+/* Quando favoritado */
+.btn-favorito-detalhes.ativo,
+.btn-coracao-fav.ativo {
+    background: rgba(255, 51, 75, 0.15) !important;
+    border-color: #ff334b !important;
+}
+
+.btn-favorito-detalhes.ativo .icone-coracao,
+.btn-coracao-fav.ativo .svg-coracao {
+    fill: #ff334b !important;
+    stroke: #ff334b !important;
+    animation: pulsoFav 0.3s ease-out;
+}
+
+@keyframes pulsoFav {
     0% { transform: scale(1); }
-    50% { transform: scale(1.3); }
+    50% { transform: scale(1.35); }
     100% { transform: scale(1); }
 }
 
 .info-produto .preco {
     font-size: 28px;
-    color: var(--dourado);
+    color: var(--dourado, #d4af37);
     font-weight: 700;
     margin: 0 0 20px 0;
 }
 
 .descricao {
-    color: var(--cinza-texto);
+    color: var(--cinza-texto, #aaa);
     font-size: 14.5px;
     line-height: 1.6;
     margin-bottom: 25px;
@@ -204,7 +240,7 @@
 .tamanhos h4,
 .cores h4,
 .quantidade-container h4 {
-    color: var(--branco);
+    color: var(--branco, #fff);
     font-weight: 700;
     margin: 0;
     font-size: 13px;
@@ -215,7 +251,7 @@
 .btn-link-guia {
     background: none;
     border: none;
-    color: var(--dourado);
+    color: var(--dourado, #d4af37);
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
@@ -243,7 +279,7 @@
     border: 1px solid #333;
     background-color: #121212;
     border-radius: 6px;
-    color: var(--cinza-texto);
+    color: var(--cinza-texto, #aaa);
     cursor: pointer;
     font-weight: 700;
     font-size: 13px;
@@ -252,9 +288,9 @@
 }
 
 .opcoes-tamanho input[type="radio"]:checked + .box-tamanho {
-    background-color: var(--dourado);
+    background-color: var(--dourado, #d4af37);
     color: #000;
-    border-color: var(--dourado);
+    border-color: var(--dourado, #d4af37);
     font-weight: 900;
 }
 
@@ -285,7 +321,7 @@
 }
 
 .opcoes-cor input[type="radio"]:checked + .box-cor {
-    border: 2px solid var(--dourado);
+    border: 2px solid var(--dourado, #d4af37);
     transform: scale(1.15);
     box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
 }
@@ -307,7 +343,7 @@
 
 .btn-qtd {
     background-color: #181818;
-    color: var(--dourado);
+    color: var(--dourado, #d4af37);
     border: none;
     width: 44px;
     height: 44px;
@@ -329,7 +365,7 @@
     text-align: center;
     border: none;
     background-color: transparent;
-    color: var(--branco);
+    color: var(--branco, #fff);
     font-size: 16px;
     font-weight: 700;
     outline: none;
@@ -340,7 +376,7 @@
     max-width: 400px;
     padding: 16px;
     font-size: 14px;
-    background: linear-gradient(135deg, var(--dourado) 0%, #b5952f 100%);
+    background: linear-gradient(135deg, var(--dourado, #d4af37) 0%, #b5952f 100%);
     color: #000;
     text-transform: uppercase;
     font-weight: 900;
@@ -376,12 +412,12 @@
 
 .topo-avaliacoes h2 {
     font-size: 22px;
-    color: var(--branco);
+    color: var(--branco, #fff);
     margin: 0 0 5px 0;
 }
 
 .subtexto-avaliacoes {
-    color: var(--cinza-texto);
+    color: var(--cinza-texto, #aaa);
     font-size: 13px;
     margin: 0;
 }
@@ -389,7 +425,7 @@
 .btn-avaliar-peca {
     background: #181818;
     border: 1px solid #333;
-    color: var(--dourado);
+    color: var(--dourado, #d4af37);
     padding: 10px 16px;
     border-radius: 6px;
     font-size: 12px;
@@ -400,7 +436,7 @@
 }
 
 .btn-avaliar-peca:hover {
-    border-color: var(--dourado);
+    border-color: var(--dourado, #d4af37);
     background: rgba(212, 175, 55, 0.08);
 }
 
@@ -417,7 +453,7 @@
     margin-top: 0;
     margin-bottom: 15px;
     font-size: 16px;
-    color: var(--branco);
+    color: var(--branco, #fff);
 }
 
 .seletor-estrelas-input {
@@ -442,7 +478,7 @@
 }
 
 .estrela-opcao.ativa {
-    color: var(--dourado);
+    color: var(--dourado, #d4af37);
 }
 
 .grupo-campo-av {
@@ -465,7 +501,7 @@
 
 .grupo-campo-av input:focus,
 .grupo-campo-av textarea:focus {
-    border-color: var(--dourado);
+    border-color: var(--dourado, #d4af37);
 }
 
 .acoes-form-av {
@@ -474,7 +510,7 @@
 }
 
 .btn-enviar-av {
-    background: var(--dourado);
+    background: var(--dourado, #d4af37);
     color: #000;
     border: none;
     padding: 11px 18px;
@@ -510,7 +546,7 @@
 }
 
 .estrelas-card {
-    color: var(--dourado);
+    color: var(--dourado, #d4af37);
     font-size: 16px;
     margin-bottom: 8px;
 }
@@ -576,7 +612,7 @@
 .modal-conteudo {
     background: #141414;
     border: 1px solid #333;
-    border-top: 3px solid var(--dourado);
+    border-top: 3px solid var(--dourado, #d4af37);
     border-radius: 10px;
     max-width: 480px;
     width: 100%;
@@ -618,7 +654,7 @@
 
 .tabela-medidas-app th {
     background: #202020;
-    color: var(--dourado);
+    color: var(--dourado, #d4af37);
     padding: 10px;
     font-size: 12px;
 }
@@ -629,7 +665,7 @@
 }
 
 /* =====================================================
-   4. ADAPTAÇÃO PARA TELEMÓVEL (MOBILE VIEW)
+   4. ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS (MOBILE)
    ===================================================== */
 @media (max-width: 768px) {
     .detalhes-wrapper {
@@ -642,15 +678,20 @@
     }
 
     .img-principal {
-        height: 400px;
+        height: 380px;
     }
 
     .info-produto h1 {
         font-size: 22px;
     }
 
-    .linha-avaliacao-favorito {
-        margin: 2px 0 12px 0;
+    .linha-avaliacao-favorito,
+    .barra-social-produto {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        margin: 4px 0 12px 0 !important;
     }
 
     .info-produto .preco {
@@ -676,14 +717,4 @@
     .grid-avaliacoes {
         grid-template-columns: 1fr;
     }
-}
-.btn-favorito-detalhes svg,
-.btn-favorito-detalhes path {
-    pointer-events: none !important;
-}
-
-.btn-favorito-detalhes {
-    cursor: pointer;
-    z-index: 10;
-    position: relative;
 }
