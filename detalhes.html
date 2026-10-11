@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="./css/detalhes.css">
     <link rel="stylesheet" href="./css/gavetas.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
-    
+
     <style>
         #container-detalhes {
             display: block !important;
@@ -29,6 +29,7 @@
             z-index: 9999;
             backdrop-filter: blur(4px);
         }
+
         .modal-conteudo {
             background: #141414;
             border: 1px solid #333;
@@ -37,8 +38,9 @@
             max-width: 480px;
             width: 90%;
             color: #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
         }
+
         .modal-topo {
             display: flex;
             justify-content: space-between;
@@ -47,11 +49,13 @@
             border-bottom: 1px solid #2a2a2a;
             padding-bottom: 10px;
         }
+
         .modal-topo h3 {
             margin: 0;
             color: var(--dourado, #d4af37);
             font-size: 16px;
         }
+
         .btn-fechar-modal {
             background: none;
             border: none;
@@ -60,16 +64,20 @@
             cursor: pointer;
             line-height: 1;
         }
+
         .tabela-medidas-app {
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
             text-align: center;
         }
-        .tabela-medidas-app th, .tabela-medidas-app td {
+
+        .tabela-medidas-app th,
+        .tabela-medidas-app td {
             padding: 10px;
             border: 1px solid #2a2a2a;
         }
+
         .tabela-medidas-app th {
             background: #1f1f1f;
             color: var(--dourado, #d4af37);
@@ -83,17 +91,20 @@
             padding: 18px;
             margin-top: 15px;
         }
+
         .form-avaliacao-box h3 {
             margin-top: 0;
             color: var(--dourado, #d4af37);
             font-size: 15px;
         }
+
         .seletor-estrelas-input {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 12px;
         }
+
         .estrelas-clique {
             display: flex;
             gap: 4px;
@@ -101,17 +112,22 @@
             cursor: pointer;
             user-select: none;
         }
+
         .estrela-opcao {
             color: #555;
             transition: color 0.2s;
         }
+
         .estrela-opcao.ativa {
             color: #fbc02d;
         }
+
         .grupo-campo-av {
             margin-bottom: 10px;
         }
-        .grupo-campo-av input, .grupo-campo-av textarea {
+
+        .grupo-campo-av input,
+        .grupo-campo-av textarea {
             width: 100%;
             box-sizing: border-box;
             background: #0a0a0a;
@@ -122,10 +138,12 @@
             font-family: inherit;
             font-size: 12px;
         }
+
         .acoes-form-av {
             display: flex;
             gap: 10px;
         }
+
         .btn-enviar-av {
             background: var(--dourado, #d4af37);
             color: #000;
@@ -135,6 +153,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         .btn-cancelar-av {
             background: #2a2a2a;
             color: #fff;
@@ -143,6 +162,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         .card-avaliacao-item {
             background: #141414;
             border: 1px solid #222;
@@ -150,21 +170,25 @@
             padding: 14px;
             margin-top: 10px;
         }
+
         .estrelas-card {
             color: #fbc02d;
             font-size: 14px;
             margin-bottom: 6px;
         }
+
         .comentario-card {
             font-size: 13px;
             color: #ccc;
             margin: 0 0 6px 0;
             font-style: italic;
         }
+
         .autor-card {
             font-size: 11px;
             color: #777;
         }
+
         .badge-verificado {
             color: #4caf50;
             font-weight: bold;
@@ -211,14 +235,35 @@
             <!-- Informações e Seletores -->
             <div class="info-produto">
                 <h1 id="detalhe-nome">Carregando peça...</h1>
+
+                <!-- LINHA DE AVALIAÇÕES + CORAÇÃO DE FAVORITOS -->
+                <div class="linha-avaliacao-favorito">
+                    <div class="bloco-estrelas-produto" id="link-avaliacoes" title="Ver avaliações">
+                        <div class="estrelas-icones" id="detalhe-estrelas">
+                            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+                        </div>
+                        <span class="qtd-avaliacoes" id="detalhe-qtd-avaliacoes">Sem avaliações</span>
+                    </div>
+
+                    <!-- Botão de Coração Funcional -->
+                    <button type="button" class="btn-favorito-detalhes" id="btn-favorito-detalhes"
+                        aria-label="Favoritar">
+                        <svg class="icone-coracao" viewBox="0 0 24 24" width="22" height="22">
+                            <path
+                                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                        </svg>
+                    </button>
+                </div>
                 <p class="preco" id="detalhe-preco">R$ 0,00</p>
+                <p class="descricao" id="detalhe-descricao"></p>
                 <p class="descricao" id="detalhe-descricao"></p>
 
                 <!-- Tamanhos e Guia de Medidas -->
                 <div class="tamanhos">
                     <div class="topo-tamanhos">
                         <h4>Tamanhos Disponíveis</h4>
-                        <button type="button" id="btn-abrir-guia-medidas" class="btn-link-guia" style="cursor: pointer;">📐 Guia de Medidas</button>
+                        <button type="button" id="btn-abrir-guia-medidas" class="btn-link-guia"
+                            style="cursor: pointer;">📐 Guia de Medidas</button>
                     </div>
                     <div class="opcoes-tamanho" id="detalhe-tamanhos"></div>
                 </div>
@@ -251,7 +296,8 @@
                     <h2>Avaliações dos Clientes</h2>
                     <p class="subtexto-avaliacoes">Opiniões de quem já comprou esta peça na VR Modas.</p>
                 </div>
-                <button type="button" id="btn-abrir-form-avaliacao" class="btn-avaliar-peca" style="cursor: pointer;">⭐ Deixar Avaliação</button>
+                <button type="button" id="btn-abrir-form-avaliacao" class="btn-avaliar-peca" style="cursor: pointer;">⭐
+                    Deixar Avaliação</button>
             </div>
 
             <form id="form-avaliacao-cliente" class="form-avaliacao-box" style="display: none;">
@@ -273,7 +319,8 @@
                 </div>
 
                 <div class="grupo-campo-av">
-                    <textarea id="texto-avaliacao" rows="3" placeholder="Conte como foi sua experiência com a peça..." required></textarea>
+                    <textarea id="texto-avaliacao" rows="3" placeholder="Conte como foi sua experiência com a peça..."
+                        required></textarea>
                 </div>
 
                 <div class="acoes-form-av">
@@ -296,13 +343,38 @@
             </div>
             <table class="tabela-medidas-app">
                 <thead>
-                    <tr><th>Tamanho</th><th>Busto</th><th>Cintura</th><th>Quadril</th></tr>
+                    <tr>
+                        <th>Tamanho</th>
+                        <th>Busto</th>
+                        <th>Cintura</th>
+                        <th>Quadril</th>
+                    </tr>
                 </thead>
                 <tbody>
-                    <tr><td><strong>P (38)</strong></td><td>84 - 88</td><td>66 - 70</td><td>94 - 98</td></tr>
-                    <tr><td><strong>M (40)</strong></td><td>89 - 94</td><td>71 - 76</td><td>99 - 104</td></tr>
-                    <tr><td><strong>G (42)</strong></td><td>95 - 100</td><td>77 - 82</td><td>105 - 110</td></tr>
-                    <tr><td><strong>GG (44)</strong></td><td>101 - 106</td><td>83 - 88</td><td>111 - 116</td></tr>
+                    <tr>
+                        <td><strong>P (38)</strong></td>
+                        <td>84 - 88</td>
+                        <td>66 - 70</td>
+                        <td>94 - 98</td>
+                    </tr>
+                    <tr>
+                        <td><strong>M (40)</strong></td>
+                        <td>89 - 94</td>
+                        <td>71 - 76</td>
+                        <td>99 - 104</td>
+                    </tr>
+                    <tr>
+                        <td><strong>G (42)</strong></td>
+                        <td>95 - 100</td>
+                        <td>77 - 82</td>
+                        <td>105 - 110</td>
+                    </tr>
+                    <tr>
+                        <td><strong>GG (44)</strong></td>
+                        <td>101 - 106</td>
+                        <td>83 - 88</td>
+                        <td>111 - 116</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -493,7 +565,7 @@
 
             // Seleção de Estrelas (1 a 5)
             estrelasEl.forEach(star => {
-                star.onclick = function() {
+                star.onclick = function () {
                     const val = parseInt(this.getAttribute('data-valor'));
                     if (inputNotaVal) inputNotaVal.value = val;
                     estrelasEl.forEach((s, idx) => {
@@ -536,7 +608,7 @@
 
             // Salvar Nova Avaliação
             if (formAv) {
-                formAv.onsubmit = function(e) {
+                formAv.onsubmit = function (e) {
                     e.preventDefault();
                     const autor = document.getElementById('autor-avaliacao').value.trim();
                     const texto = document.getElementById('texto-avaliacao').value.trim();

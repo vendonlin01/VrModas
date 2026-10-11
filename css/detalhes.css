@@ -11,7 +11,7 @@
 }
 
 /* =====================================================
-   1. BLOCO SUPERIOR: DUAS COLUNAS LADO A LADO NO DESKTOP
+1. BLOCO SUPERIOR: DUAS COLUNAS LADO A LADO NO DESKTOP
    ===================================================== */
 .produto-view {
     display: grid;
@@ -83,11 +83,96 @@
 .info-produto h1 {
     font-size: 34px;
     color: var(--branco);
-    margin: 0 0 10px 0;
+    margin: 0 0 6px 0;
     font-weight: 900;
     line-height: 1.25;
     word-break: normal;
     overflow-wrap: break-word;
+}
+
+/* =====================================================
+   ESTRELAS DE AVALIAÇÃO + CORAÇÃO DE FAVORITOS
+   ===================================================== */
+.linha-avaliacao-favorito {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bloco-estrelas-produto {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.estrelas-icones {
+    color: var(--dourado);
+    font-size: 15px;
+    letter-spacing: 1px;
+    line-height: 1;
+}
+
+.nota-media {
+    color: var(--branco);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.qtd-avaliacoes {
+    color: var(--cinza-texto);
+    font-size: 12px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+/* Botão de Coração */
+.btn-favorito-detalhes {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    padding: 0;
+}
+
+.btn-favorito-detalhes:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(1.08);
+}
+
+.btn-favorito-detalhes .icone-coracao {
+    fill: transparent;
+    stroke: var(--dourado);
+    stroke-width: 2;
+    transition: all 0.25s ease;
+}
+
+/* Quando está favoritado */
+.btn-favorito-detalhes.ativo {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: var(--dourado);
+}
+
+.btn-favorito-detalhes.ativo .icone-coracao {
+    fill: #ff334b;
+    stroke: #ff334b;
+    animation: pulsoCoracao 0.3s ease;
+}
+
+@keyframes pulsoCoracao {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
 }
 
 .info-produto .preco {
@@ -544,7 +629,7 @@
 }
 
 /* =====================================================
-   4. ADAPTAÇÃO PARA CELULAR (MOBILE VIEW)
+   4. ADAPTAÇÃO PARA TELEMÓVEL (MOBILE VIEW)
    ===================================================== */
 @media (max-width: 768px) {
     .detalhes-wrapper {
@@ -562,6 +647,10 @@
 
     .info-produto h1 {
         font-size: 22px;
+    }
+
+    .linha-avaliacao-favorito {
+        margin: 2px 0 12px 0;
     }
 
     .info-produto .preco {
@@ -587,4 +676,14 @@
     .grid-avaliacoes {
         grid-template-columns: 1fr;
     }
+}
+.btn-favorito-detalhes svg,
+.btn-favorito-detalhes path {
+    pointer-events: none !important;
+}
+
+.btn-favorito-detalhes {
+    cursor: pointer;
+    z-index: 10;
+    position: relative;
 }
