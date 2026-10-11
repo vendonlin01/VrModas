@@ -235,3 +235,129 @@
         left: 12px; 
     }
 }
+/* CONTAINER E ALTURA ELEGANTE DO BANNER */
+.carrossel-container {
+    position: relative;
+    width: 100%;
+    height: 480px; /* Altura ideal: não esmaga e não ocupa a tela inteira */
+    overflow: hidden;
+    background: #000;
+}
+
+.trilho-banners {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* CADA SLIDE/BANNER */
+.carrossel-container .slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.6s ease-in-out, visibility 0.6s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carrossel-container .slide.ativo {
+    opacity: 1;
+    visibility: visible;
+    z-index: 2;
+}
+
+/* CONTEÚDO CENTRAL DO BANNER */
+.slide-content {
+    text-align: center;
+    max-width: 650px;
+    padding: 0 20px;
+    z-index: 3;
+}
+
+.slide-content h1 {
+    font-size: clamp(26px, 4.5vw, 44px);
+    font-weight: 900;
+    color: var(--dourado, #d4af37);
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.8);
+}
+
+.slide-content p {
+    font-size: clamp(13px, 2vw, 16px);
+    color: #f0f0f0;
+    margin: 0 0 22px 0;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.slide-content .btn-dourado {
+    display: inline-block;
+    background: var(--dourado, #d4af37);
+    color: #000;
+    font-weight: 800;
+    padding: 12px 28px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+    transition: transform 0.2s, background 0.2s;
+}
+
+.slide-content .btn-dourado:hover {
+    transform: translateY(-2px);
+    background: #e5bd3b;
+}
+
+/* SETAS LATERAIS (DESKTOP) */
+.btn-banner-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    color: var(--dourado, #d4af37);
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    user-select: none;
+}
+
+.btn-banner-nav:hover {
+    background: rgba(0, 0, 0, 0.85);
+    border-color: var(--dourado, #d4af37);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.btn-banner-prev {
+    left: 20px;
+}
+
+.btn-banner-next {
+    right: 20px;
+}
+
+/* NO CELULAR: Ajusta a altura e esconde as setas para deslizar com o dedo */
+@media (max-width: 768px) {
+    .carrossel-container {
+        height: 380px;
+    }
+    .btn-banner-nav {
+        display: none !important;
+    }
+}

@@ -1,5 +1,6 @@
 /* =====================================================
    SACOLA, ENVIO (CASA/LOJA) & FINALIZAÇÃO - VR MODAS
+   (100% NATIVO NO SITE - SEM WHATSAPP)
    ===================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -141,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <!-- AVISO DE RETIRADA NA LOJA -->
                 <div id="painel-aviso-retirada" style="display: ${tipoEnvioSelecionado === 'retirada' ? 'block' : 'none'}; background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #292929; margin-bottom: 10px;">
                     <span style="font-size: 11px; font-weight: 700; color: var(--dourado, #d4af37);">🏬 Retirada Gratuita no Ponto Físico</span>
-                    <p style="font-size: 11px; color: #aaa; margin: 4px 0 0 0;">Você pode retirar as suas peças diretamente no nosso ponto oficial da VR Modas após confirmação via WhatsApp.</p>
+                    <p style="font-size: 11px; color: #aaa; margin: 4px 0 0 0;">Você pode retirar as suas peças diretamente na loja física assim que o pedido for separado.</p>
                 </div>
 
                 <!-- CUPOM DE DESCONTO -->
@@ -186,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 enderecoEntregaCustom = inputNovoEnd.value.trim() || 'Retirada na Loja / A combinar';
                 formAltEnd.style.display = 'none';
                 document.getElementById('texto-endereco-sacola').innerText = enderecoEntregaCustom;
-                if (typeof mostrarToast === 'function') mostrarToast("Endereço de entrega atualizado!");
+                if (typeof mostrarToast === 'function') mostrarToast("Endereço atualizado!");
             };
         }
 
@@ -232,7 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const produtoIdNaUrl = urlParams.get('id');
             const produtosAtuais = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
             
-            // Busca segura pelo ID
             let prodRef = null;
             if (produtoIdNaUrl) {
                 prodRef = produtosAtuais.find(p => String(p.id).trim() === String(produtoIdNaUrl).trim());
@@ -323,7 +323,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // FINALIZAR PEDIDO (SALVAR & WHATSAPP)
+    // CONFIRMAÇÃO VISUAL NO PRÓPRIO SITE
+    // ==========================================
+    function exibirConfirmacaoNoSite(pedido) {
+        let modal = document.getElementById('modal-pedido-sucesso');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'modal-pedido-sucesso';
+            modal.style.cssText = `
+                position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+                display: flex; align-items: center; justify-content: center;
+                z-index: 10000; padding: 15px; backdrop-filter: blur(4px);
+            `;
+            document.body.appendChild(modal);
+        }
+
+        const itensHtml = pedido.itens.map(i => `
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; color:#ccc;">
+                <span>${i.quantidade}x ${i.nome} (${i.tamanho} / ${i.cor})</span>
+                <span style="color:var(--dourado, #d4af37); font-weight:bold;">${(i.preco * i.quantidade).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</span>
+            </div>
+        `).join('');
+
+        modal.innerHTML = `
+            <div style="background:#141414; border:1px solid #333; border-top:3px solid var(--dourado, #d4af37); border-radius:8px; max-width:440px; width:100%; padding:22px; color:#fff; text-align:center; box-shadow:0 15px 35px rgba(0,0,0,0.9);">
+                <div style="font-size:36px; margin-bottom:8px;">🛍️</div>
+                <h2 style="margin:0 0 6px 0; color:var(--dourado, #d4af37); font-size:18px;">Pedido Registrado com Sucesso!</h2>
+                <p style="font-size:12px; color:#aaa; margin:0 0 14px 0;">Obrigada por comprar na VR Modas! O seu pedido já foi enviado ao painel do lojista.</p>
+                
+                <div style="background:#0a0a0a; border:1px solid #222; border-radius:6px; padding:12px; text-align:left; margin-bottom:15px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #1f1f1f; padding-bottom:6px;">
+                        <span style="font-size:12px; color:#777;">Código do Pedido:</span>
+                        <strong style="font-size:13px; color:var(--dourado, #d4af37);">${pedido.codigo}</strong>
+                    </div>
+                    <div style="margin-bottom:8px;">${itensHtml}</div>
+                    <div style="display:flex; justify-content:space-between; border-top:1px solid #1f1f1f; padding-top:6px;">
+                        <strong style="font-size:13px;">Total:</strong>
+                        <strong style="font-size:15px; color:var(--dourado, #d4af37);">${pedido.total.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</strong>
+                    </div>
+                </div>
+
+                <div style="background:#1a1a1a; padding:10px; border-radius:6px; font-size:11px; color:#aaa; margin-bottom:15px; text-align:left;">
+                    <span style="color:var(--dourado, #d4af37); font-weight:bold;">📦 Forma de Recebimento:</span><br>
+                    ${pedido.cliente.endereco}<br><br>
+                    <span style="color:var(--dourado, #d4af37); font-weight:bold;">💳 Forma de Pagamento:</span> ${pedido.formaPagamento}
+                </div>
+
+                <button id="btn-fechar-modal-pedido" style="width:100%; background:var(--dourado, #d4af37); color:#000; border:none; padding:11px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">Continuar Comprando</button>
+            </div>
+        `;
+
+        modal.style.display = 'flex';
+        document.getElementById('btn-fechar-modal-pedido').onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
+
+    // ==========================================
+    // FINALIZAR PEDIDO (SALVAR DIRETO NO SITE)
     // ==========================================
     const btnFinalizarCompra = document.getElementById('btn-finalizar-compra') || document.querySelector('.btn-finalizar');
     if (btnFinalizarCompra) {
@@ -363,26 +420,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: "Pendente"
             };
 
+            // 1. Salva nos pedidos do administrador
             let pedidosAtuais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
             pedidosAtuais.unshift(novoPedido);
             localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
 
-            const configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || { whatsapp: '5589999999999' };
-            const whatsLoja = (configLoja.whatsapp || '5589999999999').replace(/\D/g, '');
+            // 2. Baixa no estoque
+            let bancoProdutos = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
+            novoPedido.itens.forEach(itemComprado => {
+                const prodRef = bancoProdutos.find(p => String(p.id) === String(itemComprado.idProduto));
+                if (prodRef) {
+                    prodRef.estoque = Math.max(0, (parseInt(prodRef.estoque) || 0) - itemComprado.quantidade);
+                }
+            });
+            localStorage.setItem('vr_modas_db', JSON.stringify(bancoProdutos));
 
-            let textoItensWhats = novoPedido.itens.map(it => `• ${it.quantidade}x ${it.nome} (Tam: ${it.tamanho} | Cor: ${it.cor}) - ${(it.preco * it.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`).join('\n');
+            // 3. Notificação no site
+            const notificacoes = JSON.parse(localStorage.getItem('vr_modas_notificacoes_cliente')) || [];
+            notificacoes.unshift({
+                id: Date.now(),
+                pedido: numeroPedido,
+                mensagem: `Seu pedido ${numeroPedido} foi registrado com sucesso e aguarda separação!`,
+                dataHora: agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                lida: false
+            });
+            localStorage.setItem('vr_modas_notificacoes_cliente', JSON.stringify(notificacoes));
 
-            let msgWhats = `*NOVO PEDIDO VR MODAS* 🛍️\n\n*Pedido:* ${numeroPedido}\n*Data:* ${dataHora}\n*Cliente:* ${clienteNome}\n*Contato:* ${clienteWhats}\n*Forma de Recebimento:* ${clienteEndereco}\n\n*Itens do Pedido:*\n${textoItensWhats}\n\n`;
-            if (novoPedido.cupom) msgWhats += `*Cupom:* ${novoPedido.cupom}\n`;
-            msgWhats += `*Forma de Pagamento:* ${metodoPagamentoSelecionado.toUpperCase()}\n*VALOR TOTAL:* ${totalComDesconto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}\n\nOlá! Gostaria de confirmar meu pedido.`;
-
+            // 4. Limpa sacola e abre modal
             itensNoCarrinhoData = [];
             cupomAtivo = null;
             renderizarSacola();
             if (carrinhoLateral) carrinhoLateral.classList.remove('aberto');
 
-            if (typeof mostrarToast === 'function') mostrarToast(`Pedido ${numeroPedido} registrado!`);
-            window.open(`https://api.whatsapp.com/send?phone=${whatsLoja}&text=${encodeURIComponent(msgWhats)}`, '_blank');
+            exibirConfirmacaoNoSite(novoPedido);
         };
     }
 

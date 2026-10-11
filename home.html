@@ -358,7 +358,13 @@
 
     <!-- CARROSSEL DINÂMICO DE BANNERS (HERO) -->
     <div class="carrossel-container" id="carrossel-home">
-        <!-- O JavaScript preenche automaticamente com os banners cadastrados pelo Lojista -->
+        <button type="button" class="btn-banner-nav btn-banner-prev" id="btn-banner-prev"
+            aria-label="Anterior">&#10094;</button>
+        <div id="trilho-banners" class="trilho-banners">
+            <!-- O JavaScript preenche automaticamente com os banners -->
+        </div>
+        <button type="button" class="btn-banner-nav btn-banner-next" id="btn-banner-next"
+            aria-label="Próximo">&#10095;</button>
     </div>
 
     <!-- Vitrine Dinâmica -->
@@ -437,7 +443,7 @@
     <script src="js/favoritos.js"></script>
     <script src="js/catalogo.js"></script>
     <script src="js/sacola.js"></script>
-    
+
     <!-- Script de Gestão do Perfil e Contato Dinâmico -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {

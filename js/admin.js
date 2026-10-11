@@ -1,3 +1,8 @@
+/* =====================================================
+   PAINEL DO LOJISTA (ADMIN) - VR MODAS
+   Dashboard, Gestão de Estoque, Pedidos, Notificações & Comprovante
+   ===================================================== */
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // ==========================================
@@ -12,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'secao-dashboard': { titulo: 'Dashboard & Vendas', sub: 'Visão geral do faturamento, pedidos e relatórios de desempenho.' },
         'secao-cadastro': { titulo: 'Cadastrar Nova Peça', sub: 'Adicione novos produtos com cores, tamanhos e fotos compactadas.' },
         'secao-catalogo': { titulo: 'Catálogo & Estoque', sub: 'Gerencie peças cadastradas, preços e monitore estoque baixo.' },
-        'secao-pedidos': { titulo: 'Pedidos dos Clientes', sub: 'Acompanhe as compras feitas pela sacola e emita comprovantes.' },
+        'secao-pedidos': { titulo: 'Pedidos dos Clientes', sub: 'Acompanhe as compras feitas pela sacola, altere status e emita comprovantes.' },
         'secao-banners': { titulo: 'Banners da Vitrine', sub: 'Gerencie os sliders e chamadas promocionais da tela inicial.' },
         'secao-config': { titulo: 'Configurações & Backup', sub: 'Defina canais oficiais de suporte, códigos promocionais e cópias de segurança.' }
     };
@@ -126,8 +131,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const produtos = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
         const pedidos = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
 
-        const totalFat = pedidos.reduce((acc, p) => acc + (Number(p.total) || 0), 0);
+        const pedidosValidos = pedidos.filter(p => ['Pago', 'Em Separação', 'Enviado', 'Concluído'].includes(p.status));
+        const totalFat = pedidosValidos.reduce((acc, p) => acc + (Number(p.total) || 0), 0);
         const itensBaixos = produtos.filter(p => parseInt(p.estoque || 0) < 5).length;
+        const concluidosCount = pedidos.filter(p => p.status === 'Concluído').length;
 
         const elFat = document.getElementById('dash-faturamento');
         const elPed = document.getElementById('dash-total-pedidos');
@@ -135,7 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const elTot = document.getElementById('dash-total-produtos');
 
         if (elFat) elFat.innerText = totalFat.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        if (elPed) elPed.innerText = pedidos.length;
+        if (elPed) elPed.innerText = concluidosCount > 0 ? concluidosCount : pedidos.length;
         if (elEst) elEst.innerText = itensBaixos;
         if (elTot) elTot.innerText = produtos.length;
 
@@ -221,9 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const avisoDesc = document.getElementById('aviso-desconto');
 
     let fotosAtuais = [];
-    let listaCoresCadastradas = []; // Formato: [{ cor: 'Azul', qtd: 5 }, { cor: 'Preto', qtd: 10 }]
+    let listaCoresCadastradas = [];
 
-    // Elementos do Gerenciador de Cores
     const inputNomeCor = document.getElementById('input-nome-cor');
     const inputQtdCor = document.getElementById('input-qtd-cor');
     const btnAdicionarCor = document.getElementById('btn-adicionar-cor');
@@ -256,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const chip = document.createElement('div');
             chip.style.cssText = "display: inline-flex; align-items: center; gap: 8px; background: #1a1a1a; border: 1px solid #333; padding: 6px 12px; border-radius: 20px; font-size: 12px; color: #fff;";
             chip.innerHTML = `
-                <span style="font-weight: 700; color: var(--dourado);">${item.cor}</span>
+                <span style="font-weight: 700; color: var(--dourado, #d4af37);">${item.cor}</span>
                 <span style="background: #2b2b2b; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold;">${item.qtd} un</span>
                 <button type="button" style="background: none; border: none; color: #ff5252; cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; padding: 0 2px;" title="Remover cor" onclick="removerCorItem(${index})">✕</button>
             `;
@@ -303,7 +309,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Cálculo automático de desconto
     function atualizarCalculoDesconto() {
         if (!inPreco || !inPromo || !avisoDesc) return;
         const vNormal = parseFloat(inPreco.value) || 0;
@@ -322,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inPreco) inPreco.addEventListener('input', atualizarCalculoDesconto);
     if (inPromo) inPromo.addEventListener('input', atualizarCalculoDesconto);
 
-    // Miniaturas com exclusão individual
     function renderizarPreviewFotos() {
         if (!previewContainer) return;
         previewContainer.innerHTML = '';
@@ -584,7 +588,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('estoque-produto').value = produto.estoque || 0;
         
-        // Reconstrói as cores e tags adicionadas
         listaCoresCadastradas = [];
         if (produto.estoquePorCor) {
             produto.estoquePorCor.split(',').forEach(item => {
@@ -620,9 +623,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 7. GESTÃO DE PEDIDOS RECEBIDOS & PDF
+    // 7. GESTÃO OPERACIONAL DE PEDIDOS & COMPROVANTE
     // ==========================================
     const listaPedidosAdmin = document.getElementById('lista-pedidos-admin');
+
+    function emitirNotificacaoCliente(pedidoCodigo, novoStatus, clienteNome) {
+        const notificacoes = JSON.parse(localStorage.getItem('vr_modas_notificacoes_cliente')) || [];
+        notificacoes.unshift({
+            id: Date.now(),
+            pedido: pedidoCodigo,
+            cliente: clienteNome,
+            mensagem: `O seu pedido ${pedidoCodigo} mudou para: ${novoStatus}!`,
+            status: novoStatus,
+            dataHora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            lida: false
+        });
+        localStorage.setItem('vr_modas_notificacoes_cliente', JSON.stringify(notificacoes));
+    }
 
     function atualizarTabelaPedidos() {
         if (!listaPedidosAdmin) return;
@@ -634,13 +651,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const coresStatus = {
+            'Pendente': '#fbc02d',
+            'Pago': '#29b6f6',
+            'Em Separação': '#ab47bc',
+            'Enviado': '#ffa726',
+            'Concluído': '#66bb6a',
+            'Cancelado': '#ef5350'
+        };
+
         pedidos.forEach(ped => {
             const totalFormatado = Number(ped.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            let resumoItens = ped.itens.map(it => `• <strong>${it.quantidade}x</strong> ${it.nome} <span style="color: #aaa; font-size: 11px;">(${it.tamanho || 'Padrão'} / ${it.cor || 'Padrão'})</span>`).join('<br>');
+            let resumoItens = (ped.itens || []).map(it => `• <strong>${it.quantidade}x</strong> ${it.nome} <span style="color: #aaa; font-size: 11px;">(${it.tamanho || 'Padrão'} / ${it.cor || 'Padrão'})</span>`).join('<br>');
             
             const nomeCli = ped.cliente?.nome || "Cliente Visitante";
             const whatsCli = ped.cliente?.whatsapp || "Não informado";
-            const endCli = ped.cliente?.endereco || "Retirada na Loja / A combinar";
+            const corAtual = coresStatus[ped.status] || '#d4af37';
 
             listaPedidosAdmin.insertAdjacentHTML('beforeend', `
                 <tr>
@@ -656,15 +682,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         <small style="color: var(--dourado); font-size: 10px;">${ped.formaPagamento || 'Pix'}</small>
                     </td>
                     <td>
-                        <select class="select-status-pedido" data-id="${ped.id}" style="padding: 6px 10px; background: #111; color: var(--branco); border: 1px solid #444; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                        <select class="select-status-pedido" data-id="${ped.id}" style="padding: 6px 8px; background: #141414; color: ${corAtual}; border: 1px solid #444; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer;">
                             <option value="Pendente" ${ped.status === 'Pendente' ? 'selected' : ''}>⏳ Pendente</option>
-                            <option value="Pago" ${ped.status === 'Pago' ? 'selected' : ''}>✅ Pago</option>
-                            <option value="Enviado" ${ped.status === 'Enviado' ? 'selected' : ''}>📦 Enviado</option>
+                            <option value="Pago" ${ped.status === 'Pago' ? 'selected' : ''}>💳 Pago</option>
+                            <option value="Em Separação" ${ped.status === 'Em Separação' ? 'selected' : ''}>📦 Em Separação</option>
+                            <option value="Enviado" ${ped.status === 'Enviado' ? 'selected' : ''}>🚚 Enviado</option>
+                            <option value="Concluído" ${ped.status === 'Concluído' ? 'selected' : ''}>✅ Concluído</option>
+                            <option value="Cancelado" ${ped.status === 'Cancelado' ? 'selected' : ''}>❌ Cancelado</option>
                         </select>
                     </td>
                     <td>
                         <div style="display: flex; gap: 6px;">
-                            <button class="btn-imprimir-pedido" data-id="${ped.id}" style="background: var(--dourado); color: #000; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">🖨️ PDF</button>
+                            <button class="btn-imprimir-pedido" data-id="${ped.id}" style="background: var(--dourado); color: #000; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">🖨️ Imprimir Pedido</button>
                             <button class="btn-excluir-pedido" data-id="${ped.id}" style="background: transparent; color: #ff4444; border: 1px solid #ff4444; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700;">🗑️</button>
                         </div>
                     </td>
@@ -681,7 +710,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (idx !== -1) {
                     pedidosAtuais[idx].status = novoStatus;
                     localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
+                    emitirNotificacaoCliente(pedidosAtuais[idx].codigo, novoStatus, pedidosAtuais[idx].cliente?.nome || 'Cliente');
                     atualizarDashboard();
+                    atualizarTabelaPedidos();
+                    alert(`Status do pedido ${pedidosAtuais[idx].codigo} atualizado para "${novoStatus}". Notificação emitida no site.`);
                 }
             };
         });
@@ -710,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!pedido) return;
 
         const janela = window.open('', '_blank');
-        const linhasItens = pedido.itens.map(it => `
+        const linhasItens = (pedido.itens || []).map(it => `
             <tr>
                 <td style="padding: 10px; border-bottom: 1px solid #eee;">
                     <strong>${it.nome}</strong><br>
@@ -729,7 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <html lang="pt-BR">
             <head>
                 <meta charset="UTF-8">
-                <title>Pedido ${pedido.codigo} | VR Modas</title>
+                <title>Comprovante do Pedido ${pedido.codigo} | VR Modas</title>
                 <style>
                     body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; margin: 30px; line-height: 1.5; font-size: 13px; }
                     .cabecalho { border-bottom: 2px solid #111; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
@@ -748,7 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="cabecalho">
                     <div>
                         <h1 class="titulo-vr">VR MODAS</h1>
-                        <p style="margin: 0; font-size: 12px; color: #666;">Comprovativo de Pedido & Expedição</p>
+                        <p style="margin: 0; font-size: 12px; color: #666;">Comprovante do Pedido</p>
                     </div>
                     <div style="text-align: right;">
                         <h2 style="margin: 0; color: #b89329; font-size: 18px;">${pedido.codigo}</h2>
@@ -758,10 +790,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 <div class="dados-quadro">
                     <div class="linha-dado"><span class="rotulo">Cliente:</span> <strong>${pedido.cliente?.nome || 'Cliente Visitante'}</strong></div>
-                    <div class="linha-dado"><span class="rotulo">WhatsApp:</span> ${pedido.cliente?.whatsapp || 'Não informado'}</div>
-                    <div class="linha-dado"><span class="rotulo">Endereço de Entrega:</span> <strong>${endFormatado}</strong></div>
-                    <div class="linha-dado"><span class="rotulo">Pagamento:</span> ${pedido.formaPagamento || 'Pix à vista'}</div>
-                    <div class="linha-dado"><span class="rotulo">Situação / Status:</span> <strong>${pedido.status}</strong></div>
+                    <div class="linha-dado"><span class="rotulo">Contato:</span> ${pedido.cliente?.whatsapp || 'Não informado'}</div>
+                    <div class="linha-dado"><span class="rotulo">Forma de Envio:</span> <strong>${endFormatado}</strong></div>
+                    <div class="linha-dado"><span class="rotulo">Pagamento:</span> ${pedido.formaPagamento || 'Pix'}</div>
+                    <div class="linha-dado"><span class="rotulo">Status Atual:</span> <strong>${pedido.status}</strong></div>
                     ${pedido.cupom ? `<div class="linha-dado"><span class="rotulo">Cupom Aplicado:</span> ${pedido.cupom}</div>` : ''}
                 </div>
 
@@ -778,12 +810,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </table>
 
                 <div class="total-box">
-                    <span style="font-size: 13px; color: #555;">Total a Pagar / Recebido:</span><br>
+                    <span style="font-size: 13px; color: #555;">Total do Pedido:</span><br>
                     <span class="total-destaque">${Number(pedido.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                 </div>
 
                 <div style="margin-top: 35px; text-align: center;">
-                    <button onclick="window.print()" style="background: #111; color: #fff; border: none; padding: 10px 22px; font-size: 13px; font-weight: bold; cursor: pointer; border-radius: 4px;">🖨️ Imprimir / Guardar como PDF</button>
+                    <button onclick="window.print()" style="background: #111; color: #fff; border: none; padding: 10px 22px; font-size: 13px; font-weight: bold; cursor: pointer; border-radius: 4px;">🖨️ Imprimir Pedido</button>
                 </div>
             </body>
             </html>
@@ -822,12 +854,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         banners.forEach(b => {
             listaBannersAdmin.insertAdjacentHTML('beforeend', `
-                <div style="display: flex; align-items: center; justify-content: space-between; background: var(--preto); padding: 12px 16px; border-radius: 6px; border: 1px solid #333; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; background: var(--preto, #0a0a0a); padding: 12px 16px; border-radius: 6px; border: 1px solid #333; margin-bottom: 8px;">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <img src="${b.imagem}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 4px;">
                         <div>
-                            <strong style="color: var(--branco); font-size: 14px;">${b.titulo}</strong>
-                            <p style="color: var(--cinza-texto); font-size: 12px; margin: 0;">${b.subtitulo}</p>
+                            <strong style="color: var(--branco, #fff); font-size: 14px;">${b.titulo}</strong>
+                            <p style="color: var(--cinza-texto, #aaa); font-size: 12px; margin: 0;">${b.subtitulo}</p>
                         </div>
                     </div>
                     <button class="btn-remover-banner" data-id="${b.id}" style="background: transparent; color: #ff4444; border: 1px solid #ff4444; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Excluir</button>
@@ -839,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.onclick = function() {
                 const idExcluir = this.getAttribute('data-id');
                 let bannersAtuais = JSON.parse(localStorage.getItem('vr_modas_banners')) || [];
-                bannersAtuais = bannersAtuais.filter(b => b.id != idExcluir);
+                bannersAtuais = bannersAtuais.filter(b => String(b.id) !== String(idExcluir));
                 localStorage.setItem('vr_modas_banners', JSON.stringify(bannersAtuais));
                 atualizarListaBanners();
             };
@@ -1027,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Inicialização
+    // Inicialização da aba padrão
     atualizarDashboard();
     atualizarTabelaProdutos();
     atualizarTabelaPedidos();
