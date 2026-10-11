@@ -361,3 +361,13 @@
         display: none !important;
     }
 }
+.carrossel-container {
+    touch-action: pan-y !important; /* Liberta a rolagem vertical e permite arrastar na horizontal */
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.slide-content h1,
+.slide-content p {
+    pointer-events: none; /* Impede que o texto bloqueie o arrastar do dedo no telemóvel */
+}

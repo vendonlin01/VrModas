@@ -1,6 +1,6 @@
 /* =====================================================
-   CARROSSEL DE BANNERS - VR MODAS
-   Fade Suave + Setas (Desktop) + Swipe (Mobile) + Auto
+   CARROSSEL DE BANNERS RESPONSIVO - VR MODAS
+   Automático + Setas (Desktop) + Deslize por Toque (Mobile)
    ===================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const banners = JSON.parse(localStorage.getItem('vr_modas_banners')) || [];
 
-    // Se houver banners salvos no admin, renderiza dinamicamente
+    // Renderiza se houver banners guardados no painel
     if (banners.length > 0) {
         trilho.innerHTML = '';
         banners.forEach((banner, index) => {
@@ -67,9 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Setas Desktop
+    // Navegação por Setas no Computador
     if (btnNext) {
         btnNext.onclick = (e) => {
+            e.preventDefault();
             e.stopPropagation();
             proximo();
             iniciarAuto();
@@ -78,39 +79,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnPrev) {
         btnPrev.onclick = (e) => {
+            e.preventDefault();
             e.stopPropagation();
             anterior();
             iniciarAuto();
         };
     }
 
-    // Pausa no Hover (Desktop)
+    // Pausa no hover para computador
     container.addEventListener('mouseenter', pararAuto);
     container.addEventListener('mouseleave', iniciarAuto);
 
-    // Gesto de Dedo / Swipe (Mobile)
+    // ==========================================
+    // SISTEMA DE TOQUE / SWIPE (TELEMÓVEL)
+    // ==========================================
     let touchStartX = 0;
+    let touchStartY = 0;
     let touchEndX = 0;
+    let touchEndY = 0;
 
     container.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX;
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
         touchEndX = touchStartX;
+        touchEndY = touchStartY;
         pararAuto();
     }, { passive: true });
 
     container.addEventListener('touchmove', (e) => {
-        touchEndX = e.touches[0].clientX;
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
     }, { passive: true });
 
-    container.addEventListener('touchend', () => {
-        const diff = touchStartX - touchEndX;
-        if (diff > 45) {
-            proximo();
-        } else if (diff < -45) {
-            anterior();
+    function verificarGesto() {
+        const diffX = touchStartX - touchEndX;
+        const diffY = touchStartY - touchEndY;
+        const LIMIAR_MINIMO = 35; // Distância mínima do dedo em píxeis
+
+        // Confirma que o movimento foi horizontal e não vertical
+        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > LIMIAR_MINIMO) {
+            if (diffX > 0) {
+                // Deslizou para a esquerda -> Avança para o próximo
+                proximo();
+            } else {
+                // Deslizou para a direita -> Volta para o anterior
+                anterior();
+            }
         }
         iniciarAuto();
-    });
+    }
 
+    container.addEventListener('touchend', verificarGesto, { passive: true });
+    container.addEventListener('touchcancel', iniciarAuto, { passive: true });
+
+    // Inicia a rotação automática
     iniciarAuto();
 });
