@@ -102,6 +102,30 @@
         }
 
         /* =========================================
+           BOTÃO ENGRENAGEM (PAINEL ADMIN NO TOPO)
+           ========================================= */
+        .btn-admin-topo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid #333;
+            color: var(--dourado, #d4af37);
+            text-decoration: none;
+            transition: all 0.25s ease;
+            cursor: pointer;
+        }
+
+        .btn-admin-topo:hover {
+            border-color: var(--dourado, #d4af37);
+            background: rgba(212, 175, 55, 0.12);
+            transform: rotate(45deg) scale(1.05);
+        }
+
+        /* =========================================
            DROPDOWNS DO MENU DE NAVEGAÇÃO
            ========================================= */
         .nav-dropdown {
@@ -183,8 +207,57 @@
             color: var(--dourado);
         }
 
-        /* Comportamento responsivo na gaveta mobile */
+        /* =========================================
+           RESPONSIVIDADE (DESKTOP E CELULAR)
+           ========================================= */
+        /* No COMPUTADOR (Desktop) */
+        @media (min-width: 769px) {
+            .link-menu-lojista,
+            .divisor-menu-mobile {
+                display: none !important;
+            }
+        }
+
+        /* No CELULAR (Mobile) */
         @media (max-width: 768px) {
+            /* Esconde a engrenagem do topo para não poluir a barra móvel */
+            .btn-admin-topo {
+                display: none !important;
+            }
+
+            .divisor-menu-mobile {
+                display: block !important;
+                border: 0;
+                border-top: 1px solid rgba(255, 255, 255, 0.12);
+                margin: 18px 10px 8px 10px;
+                width: calc(100% - 20px);
+            }
+
+            .link-menu-lojista {
+                display: flex !important;
+                align-items: center !important;
+                gap: 10px !important;
+                padding: 12px 14px !important;
+                margin: 8px 10px 18px 10px !important;
+                background: rgba(212, 175, 55, 0.08) !important;
+                border: 1px solid rgba(212, 175, 55, 0.35) !important;
+                border-radius: 6px !important;
+                color: var(--dourado, #d4af37) !important;
+                font-size: 12.5px !important;
+                font-weight: 700;
+                text-decoration: none;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                transition: all 0.25s ease !important;
+            }
+
+            .link-menu-lojista:active,
+            .link-menu-lojista:hover {
+                background: var(--dourado, #d4af37) !important;
+                color: #000 !important;
+                transform: translateX(4px);
+            }
+
             .nav-dropdown {
                 display: flex;
                 flex-direction: column;
@@ -212,7 +285,7 @@
         }
 
         /* =========================================
-           REFORÇO DO BOTÃO "VER DETALHES" DOURADO
+           BOTÃO "VER DETALHES"
            ========================================= */
         .card-info {
             padding: 14px 12px 16px 12px !important;
@@ -266,10 +339,10 @@
 
     <!-- Cabeçalho com Barra de Pesquisa -->
     <header class="header">
-        <!-- 1. Menu Hambúrguer (Só visível no telemóvel) -->
+        <!-- 1. Menu Hambúrguer (Só visível no celular) -->
         <button id="btn-menu" class="btn-menu">☰</button>
 
-        <!-- 2. Logótipo na Esquerda -->
+        <!-- 2. Logotipo na Esquerda -->
         <div class="logo">
             <a href="home.html">
                 <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
@@ -282,7 +355,7 @@
             <button id="btn-busca">🔍</button>
         </div>
 
-        <!-- 4. Menu de Navegação Estruturado com Dropdowns -->
+        <!-- 4. Menu de Navegação Horizontal / Gaveta Mobile -->
         <nav id="navbar" class="navbar">
             <button id="fechar-menu" class="btn-fechar-menu">&times;</button>
             <a href="home.html" class="nav-item" style="color: var(--dourado);">Início</a>
@@ -325,10 +398,25 @@
 
             <!-- Ofertas -->
             <a href="produtos.html?categoria=ofertas" class="nav-item nav-destaque">Ofertas 🔥</a>
+
+            <!-- Linha e Botão Área do Lojista (Exclusivos para Celular na Gaveta) -->
+            <hr class="divisor-menu-mobile">
+            <a href="admin.html" class="link-menu-lojista">
+                <span>⚙️</span>
+                <span>Área do Lojista</span>
+            </a>
         </nav>
 
-        <!-- 5. Ações do Cabeçalho (Perfil, Favoritos, Sacola) no Canto Direito -->
+        <!-- 5. Ações do Cabeçalho: Engrenagem, Perfil, Favoritos e Sacola -->
         <div class="acoes-header">
+            <!-- Botão Engrenagem (Exclusivo Computador) -->
+            <a href="admin.html" class="btn-admin-topo" title="Área do Lojista / Painel">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </a>
+
             <!-- Botão de Perfil -->
             <div class="perfil-container" id="area-perfil">
                 <button id="btn-usuario" class="btn-usuario" title="Minha Conta">
@@ -339,8 +427,7 @@
                     <div class="info-nome" id="dropdown-nome">Olá, Visitante</div>
                     <a href="login.html" id="link-login-dropdown">Entrar na Conta</a>
                     <a href="cadastro.html" id="link-cadastro-dropdown">Criar Conta</a>
-                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪
-                        Sair</button>
+                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪 Sair</button>
                 </div>
             </div>
 
@@ -434,11 +521,10 @@
 
         <div class="footer-bottom">
             <p>&copy; 2026 VR Modas. Todos os direitos reservados.</p>
-            <a href="admin.html" class="link-lojista">Área do Lojista</a>
         </div>
     </footer>
+
     <!-- Scripts JavaScript -->
-    <!-- SE TIVER db.js, COLOQUE-O EM PRIMEIRO -->
     <script src="js/db.js"></script>
     <script src="js/carrossel.js"></script>
     <script src="js/favoritos.js"></script>
