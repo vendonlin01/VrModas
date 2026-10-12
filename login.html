@@ -88,7 +88,7 @@
             padding: 13px 14px;
             border-radius: 6px;
             font-family: 'Montserrat', sans-serif;
-            font-size: 16px; /* Previne auto-zoom no iOS e Android */
+            font-size: 16px;
             outline: none;
             transition: border-color 0.25s ease;
         }
@@ -116,10 +116,15 @@
             letter-spacing: 1px;
             cursor: pointer;
             margin-top: 8px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s;
         }
 
-        .btn-entrar:active {
+        .btn-entrar:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .btn-entrar:active:not(:disabled) {
             transform: scale(0.98);
         }
 
@@ -189,7 +194,7 @@
                 <input type="password" id="login-senha" placeholder="Digite sua senha" required>
             </div>
 
-            <button type="submit" class="btn-entrar">Entrar</button>
+            <button type="submit" class="btn-entrar" id="btn-submit">Entrar</button>
             <div id="msg-erro" class="msg-erro">E-mail ou senha incorretos!</div>
         </form>
 
@@ -202,50 +207,89 @@
     </div>
 
     <script>
-        document.getElementById('form-login').onsubmit = function(e) {
+        const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
+
+        document.getElementById('form-login').onsubmit = async function(e) {
             e.preventDefault();
             const email = document.getElementById('login-email').value.trim().toLowerCase();
             const senha = document.getElementById('login-senha').value;
             const erroEl = document.getElementById('msg-erro');
+            const btnSubmit = document.getElementById('btn-submit');
 
-            // 1. CREDENCIAIS DO ADMINISTRADOR
-            const ADMIN_EMAIL = "admin@vrmodas.com";
-            const ADMIN_SENHA = "123456";
+            erroEl.style.display = 'none';
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = 'Autenticando...';
 
-            if (email === ADMIN_EMAIL && senha === ADMIN_SENHA) {
-                const sessaoAdmin = {
-                    email: email,
-                    role: "admin",
-                    nome: "Administrador VR Modas"
-                };
-                sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoAdmin));
+            try {
+                // 1. Consulta no Neon (PostgreSQL)
+                const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+                const sql = neon(NEON_CONNECTION_STRING);
+
+                const usuarios = await sql`
+                    SELECT id, nome, email, whatsapp, endereco, role 
+                    FROM usuarios 
+                    WHERE LOWER(email) = ${email} AND senha = ${senha} 
+                    LIMIT 1;
+                `;
+
+                if (usuarios.length > 0) {
+                    const usuario = usuarios[0];
+
+                    if (usuario.role === 'admin') {
+                        const sessaoAdmin = {
+                            id: usuario.id,
+                            email: usuario.email,
+                            role: 'admin',
+                            nome: usuario.nome
+                        };
+                        sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoAdmin));
+                        sessionStorage.setItem('vr_admin_logado', 'true');
+                        window.location.href = 'admin.html';
+                        return;
+                    }
+
+                    // Se for cliente comum
+                    const sessaoCliente = {
+                        id: usuario.id,
+                        email: usuario.email,
+                        nome: usuario.nome,
+                        whatsapp: usuario.whatsapp,
+                        endereco: usuario.endereco,
+                        role: 'cliente'
+                    };
+                    sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
+                    sessionStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
+                    sessionStorage.setItem('vr_cliente_logado', 'true');
+
+                    alert(`Bem-vindo(a) de volta, ${usuario.nome}!`);
+                    window.location.href = 'home.html';
+                    return;
+                }
+            } catch (errBanco) {
+                console.warn('⚠️ Falha ao consultar Neon, verificando fallback local:', errBanco);
+            }
+
+            // 2. Fallback de emergência (Admin fixo ou LocalStorage)
+            if (email === 'admin@vrmodas.com' && senha === '123456') {
+                sessionStorage.setItem('vr_usuario_ativo', JSON.stringify({ email, role: 'admin', nome: 'Administrador VR Modas' }));
                 sessionStorage.setItem('vr_admin_logado', 'true');
                 window.location.href = 'admin.html';
                 return;
             }
 
-            // 2. BUSCA NO BANCO DE CLIENTES
-            const usuarios = JSON.parse(localStorage.getItem('vr_modas_usuarios')) || [];
-            const cliente = usuarios.find(u => u.email === email && u.senha === senha);
-
-            if (cliente) {
-                const sessaoCliente = {
-                    id: cliente.id,
-                    email: cliente.email,
-                    nome: cliente.nome,
-                    whatsapp: cliente.whatsapp,
-                    endereco: cliente.endereco,
-                    role: "cliente"
-                };
-                sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
-                sessionStorage.setItem('vr_cliente_dados', JSON.stringify(cliente));
+            const usuariosLocais = JSON.parse(localStorage.getItem('vr_modas_usuarios')) || [];
+            const clienteLocal = usuariosLocais.find(u => u.email === email && u.senha === senha);
+            if (clienteLocal) {
+                sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(clienteLocal));
+                sessionStorage.setItem('vr_cliente_dados', JSON.stringify(clienteLocal));
                 sessionStorage.setItem('vr_cliente_logado', 'true');
-
-                alert(`Bem-vindo(a) de volta, ${cliente.nome}!`);
+                alert(`Bem-vindo(a) de volta, ${clienteLocal.nome}!`);
                 window.location.href = 'home.html';
                 return;
             }
 
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = 'Entrar';
             erroEl.style.display = 'block';
         };
     </script>

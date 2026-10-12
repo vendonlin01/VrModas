@@ -20,13 +20,17 @@
             margin-bottom: 25px;
         }
         .btn-voltar-link {
-            color: var(--dourado);
+            color: var(--dourado, #d4af37);
             text-decoration: none;
             font-size: 13px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            transition: opacity 0.2s;
+        }
+        .btn-voltar-link:hover {
+            opacity: 0.8;
         }
         .card-pedido-cliente {
             background: #121212;
@@ -35,6 +39,10 @@
             padding: 16px;
             margin-bottom: 16px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: border-color 0.2s;
+        }
+        .card-pedido-cliente:hover {
+            border-color: #383838;
         }
         .topo-card-pedido {
             display: flex;
@@ -49,10 +57,23 @@
             border-radius: 20px;
             font-size: 11px;
             font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .status-Pendente { background: rgba(255, 152, 0, 0.15); color: #ff9800; border: 1px solid #ff9800; }
-        .status-Pago { background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid #4caf50; }
-        .status-Enviado { background: rgba(33, 150, 243, 0.15); color: #2196f3; border: 1px solid #2196f3; }
+        .status-Pago { background: rgba(41, 182, 246, 0.15); color: #29b6f6; border: 1px solid #29b6f6; }
+        .status-Em-Separacao { background: rgba(171, 71, 188, 0.15); color: #ab47bc; border: 1px solid #ab47bc; }
+        .status-Enviado { background: rgba(255, 167, 38, 0.15); color: #ffa726; border: 1px solid #ffa726; }
+        .status-Concluido { background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid #4caf50; }
+        .status-Cancelado { background: rgba(239, 83, 80, 0.15); color: #ef5350; border: 1px solid #ef5350; }
+
+        .loader-pedidos {
+            text-align: center;
+            color: var(--dourado, #d4af37);
+            font-size: 14px;
+            padding: 30px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -70,53 +91,112 @@
         </div>
 
         <h1 style="font-size: 22px; color: #fff; margin-bottom: 6px;">Minhas Compras</h1>
-        <p style="color: var(--cinza-texto); font-size: 13px; margin-bottom: 24px;">Acompanhe o status e a entrega dos seus pedidos em tempo real.</p>
+        <p style="color: var(--cinza-texto, #aaa); font-size: 13px; margin-bottom: 24px;">Acompanhe o status e a entrega dos seus pedidos em tempo real.</p>
 
-        <div id="lista-pedidos-cliente"></div>
+        <div id="lista-pedidos-cliente">
+            <div class="loader-pedidos">Carregando seus pedidos...</div>
+        </div>
     </main>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const container = document.getElementById('lista-pedidos-cliente');
-            const todosPedidos = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
-            const clienteSessao = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) || null;
+        const NEON_PEDIDOS_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
 
-            let pedidosExibir = todosPedidos;
-            if (clienteSessao && clienteSessao.nome) {
-                const filtrados = todosPedidos.filter(p => p.cliente && p.cliente.nome.toLowerCase().includes(clienteSessao.nome.toLowerCase()));
-                if (filtrados.length > 0) pedidosExibir = filtrados;
+        document.addEventListener('DOMContentLoaded', async () => {
+            const container = document.getElementById('lista-pedidos-cliente');
+            const clienteSessao = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) || 
+                                  JSON.parse(sessionStorage.getItem('vr_cliente_dados')) || 
+                                  JSON.parse(localStorage.getItem('vr_cliente_dados')) || null;
+
+            let pedidosExibir = [];
+
+            // 1. Busca direta no Neon PostgreSQL
+            try {
+                const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+                const sql = neon(NEON_PEDIDOS_CONN);
+
+                let dadosBanco = [];
+
+                if (clienteSessao && (clienteSessao.email || clienteSessao.nome)) {
+                    const emailFiltro = (clienteSessao.email || '').toLowerCase().trim();
+                    const nomeFiltro = `%${(clienteSessao.nome || '').trim()}%`;
+
+                    dadosBanco = await sql`
+                        SELECT * FROM pedidos 
+                        WHERE LOWER(cliente_email) = ${emailFiltro} 
+                           OR cliente_nome ILIKE ${nomeFiltro}
+                        ORDER BY id DESC;
+                    `;
+                } else {
+                    // Visitante sem login: busca os pedidos mais recentes
+                    dadosBanco = await sql`SELECT * FROM pedidos ORDER BY id DESC LIMIT 10;`;
+                }
+
+                if (Array.isArray(dadosBanco) && dadosBanco.length > 0) {
+                    pedidosExibir = dadosBanco.map(p => ({
+                        id: p.id,
+                        codigo: `#VR-${p.id}`,
+                        data: new Date(p.criado_em).toLocaleDateString('pt-BR') + ' às ' + new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                        itens: Array.isArray(p.itens) ? p.itens : (typeof p.itens === 'string' ? JSON.parse(p.itens) : []),
+                        formaPagamento: p.forma_pagamento || 'PIX',
+                        status: p.status || 'Pendente',
+                        total: parseFloat(p.total),
+                        endereco: p.endereco_entrega
+                    }));
+                }
+            } catch (erroBanco) {
+                console.warn('⚠️ Falha ao buscar pedidos no Neon, verificando cache local:', erroBanco);
             }
 
+            // 2. Fallback no LocalStorage
             if (pedidosExibir.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #888; padding: 40px; background: #121212; border-radius: 8px; border: 1px solid #222;">Você ainda não realizou nenhum pedido.</div>';
+                const todosPedidosLocais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
+                if (clienteSessao && clienteSessao.nome) {
+                    pedidosExibir = todosPedidosLocais.filter(p => p.cliente && p.cliente.nome.toLowerCase().includes(clienteSessao.nome.toLowerCase()));
+                }
+                if (pedidosExibir.length === 0 && todosPedidosLocais.length > 0) {
+                    pedidosExibir = todosPedidosLocais;
+                }
+            }
+
+            // 3. Renderização na tela
+            if (pedidosExibir.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #888; padding: 40px 20px; background: #121212; border-radius: 8px; border: 1px solid #222;">
+                        <div style="font-size: 32px; margin-bottom: 8px;">🛍️</div>
+                        <p style="margin: 0; font-size: 14px;">Você ainda não realizou nenhum pedido.</p>
+                        <a href="produtos.html" class="btn-voltar-link" style="margin-top: 14px; display: inline-block;">Ver Coleção</a>
+                    </div>
+                `;
                 return;
             }
 
             container.innerHTML = pedidosExibir.map(ped => {
-                const itensHTML = ped.itens.map(it => {
+                const itensHTML = (ped.itens || []).map(it => {
                     const tam = it.tamanho || 'Padrão';
                     const cor = it.cor || 'Padrão';
-                    return `<div>• ${it.quantidade}x ${it.nome} (${tam} / ${cor})</div>`;
+                    return `<div>• <strong>${it.quantidade}x</strong> ${it.nome} <span style="color: #777; font-size: 11px;">(${tam} / ${cor})</span></div>`;
                 }).join('');
 
                 const formaPagto = ped.formaPagamento || 'Pix à vista';
-                const totalValor = Number(ped.total).toFixed(2);
+                const totalValor = Number(ped.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                const statusClasse = (ped.status || 'Pendente').replace(/\s+/g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
                 return `
                     <div class="card-pedido-cliente">
                         <div class="topo-card-pedido">
                             <div>
-                                <strong style="color: var(--dourado); font-size: 15px;">${ped.codigo}</strong>
-                                <div style="font-size: 11px; color: #777;">${ped.data}</div>
+                                <strong style="color: var(--dourado, #d4af37); font-size: 15px;">${ped.codigo}</strong>
+                                <div style="font-size: 11px; color: #777; margin-top: 2px;">${ped.data}</div>
                             </div>
-                            <span class="status-badge status-${ped.status}">${ped.status}</span>
+                            <span class="status-badge status-${statusClasse}">${ped.status}</span>
                         </div>
                         <div style="font-size: 13px; margin-bottom: 12px; line-height: 1.6; color: #ccc;">
                             ${itensHTML}
                         </div>
+                        ${ped.endereco ? `<div style="font-size: 11px; color: #888; margin-bottom: 10px; border-top: 1px dashed #222; padding-top: 8px;">📍 <strong>Envio:</strong> ${ped.endereco}</div>` : ''}
                         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1f1f1f; padding-top: 10px; margin-top: 10px;">
                             <span style="font-size: 12px; color: #aaa;">Pagamento: <strong>${formaPagto}</strong></span>
-                            <strong style="color: #fff; font-size: 15px;">Total: R$ ${totalValor}</strong>
+                            <strong style="color: #fff; font-size: 15px;">Total: ${totalValor}</strong>
                         </div>
                     </div>
                 `;

@@ -109,6 +109,11 @@
             font-weight: 700;
             font-size: 13px;
             margin-top: 10px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-whatsapp-direto:hover {
+            opacity: 0.9;
         }
     </style>
 </head>
@@ -133,11 +138,30 @@
     </main>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || {
+        const NEON_SUPORTE_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            let configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || {
                 whatsapp: "5589999999999",
                 email: "contato@vrmodas.com"
             };
+
+            // Consulta configurações atualizadas no Neon
+            try {
+                const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+                const sql = neon(NEON_SUPORTE_CONN);
+                const configs = await sql`SELECT chave, valor FROM configuracoes;`;
+                
+                if (Array.isArray(configs) && configs.length > 0) {
+                    const mapa = {};
+                    configs.forEach(c => { mapa[c.chave] = c.valor; });
+                    if (mapa.whatsapp) configLoja.whatsapp = mapa.whatsapp.replace(/\D/g, '');
+                    if (mapa.email) configLoja.email = mapa.email;
+                    localStorage.setItem('vr_modas_config', JSON.stringify(configLoja));
+                }
+            } catch (erroBanco) {
+                console.warn('⚠️ Falha ao buscar configurações no Neon, usando dados locais:', erroBanco);
+            }
 
             const chat = document.getElementById('chat-mensagens');
 
@@ -156,18 +180,19 @@
                         let respostaBot = '';
 
                         if (tipo === 'rastreio') {
-                            respostaBot = `Você pode acompanhar todas as suas compras em tempo real acedendo à secção <a href="pedidos.html" style="color: var(--dourado, #d4af37); font-weight: bold;">Meus Pedidos</a> da nossa loja.`;
+                            respostaBot = `Você pode acompanhar todas as suas compras em tempo real acessando a seção <a href="pedidos.html" style="color: var(--dourado, #d4af37); font-weight: bold;">Minhas Compras</a> da nossa loja.`;
                         } else if (tipo === 'pagamento') {
-                            respostaBot = `Aceitamos **Pix à vista** (com confirmação imediata), **Cartão de Débito** e **Cartão de Crédito** em até 12x com regras especiais por peça!`;
+                            respostaBot = `Aceitamos <strong>Pix à vista</strong> (com baixa imediata), <strong>Cartão de Débito</strong> e <strong>Cartão de Crédito</strong> com parcelamento flexível configurado em cada peça!`;
                         } else if (tipo === 'troca') {
-                            respostaBot = `Garantimos trocas em até 7 dias corridos após o recebimento da peça, desde que esteja com a etiqueta original e sem sinais de uso.`;
+                            respostaBot = `Garantimos trocas em até 7 dias corridos após o recebimento da peça, desde que esteja com a etiqueta original fixada e sem sinais de uso.`;
                         } else if (tipo === 'humano') {
                             const linkWhats = `https://wa.me/${configLoja.whatsapp}?text=${encodeURIComponent("Olá! Gostaria de falar com uma atendente da VR Modas sobre um atendimento.")}`;
                             respostaBot = `
-                                Perfeito! Clique no botão abaixo para conversar diretamente com a nossa equipa:
+                                Perfeito! Clique no botão abaixo para conversar diretamente com a nossa equipe:
                                 <a href="${linkWhats}" target="_blank" class="btn-whatsapp-direto">
                                     🟢 Iniciar Conversa no WhatsApp
                                 </a>
+                                <div style="margin-top: 8px; font-size: 11px; color: #888;">Ou envie um e-mail para: <strong>${configLoja.email}</strong></div>
                             `;
                         }
 

@@ -1,9 +1,21 @@
 /* =====================================================
    PAINEL DO LOJISTA (ADMIN) - VR MODAS
-   Dashboard, Gestão de Estoque, Pedidos, Notificações & Comprovante
+   Conectado 100% ao Banco de Dados Neon (PostgreSQL)
+   Dashboard, Gestão de Estoque, Pedidos, Banners & Configs
    ===================================================== */
 
-document.addEventListener('DOMContentLoaded', () => {
+const NEON_ADMIN_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
+
+let sqlNeon = null;
+async function getSql() {
+    if (!sqlNeon) {
+        const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+        sqlNeon = neon(NEON_ADMIN_CONN);
+    }
+    return sqlNeon;
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
 
     // ==========================================
     // 1. SISTEMA DE NAVEGAÇÃO ENTRE ABAS
@@ -45,11 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (idAlvo === 'secao-dashboard') atualizarDashboard();
-        if (idAlvo === 'secao-catalogo') atualizarTabelaProdutos();
-        if (idAlvo === 'secao-pedidos') atualizarTabelaPedidos();
+        if (idAlvo === 'secao-catalogo') carregarEAtualizarTabelaProdutos();
+        if (idAlvo === 'secao-pedidos') carregarEAtualizarTabelaPedidos();
+        if (idAlvo === 'secao-banners') carregarEAtualizarListaBanners();
         if (idAlvo === 'secao-config') {
             carregarConfiguracoes();
-            atualizarListaCupons();
+            carregarEAtualizarListaCupons();
         }
     }
 
@@ -213,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 5. CADASTRO E EDIÇÃO DE PRODUTOS & CORES DINÂMICAS
+    // 5. CADASTRO E EDIÇÃO DE PRODUTOS (NEON DB)
     // ==========================================
     const formAdmin = document.getElementById('form-cadastro-produto');
     const inputFoto = document.getElementById('foto-produto');
@@ -365,7 +378,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetarModoEdicao() {
         if (editandoIdInput) editandoIdInput.value = "";
         if (tituloFormProduto) tituloFormProduto.innerText = "➕ Cadastrar Nova Peça";
-        if (btnSubmitProduto) btnSubmitProduto.innerText = "💾 Salvar Peça no Catálogo";
+        if (btnSubmitProduto) {
+            btnSubmitProduto.innerText = "💾 Salvar Peça no Catálogo";
+            btnSubmitProduto.disabled = false;
+        }
         if (btnCancelarEdicao) btnCancelarEdicao.style.display = "none";
         
         fotosAtuais = [];
@@ -391,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCancelarEdicao) btnCancelarEdicao.onclick = resetarModoEdicao;
 
     if (formAdmin) {
-        formAdmin.onsubmit = function(event) {
+        formAdmin.onsubmit = async function(event) {
             event.preventDefault();
             const idEditando = editandoIdInput ? editandoIdInput.value : '';
             const nome = document.getElementById('nome-produto').value.trim();
@@ -415,55 +431,98 @@ document.addEventListener('DOMContentLoaded', () => {
             const taxaJuros = parseFloat(document.getElementById('taxa-juros')?.value || '0');
 
             const imagensFinais = (fotosAtuais.length > 0) ? fotosAtuais : ["img/produto1.jpg"];
+            const fotoCapa = imagensFinais[0];
 
-            const dadosComuns = { 
-                nome, 
-                preco, 
-                precoPromocional,
-                estoquePorCor,
-                categoria, 
-                estoque, 
-                promocao: isPromocao, 
-                cores, 
-                tamanhos, 
-                descricao,
-                imagens: imagensFinais,
-                pagamento: {
-                    maxParcelas,
-                    parcelasSemJuros,
-                    taxaJuros
-                }
-            };
+            btnSubmitProduto.disabled = true;
+            btnSubmitProduto.innerText = "Gravando no Neon...";
 
-            salvarOuAtualizarProduto(idEditando, dadosComuns);
-        };
-
-        function salvarOuAtualizarProduto(idEditando, dados) {
-            let banco = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
             try {
+                const sql = await getSql();
+
                 if (idEditando) {
-                    const idx = banco.findIndex(p => String(p.id) === String(idEditando));
-                    if (idx !== -1) {
-                        banco[idx] = { ...banco[idx], ...dados, id: banco[idx].id };
-                    }
+                    // ATUALIZAÇÃO NO NEON
+                    await sql`
+                        UPDATE produtos 
+                        SET nome = ${nome},
+                            preco = ${preco},
+                            preco_promocional = ${precoPromocional},
+                            categoria = ${categoria},
+                            estoque = ${estoque},
+                            descricao = ${descricao},
+                            imagem = ${fotoCapa},
+                            imagens = ${JSON.stringify(imagensFinais)}::jsonb,
+                            tamanhos = ${JSON.stringify(tamanhos)}::jsonb,
+                            cores = ${JSON.stringify(listaCoresCadastradas.map(c => c.cor))}::jsonb,
+                            destaque = ${isPromocao}
+                        WHERE id = ${parseInt(idEditando)};
+                    `;
                 } else {
-                    const novoProduto = { id: Date.now(), ...dados };
-                    banco.push(novoProduto);
+                    // INSERÇÃO NO NEON
+                    await sql`
+                        INSERT INTO produtos (nome, preco, preco_promocional, categoria, estoque, descricao, imagem, imagens, tamanhos, cores, destaque)
+                        VALUES (
+                            ${nome},
+                            ${preco},
+                            ${precoPromocional},
+                            ${categoria},
+                            ${estoque},
+                            ${descricao},
+                            ${fotoCapa},
+                            ${JSON.stringify(imagensFinais)}::jsonb,
+                            ${JSON.stringify(tamanhos)}::jsonb,
+                            ${JSON.stringify(listaCoresCadastradas.map(c => c.cor))}::jsonb,
+                            ${isPromocao}
+                        );
+                    `;
                 }
 
-                localStorage.setItem('vr_modas_db', JSON.stringify(banco));
-                resetarModoEdicao();
-                atualizarDashboard();
-                alternarAbaAdmin('secao-catalogo');
-                alert(`Produto "${dados.nome}" guardado com sucesso!`);
-            } catch (err) {
-                alert("Armazenamento local cheio. Tente imagens menores.");
+                alert(`Produto "${nome}" salvo no Neon com sucesso!`);
+            } catch (erroBanco) {
+                console.error("Erro ao salvar produto no Neon:", erroBanco);
+                alert("Erro ao gravar no banco na nuvem. Verifique o console.");
             }
+
+            // Sincroniza e recarrega os dados locais
+            if (typeof sincronizarProdutosNeon === 'function') {
+                await sincronizarProdutosNeon();
+            } else {
+                await recarregarProdutosDoNeon();
+            }
+
+            resetarModoEdicao();
+            atualizarDashboard();
+            alternarAbaAdmin('secao-catalogo');
+        };
+    }
+
+    async function recarregarProdutosDoNeon() {
+        try {
+            const sql = await getSql();
+            const dados = await sql`SELECT * FROM produtos ORDER BY id DESC;`;
+            if (Array.isArray(dados)) {
+                const produtosFormatados = dados.map(item => ({
+                    id: item.id,
+                    nome: item.nome,
+                    preco: parseFloat(item.preco),
+                    precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
+                    descricao: item.descricao || '',
+                    categoria: item.categoria || 'geral',
+                    estoque: item.estoque !== null ? parseInt(item.estoque) : 10,
+                    imagem: item.imagem || 'img/produto1.jpg',
+                    imagens: Array.isArray(item.imagens) ? item.imagens : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
+                    tamanhos: Array.isArray(item.tamanhos) ? item.tamanhos : (typeof item.tamanhos === 'string' ? JSON.parse(item.tamanhos) : ['P', 'M', 'G']),
+                    cores: Array.isArray(item.cores) ? item.cores : (typeof item.cores === 'string' ? JSON.parse(item.cores) : ['Padrão']),
+                    promocao: item.destaque || !!item.preco_promocional
+                }));
+                localStorage.setItem('vr_modas_db', JSON.stringify(produtosFormatados));
+            }
+        } catch (e) {
+            console.warn("Erro ao recarregar produtos:", e);
         }
     }
 
     // ==========================================
-    // 6. CATÁLOGO & ESTOQUE
+    // 6. CATÁLOGO & ESTOQUE (NEON DB)
     // ==========================================
     let categoriaAdminAtiva = 'todos';
     const listaProdutosAdmin = document.getElementById('lista-produtos-admin');
@@ -492,11 +551,16 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.btn-aba-cat').forEach(b => b.classList.remove('ativo'));
             this.classList.add('ativo');
             categoriaAdminAtiva = this.getAttribute('data-cat');
-            atualizarTabelaProdutos();
+            renderizarTabelaProdutosUI();
         };
     });
 
-    function atualizarTabelaProdutos() {
+    async function carregarEAtualizarTabelaProdutos() {
+        await recarregarProdutosDoNeon();
+        renderizarTabelaProdutosUI();
+    }
+
+    function renderizarTabelaProdutosUI() {
         if (!listaProdutosAdmin) return;
         let produtos = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
         atualizarContadoresAbas(produtos);
@@ -556,13 +620,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.querySelectorAll('.btn-excluir-prod').forEach(btn => {
-            btn.onclick = function() {
+            btn.onclick = async function() {
                 const idProd = this.getAttribute('data-id');
-                if (confirm("Remover este produto do catálogo?")) {
-                    let lista = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
-                    lista = lista.filter(p => String(p.id) !== String(idProd));
-                    localStorage.setItem('vr_modas_db', JSON.stringify(lista));
-                    atualizarTabelaProdutos();
+                if (confirm("Deseja realmente remover este produto do banco de dados na nuvem?")) {
+                    try {
+                        const sql = await getSql();
+                        await sql`DELETE FROM produtos WHERE id = ${parseInt(idProd)};`;
+                        alert("Produto removido com sucesso!");
+                    } catch (e) {
+                        console.error("Erro ao excluir do Neon:", e);
+                    }
+                    await carregarEAtualizarTabelaProdutos();
                     atualizarDashboard();
                 }
             };
@@ -589,14 +657,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('estoque-produto').value = produto.estoque || 0;
         
         listaCoresCadastradas = [];
-        if (produto.estoquePorCor) {
-            produto.estoquePorCor.split(',').forEach(item => {
-                const partes = item.split(':');
-                if (partes.length === 2) {
-                    listaCoresCadastradas.push({ cor: partes[0].trim(), qtd: parseInt(partes[1].trim()) || 1 });
-                }
-            });
-        } else if (produto.cores) {
+        if (Array.isArray(produto.cores)) {
+            produto.cores.forEach(c => listaCoresCadastradas.push({ cor: c, qtd: 1 }));
+        } else if (typeof produto.cores === 'string' && produto.cores) {
             produto.cores.split(',').forEach(c => {
                 if (c.trim()) listaCoresCadastradas.push({ cor: c.trim(), qtd: 1 });
             });
@@ -623,25 +686,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 7. GESTÃO OPERACIONAL DE PEDIDOS & COMPROVANTE
+    // 7. GESTÃO DE PEDIDOS (NEON DB)
     // ==========================================
     const listaPedidosAdmin = document.getElementById('lista-pedidos-admin');
 
-    function emitirNotificacaoCliente(pedidoCodigo, novoStatus, clienteNome) {
-        const notificacoes = JSON.parse(localStorage.getItem('vr_modas_notificacoes_cliente')) || [];
-        notificacoes.unshift({
-            id: Date.now(),
-            pedido: pedidoCodigo,
-            cliente: clienteNome,
-            mensagem: `O seu pedido ${pedidoCodigo} mudou para: ${novoStatus}!`,
-            status: novoStatus,
-            dataHora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-            lida: false
-        });
-        localStorage.setItem('vr_modas_notificacoes_cliente', JSON.stringify(notificacoes));
+    async function recarregarPedidosDoNeon() {
+        try {
+            const sql = await getSql();
+            const dados = await sql`SELECT * FROM pedidos ORDER BY id DESC;`;
+            if (Array.isArray(dados)) {
+                const pedidosFormatados = dados.map(p => ({
+                    id: p.id,
+                    codigo: `#VR-${p.id}`,
+                    cliente: {
+                        nome: p.cliente_nome,
+                        whatsapp: p.cliente_whatsapp,
+                        email: p.cliente_email,
+                        endereco: p.endereco_entrega
+                    },
+                    itens: Array.isArray(p.itens) ? p.itens : (typeof p.itens === 'string' ? JSON.parse(p.itens) : []),
+                    total: parseFloat(p.total),
+                    formaPagamento: p.forma_pagamento || 'PIX',
+                    status: p.status || 'Pendente',
+                    data: new Date(p.criado_em).toLocaleDateString('pt-BR')
+                }));
+                localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosFormatados));
+            }
+        } catch (e) {
+            console.warn("Erro ao buscar pedidos do Neon:", e);
+        }
     }
 
-    function atualizarTabelaPedidos() {
+    async function carregarEAtualizarTabelaPedidos() {
+        await recarregarPedidosDoNeon();
+        renderizarTabelaPedidosUI();
+    }
+
+    function renderizarTabelaPedidosUI() {
         if (!listaPedidosAdmin) return;
         const pedidos = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
         listaPedidosAdmin.innerHTML = '';
@@ -664,7 +745,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalFormatado = Number(ped.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             let resumoItens = (ped.itens || []).map(it => `• <strong>${it.quantidade}x</strong> ${it.nome} <span style="color: #aaa; font-size: 11px;">(${it.tamanho || 'Padrão'} / ${it.cor || 'Padrão'})</span>`).join('<br>');
             
-            const nomeCli = ped.cliente?.nome || "Cliente Visitante";
+            const nomeCli = ped.cliente?.nome || "Cliente";
             const whatsCli = ped.cliente?.whatsapp || "Não informado";
             const corAtual = coresStatus[ped.status] || '#d4af37';
 
@@ -702,19 +783,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.querySelectorAll('.select-status-pedido').forEach(sel => {
-            sel.onchange = function() {
+            sel.onchange = async function() {
                 const idPed = this.getAttribute('data-id');
                 const novoStatus = this.value;
-                let pedidosAtuais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
-                const idx = pedidosAtuais.findIndex(p => String(p.id) === String(idPed));
-                if (idx !== -1) {
-                    pedidosAtuais[idx].status = novoStatus;
-                    localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
-                    emitirNotificacaoCliente(pedidosAtuais[idx].codigo, novoStatus, pedidosAtuais[idx].cliente?.nome || 'Cliente');
-                    atualizarDashboard();
-                    atualizarTabelaPedidos();
-                    alert(`Status do pedido ${pedidosAtuais[idx].codigo} atualizado para "${novoStatus}". Notificação emitida no site.`);
+                try {
+                    const sql = await getSql();
+                    await sql`UPDATE pedidos SET status = ${novoStatus} WHERE id = ${parseInt(idPed)};`;
+                    alert(`Status do pedido atualizado para "${novoStatus}" no Neon!`);
+                } catch (e) {
+                    console.error("Erro ao atualizar status:", e);
                 }
+                await carregarEAtualizarTabelaPedidos();
+                atualizarDashboard();
             };
         });
 
@@ -723,13 +803,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.querySelectorAll('.btn-excluir-pedido').forEach(btn => {
-            btn.onclick = function() {
+            btn.onclick = async function() {
                 const idPed = this.getAttribute('data-id');
-                if (confirm("Remover este pedido?")) {
-                    let pedidosAtuais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
-                    pedidosAtuais = pedidosAtuais.filter(p => String(p.id) !== String(idPed));
-                    localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
-                    atualizarTabelaPedidos();
+                if (confirm("Remover este pedido do banco?")) {
+                    try {
+                        const sql = await getSql();
+                        await sql`DELETE FROM pedidos WHERE id = ${parseInt(idPed)};`;
+                    } catch (e) {
+                        console.error("Erro ao deletar pedido:", e);
+                    }
+                    await carregarEAtualizarTabelaPedidos();
                     atualizarDashboard();
                 }
             };
@@ -789,12 +872,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div class="dados-quadro">
-                    <div class="linha-dado"><span class="rotulo">Cliente:</span> <strong>${pedido.cliente?.nome || 'Cliente Visitante'}</strong></div>
+                    <div class="linha-dado"><span class="rotulo">Cliente:</span> <strong>${pedido.cliente?.nome || 'Cliente'}</strong></div>
                     <div class="linha-dado"><span class="rotulo">Contato:</span> ${pedido.cliente?.whatsapp || 'Não informado'}</div>
                     <div class="linha-dado"><span class="rotulo">Forma de Envio:</span> <strong>${endFormatado}</strong></div>
                     <div class="linha-dado"><span class="rotulo">Pagamento:</span> ${pedido.formaPagamento || 'Pix'}</div>
                     <div class="linha-dado"><span class="rotulo">Status Atual:</span> <strong>${pedido.status}</strong></div>
-                    ${pedido.cupom ? `<div class="linha-dado"><span class="rotulo">Cupom Aplicado:</span> ${pedido.cupom}</div>` : ''}
                 </div>
 
                 <table>
@@ -824,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 8. BANNERS DA HOME
+    // 8. BANNERS DA HOME (NEON DB)
     // ==========================================
     const formBanner = document.getElementById('form-cadastro-banner');
     const inputFotoBanner = document.getElementById('foto-banner');
@@ -842,13 +924,38 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function atualizarListaBanners() {
+    async function recarregarBannersDoNeon() {
+        try {
+            const sql = await getSql();
+            const dados = await sql`SELECT * FROM banners WHERE ativo = true ORDER BY id DESC;`;
+            if (Array.isArray(dados)) {
+                const formatados = dados.map(b => ({
+                    id: b.id,
+                    titulo: b.titulo,
+                    subtitulo: b.subtitulo,
+                    imagem: b.imagem,
+                    btnTexto: b.btn_texto || 'Ver Coleção',
+                    btnLink: b.btn_link || 'produtos.html'
+                }));
+                localStorage.setItem('vr_modas_banners', JSON.stringify(formatados));
+            }
+        } catch (e) {
+            console.warn("Erro ao buscar banners:", e);
+        }
+    }
+
+    async function carregarEAtualizarListaBanners() {
+        await recarregarBannersDoNeon();
+        renderizarListaBannersUI();
+    }
+
+    function renderizarListaBannersUI() {
         if (!listaBannersAdmin) return;
         listaBannersAdmin.innerHTML = '';
         const banners = JSON.parse(localStorage.getItem('vr_modas_banners')) || [];
 
         if (banners.length === 0) {
-            listaBannersAdmin.innerHTML = '<p style="color: var(--cinza-texto);">Nenhum banner ativo. A Home ficará sem slider.</p>';
+            listaBannersAdmin.innerHTML = '<p style="color: var(--cinza-texto);">Nenhum banner ativo no momento.</p>';
             return;
         }
 
@@ -868,12 +975,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.querySelectorAll('.btn-remover-banner').forEach(btn => {
-            btn.onclick = function() {
+            btn.onclick = async function() {
                 const idExcluir = this.getAttribute('data-id');
-                let bannersAtuais = JSON.parse(localStorage.getItem('vr_modas_banners')) || [];
-                bannersAtuais = bannersAtuais.filter(b => String(b.id) !== String(idExcluir));
-                localStorage.setItem('vr_modas_banners', JSON.stringify(bannersAtuais));
-                atualizarListaBanners();
+                if (confirm("Remover este banner do banco?")) {
+                    try {
+                        const sql = await getSql();
+                        await sql`DELETE FROM banners WHERE id = ${parseInt(idExcluir)};`;
+                    } catch (e) {
+                        console.error("Erro ao deletar banner:", e);
+                    }
+                    await carregarEAtualizarListaBanners();
+                }
             };
         });
     }
@@ -881,44 +993,53 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formBanner) {
         formBanner.onsubmit = function(event) {
             event.preventDefault();
-            const titulo = document.getElementById('titulo-banner').value;
-            const subtitulo = document.getElementById('subtitulo-banner').value;
-            const btnTexto = document.getElementById('btn-texto-banner').value;
-            const btnLink = document.getElementById('btn-link-banner').value;
+            const titulo = document.getElementById('titulo-banner').value.trim();
+            const subtitulo = document.getElementById('subtitulo-banner').value.trim();
+            const btnTexto = document.getElementById('btn-texto-banner').value.trim();
+            const btnLink = document.getElementById('btn-link-banner').value.trim();
 
             if (inputFotoBanner.files && inputFotoBanner.files[0]) {
-                comprimirImagem(inputFotoBanner.files[0], function(imagemComprimida) {
-                    const novoBanner = { id: Date.now(), titulo, subtitulo, btnTexto, btnLink, imagem: imagemComprimida };
-                    let banners = JSON.parse(localStorage.getItem('vr_modas_banners')) || [];
-                    banners.push(novoBanner);
-                    localStorage.setItem('vr_modas_banners', JSON.stringify(banners));
+                comprimirImagem(inputFotoBanner.files[0], async function(imagemComprimida) {
+                    try {
+                        const sql = await getSql();
+                        await sql`
+                            INSERT INTO banners (titulo, subtitulo, imagem, btn_texto, btn_link, ativo)
+                            VALUES (${titulo}, ${subtitulo}, ${imagemComprimida}, ${btnTexto}, ${btnLink}, true);
+                        `;
+                        alert("Novo banner salvo no Neon!");
+                    } catch (e) {
+                        console.error("Erro ao salvar banner:", e);
+                    }
                     formBanner.reset();
                     if (previewBanner) previewBanner.innerHTML = '';
-                    atualizarListaBanners();
-                    alert("Novo banner publicado!");
+                    await carregarEAtualizarListaBanners();
                 });
             }
         };
     }
 
     // ==========================================
-    // 9. CONFIGURAÇÕES, SUPORTE E CUPONS
+    // 9. CONFIGURAÇÕES & CUPONS (NEON DB)
     // ==========================================
     const formConfig = document.getElementById('form-config-loja');
     const inputWhatsConfig = document.getElementById('config-whatsapp');
     const inputEmailConfig = document.getElementById('config-email');
 
-    function carregarConfiguracoes() {
-        const configPadrao = { whatsapp: "5589999999999", email: "contato@vrmodas.com" };
-        const configSalva = JSON.parse(localStorage.getItem('vr_modas_config')) || configPadrao;
-
-        if (inputWhatsConfig) inputWhatsConfig.value = configSalva.whatsapp || "";
-        if (inputEmailConfig) inputEmailConfig.value = configSalva.email || "";
+    async function carregarConfiguracoes() {
+        try {
+            const sql = await getSql();
+            const configs = await sql`SELECT chave, valor FROM configuracoes;`;
+            const mapa = {};
+            configs.forEach(c => { mapa[c.chave] = c.valor; });
+            if (inputWhatsConfig && mapa['whatsapp']) inputWhatsConfig.value = mapa['whatsapp'];
+            if (inputEmailConfig && mapa['email']) inputEmailConfig.value = mapa['email'];
+        } catch (e) {
+            console.warn("Erro ao buscar configs do Neon:", e);
+        }
     }
 
     if (formConfig) {
-        carregarConfiguracoes();
-        formConfig.onsubmit = function(e) {
+        formConfig.onsubmit = async function(e) {
             e.preventDefault();
             const whatsappLimpo = inputWhatsConfig.value.replace(/\D/g, '');
             const emailLimpo = inputEmailConfig.value.trim();
@@ -928,9 +1049,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const novaConfig = { whatsapp: whatsappLimpo, email: emailLimpo };
-            localStorage.setItem('vr_modas_config', JSON.stringify(novaConfig));
-            alert("Configurações salvas com sucesso!");
+            try {
+                const sql = await getSql();
+                await sql`
+                    INSERT INTO configuracoes (chave, valor)
+                    VALUES ('whatsapp', ${whatsappLimpo})
+                    ON CONFLICT (chave) DO UPDATE SET valor = ${whatsappLimpo};
+                `;
+                await sql`
+                    INSERT INTO configuracoes (chave, valor)
+                    VALUES ('email', ${emailLimpo})
+                    ON CONFLICT (chave) DO UPDATE SET valor = ${emailLimpo};
+                `;
+                localStorage.setItem('vr_modas_config', JSON.stringify({ whatsapp: whatsappLimpo, email: emailLimpo }));
+                alert("Configurações salvas no Neon com sucesso!");
+            } catch (err) {
+                console.error("Erro ao salvar configs no Neon:", err);
+            }
         };
     }
 
@@ -938,12 +1073,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const formCupom = document.getElementById('form-cadastro-cupom');
     const listaCuponsAdmin = document.getElementById('lista-cupons-admin');
 
-    function atualizarListaCupons() {
+    async function carregarEAtualizarListaCupons() {
+        try {
+            const sql = await getSql();
+            const dados = await sql`SELECT * FROM cupons WHERE ativo = true ORDER BY id DESC;`;
+            if (Array.isArray(dados)) {
+                localStorage.setItem('vr_modas_cupons', JSON.stringify(dados));
+            }
+        } catch (e) {
+            console.warn("Erro ao buscar cupons do Neon:", e);
+        }
+        renderizarListaCuponsUI();
+    }
+
+    function renderizarListaCuponsUI() {
         if (!listaCuponsAdmin) return;
         listaCuponsAdmin.innerHTML = '';
-        const cupons = JSON.parse(localStorage.getItem('vr_modas_cupons')) || [
-            { id: 1, codigo: 'BEMVINDA10', tipo: 'porcentagem', valor: 10 }
-        ];
+        const cupons = JSON.parse(localStorage.getItem('vr_modas_cupons')) || [];
 
         if (cupons.length === 0) {
             listaCuponsAdmin.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--cinza-texto); padding: 20px;">Nenhum cupom ativo no momento.</td></tr>';
@@ -965,41 +1111,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.querySelectorAll('.btn-excluir-cupom').forEach(btn => {
-            btn.onclick = function() {
+            btn.onclick = async function() {
                 const id = this.getAttribute('data-id');
-                let cupons = JSON.parse(localStorage.getItem('vr_modas_cupons')) || [];
-                cupons = cupons.filter(c => String(c.id) !== String(id));
-                localStorage.setItem('vr_modas_cupons', JSON.stringify(cupons));
-                atualizarListaCupons();
+                if (confirm("Remover este cupom do banco?")) {
+                    try {
+                        const sql = await getSql();
+                        await sql`DELETE FROM cupons WHERE id = ${parseInt(id)};`;
+                    } catch (e) {
+                        console.error("Erro ao remover cupom:", e);
+                    }
+                    await carregarEAtualizarListaCupons();
+                }
             };
         });
     }
 
     if (formCupom) {
-        if (!localStorage.getItem('vr_modas_cupons')) {
-            localStorage.setItem('vr_modas_cupons', JSON.stringify([
-                { id: 1, codigo: 'BEMVINDA10', tipo: 'porcentagem', valor: 10 }
-            ]));
-        }
-        atualizarListaCupons();
-
-        formCupom.onsubmit = function(e) {
+        formCupom.onsubmit = async function(e) {
             e.preventDefault();
             const codigo = document.getElementById('cupom-codigo').value.trim().toUpperCase();
             const tipo = document.getElementById('cupom-tipo').value;
             const valor = parseFloat(document.getElementById('cupom-valor').value);
 
-            let cupons = JSON.parse(localStorage.getItem('vr_modas_cupons')) || [];
-            if (cupons.some(c => c.codigo === codigo)) {
-                alert("Já existe um cupom com esse código!");
-                return;
+            try {
+                const sql = await getSql();
+                await sql`
+                    INSERT INTO cupons (codigo, tipo, valor, ativo)
+                    VALUES (${codigo}, ${tipo}, ${valor}, true);
+                `;
+                alert(`Cupom ${codigo} cadastrado no Neon com sucesso!`);
+            } catch (err) {
+                console.error("Erro ao cadastrar cupom no Neon:", err);
+                alert("Erro ao cadastrar cupom. Verifique se o código já existe.");
             }
 
-            cupons.push({ id: Date.now(), codigo, tipo, valor });
-            localStorage.setItem('vr_modas_cupons', JSON.stringify(cupons));
             formCupom.reset();
-            atualizarListaCupons();
-            alert(`Cupom ${codigo} cadastrado com sucesso!`);
+            await carregarEAtualizarListaCupons();
         };
     }
 
@@ -1040,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.onload = function(event) {
                 try {
                     const dados = JSON.parse(event.target.result);
-                    if (confirm("Isto irá substituir o catálogo e pedidos atuais pelo ficheiro de backup. Deseja continuar?")) {
+                    if (confirm("Isto irá substituir os dados locais pelo ficheiro de backup. Deseja continuar?")) {
                         if (dados.vr_modas_db) localStorage.setItem('vr_modas_db', JSON.stringify(dados.vr_modas_db));
                         if (dados.vr_modas_pedidos) localStorage.setItem('vr_modas_pedidos', JSON.stringify(dados.vr_modas_pedidos));
                         if (dados.vr_modas_banners) localStorage.setItem('vr_modas_banners', JSON.stringify(dados.vr_modas_banners));
@@ -1059,10 +1206,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Inicialização da aba padrão
+    // Inicialização da aba padrão e sincronizações iniciais
+    await recarregarProdutosDoNeon();
+    await recarregarPedidosDoNeon();
     atualizarDashboard();
-    atualizarTabelaProdutos();
-    atualizarTabelaPedidos();
-    atualizarListaBanners();
+    renderizarTabelaProdutosUI();
     alternarAbaAdmin('secao-dashboard');
 });

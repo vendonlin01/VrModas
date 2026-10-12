@@ -1,59 +1,51 @@
-// ==========================================
-// BANCO DE DADOS LOCAL COMPARTILHADO (VR MODAS)
-// ==========================================
+// js/db.js - Conexão e sincronização Neon (PostgreSQL)
+const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
 
-// 1. Inicializa o banco de produtos se estiver vazio
-let bancoDeProdutos = JSON.parse(localStorage.getItem('vr_modas_db'));
-if (!bancoDeProdutos || bancoDeProdutos.length === 0) {
-    bancoDeProdutos = [
-        { id: 1001, nome: "Vestido Premium", preco: 149.90, imagens: ["img/produto1.jpg"], categoria: "vestidos", tamanhos: ["P", "M", "G"], cores: "Preto, Dourado", descricao: "Peça exclusiva.", estoque: 10 },
-        { id: 1002, nome: "Conjunto Dourado", preco: 199.90, imagens: ["img/produto2.jpg"], categoria: "vestidos", tamanhos: ["P", "M"], cores: "Dourado", descricao: "Conjunto sofisticado.", estoque: 5 },
-        { id: 1003, nome: "Blazer Elegance", preco: 259.90, imagens: ["img/produto3.jpg"], categoria: "camisas", tamanhos: ["M", "G"], cores: "Preto", descricao: "Caimento impecável.", estoque: 12 },
-        { id: 1004, nome: "Calça Alfaiataria", preco: 199.90, imagens: ["img/produto4.jpg"], categoria: "calcas", tamanhos: ["38", "40"], cores: "Branco", descricao: "Corte reto.", estoque: 8 }
-    ];
-    localStorage.setItem('vr_modas_db', JSON.stringify(bancoDeProdutos));
-}
+async function sincronizarProdutosNeon() {
+    try {
+        const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+        const sql = neon(NEON_CONNECTION_STRING);
 
-// 2. Inicializa o banco de banners se estiver vazio
-let bancoDeBanners = JSON.parse(localStorage.getItem('vr_modas_banners'));
-if (!bancoDeBanners || bancoDeBanners.length === 0) {
-    bancoDeBanners = [
-        {
-            id: 2001,
-            titulo: "Nova Coleção",
-            subtitulo: "Elegância e estilo em cada detalhe.",
-            btnTexto: "Ver Coleção",
-            btnLink: "#vitrine",
-            imagem: "img/produto1.jpg"
-        },
-        {
-            id: 2002,
-            titulo: "Acessórios Premium",
-            subtitulo: "O toque de sofisticação que faltava.",
-            btnTexto: "Comprar Agora",
-            btnLink: "produtos.html",
-            imagem: "img/produto2.jpg"
+        // Consulta direta na tabela de produtos
+        const dadosNeon = await sql`SELECT * FROM produtos ORDER BY id DESC;`;
+
+        if (Array.isArray(dadosNeon) && dadosNeon.length > 0) {
+            const produtosFormatados = dadosNeon.map(item => ({
+                id: item.id,
+                nome: item.nome,
+                preco: parseFloat(item.preco),
+                precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
+                descricao: item.descricao || '',
+                categoria: item.categoria || 'geral',
+                estoque: item.estoque !== null && item.estoque !== undefined ? parseInt(item.estoque) : 10,
+                imagem: item.imagem || 'img/produto1.jpg',
+                imagens: Array.isArray(item.imagens) 
+                    ? item.imagens 
+                    : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
+                tamanhos: Array.isArray(item.tamanhos) 
+                    ? item.tamanhos 
+                    : (typeof item.tamanhos === 'string' ? JSON.parse(item.tamanhos) : ['P', 'M', 'G']),
+                cores: Array.isArray(item.cores) 
+                    ? item.cores 
+                    : (typeof item.cores === 'string' ? JSON.parse(item.cores) : ['Padrão'])
+            }));
+
+            // Atualiza o cache local
+            localStorage.setItem('vr_modas_db', JSON.stringify(produtosFormatados));
+
+            // Atualiza a vitrine e catálogo na tela na hora
+            if (typeof window.filtrarEOrdenarCatalogo === 'function') {
+                window.filtrarEOrdenarCatalogo();
+            }
+
+            console.log('✅ Base de dados Neon sincronizada com sucesso!', produtosFormatados);
         }
-    ];
-    localStorage.setItem('vr_modas_banners', JSON.stringify(bancoDeBanners));
+    } catch (erro) {
+        console.warn('⚠️ A usar base de dados local temporária:', erro.message);
+    }
 }
 
-// 3. Função universal de Toasts (Notificações visuais)
-function mostrarToast(mensagem) {
-    let container = document.getElementById('toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toast-container';
-        document.body.appendChild(container);
-    }
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.innerHTML = `<span>✔</span> ${mensagem}`;
-    container.appendChild(toast);
-    
-    setTimeout(() => toast.classList.add('mostrar'), 10);
-    setTimeout(() => {
-        toast.classList.remove('mostrar');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
+// Dispara a sincronização automaticamente ao carregar a página
+document.addEventListener('DOMContentLoaded', () => {
+    sincronizarProdutosNeon();
+});

@@ -50,7 +50,7 @@
             border: 1px solid #333;
             border-top: 2px solid var(--dourado);
             border-radius: 6px;
-            min-width: 170px;
+            min-width: 180px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
             z-index: 2500;
             padding: 8px 0;
@@ -210,7 +210,6 @@
         /* =========================================
            RESPONSIVIDADE (DESKTOP E CELULAR)
            ========================================= */
-        /* No COMPUTADOR (Desktop) */
         @media (min-width: 769px) {
             .link-menu-lojista,
             .divisor-menu-mobile {
@@ -218,9 +217,7 @@
             }
         }
 
-        /* No CELULAR (Mobile) */
         @media (max-width: 768px) {
-            /* Esconde a engrenagem do topo para não poluir a barra móvel */
             .btn-admin-topo {
                 display: none !important;
             }
@@ -427,6 +424,7 @@
                     <div class="info-nome" id="dropdown-nome">Olá, Visitante</div>
                     <a href="login.html" id="link-login-dropdown">Entrar na Conta</a>
                     <a href="cadastro.html" id="link-cadastro-dropdown">Criar Conta</a>
+                    <a href="pedidos.html" id="link-pedidos-dropdown" style="display: none;">🛍️ Minhas Compras</a>
                     <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪 Sair</button>
                 </div>
             </div>
@@ -534,7 +532,7 @@
     <!-- Script de Gestão do Perfil e Contato Dinâmico -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Sincroniza o e-mail de suporte salvo pelo administrador
+            // Sincroniza o e-mail de suporte salvo pelo lojista
             const configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || {};
             const linkEmailFooter = document.getElementById('email-suporte-footer');
             if (configLoja.email && linkEmailFooter) {
@@ -548,13 +546,15 @@
             const dropdownNome = document.getElementById('dropdown-nome');
             const linkLogin = document.getElementById('link-login-dropdown');
             const linkCadastro = document.getElementById('link-cadastro-dropdown');
+            const linkPedidos = document.getElementById('link-pedidos-dropdown');
             const btnSair = document.getElementById('btn-sair-sessao');
 
             if (!btnUsuario || !menuUsuario) return;
 
-            // 1. Verifica sessão ativa
+            // 1. Verifica sessão ativa (Cliente ou Admin)
             function carregarDadosUsuario() {
-                const usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo'));
+                const usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
+                                     JSON.parse(sessionStorage.getItem('vr_cliente_dados'));
 
                 if (usuarioAtivo && usuarioAtivo.nome) {
                     const primeiroNome = usuarioAtivo.nome.split(' ')[0];
@@ -566,6 +566,7 @@
 
                     if (linkLogin) linkLogin.style.display = 'none';
                     if (linkCadastro) linkCadastro.style.display = 'none';
+                    if (linkPedidos) linkPedidos.style.display = 'block';
                     if (btnSair) btnSair.style.display = 'block';
 
                     if (usuarioAtivo.role === 'admin' && dropdownNome) {
@@ -576,6 +577,7 @@
                     if (dropdownNome) dropdownNome.innerText = 'Olá, Visitante';
                     if (linkLogin) linkLogin.style.display = 'block';
                     if (linkCadastro) linkCadastro.style.display = 'block';
+                    if (linkPedidos) linkPedidos.style.display = 'none';
                     if (btnSair) btnSair.style.display = 'none';
                 }
             }
@@ -592,12 +594,8 @@
             btnUsuario.addEventListener('touchend', alternarMenu);
 
             // 3. Impedir que cliques dentro do próprio menu fechem a janela
-            menuUsuario.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-            menuUsuario.addEventListener('touchend', (e) => {
-                e.stopPropagation();
-            });
+            menuUsuario.addEventListener('click', (e) => e.stopPropagation());
+            menuUsuario.addEventListener('touchend', (e) => e.stopPropagation());
 
             // 4. Fechar apenas se clicar fora do menu e do botão
             document.addEventListener('click', (e) => {

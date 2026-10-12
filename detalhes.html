@@ -243,6 +243,12 @@
             padding: 9px 16px;
             border-radius: 4px;
             cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-enviar-av:disabled {
+            opacity: 0.6;
+            cursor: wait;
         }
 
         .btn-cancelar-av {
@@ -327,7 +333,7 @@
             <div class="info-produto">
                 <h1 id="detalhe-nome">Carregando peça...</h1>
 
-                <!-- BARRA ELEGANTE LADO A LADO: ESTRELAS NA ESQUERDA, CORAÇÃO NA DIREITA -->
+                <!-- BARRA SOCIAL: ESTRELAS NA ESQUERDA, CORAÇÃO NA DIREITA -->
                 <div class="barra-social-produto">
                     <div class="bloco-estrelas-link" id="link-avaliacoes" title="Ver avaliações">
                         <div class="estrelas-icones" id="detalhe-estrelas">
@@ -416,7 +422,7 @@
                 </div>
 
                 <div class="acoes-form-av">
-                    <button type="submit" class="btn-enviar-av">Publicar Avaliação</button>
+                    <button type="submit" class="btn-enviar-av" id="btn-submit-av">Publicar Avaliação</button>
                     <button type="button" id="btn-cancelar-av" class="btn-cancelar-av">Cancelar</button>
                 </div>
             </form>
@@ -503,25 +509,53 @@
 
     <!-- SCRIPT GERAL DE INTERAÇÃO -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        const NEON_DETALHES_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
+
+        document.addEventListener('DOMContentLoaded', async () => {
             const params = new URLSearchParams(window.location.search);
             const idUrl = params.get('id');
-            const db = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
+            let db = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
 
-            // Identificação do Produto
             let prod = null;
             if (idUrl) {
                 prod = db.find(p => String(p.id).trim() === String(idUrl).trim());
             }
+
+            // Se não encontrou no cache local, busca direto no Neon pelo ID
+            if (!prod && idUrl) {
+                try {
+                    const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+                    const sql = neon(NEON_DETALHES_CONN);
+                    const prodBanco = await sql`SELECT * FROM produtos WHERE id = ${parseInt(idUrl)} LIMIT 1;`;
+                    if (prodBanco.length > 0) {
+                        const item = prodBanco[0];
+                        prod = {
+                            id: item.id,
+                            nome: item.nome,
+                            preco: parseFloat(item.preco),
+                            precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
+                            descricao: item.descricao || '',
+                            categoria: item.categoria || 'geral',
+                            estoque: item.estoque !== null ? parseInt(item.estoque) : 10,
+                            imagem: item.imagem || 'img/produto1.jpg',
+                            imagens: Array.isArray(item.imagens) ? item.imagens : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
+                            tamanhos: Array.isArray(item.tamanhos) ? item.tamanhos : ['P', 'M', 'G'],
+                            cores: Array.isArray(item.cores) ? item.cores : ['Padrão']
+                        };
+                    }
+                } catch (e) {
+                    console.warn('Erro ao buscar produto individual no Neon:', e);
+                }
+            }
+
             if (!prod && db.length > 0) prod = db[0];
 
-            const prodIdFinal = prod ? String(prod.id) : (idUrl || '1');
-            const nomeFinal = prod ? prod.nome : 'Vestido Premium';
-            const precoFinal = prod ? (prod.precoPromocional || prod.preco) : 149.90;
+            let prodIdFinal = prod ? String(prod.id) : (idUrl || '1');
+            let nomeFinal = prod ? prod.nome : 'Vestido Premium';
+            let precoFinal = prod ? (prod.precoPromocional || prod.preco) : 149.90;
             let fotoFinal = 'img/produto1.jpg';
 
             if (prod) {
-                // Título e Preço
                 const elNome = document.getElementById('detalhe-nome');
                 if (elNome) elNome.innerText = prod.nome;
 
@@ -539,11 +573,9 @@
                     }
                 }
 
-                // Descrição
                 const elDesc = document.getElementById('detalhe-descricao');
                 if (elDesc) elDesc.innerText = prod.descricao || 'Peça exclusiva VR Modas.';
 
-                // Imagem Principal
                 let fotos = (prod.imagens && prod.imagens.length > 0) ? prod.imagens : [prod.imagem || 'img/produto1.jpg'];
                 fotoFinal = fotos[0];
                 const imgEl = document.getElementById('detalhe-img');
@@ -552,7 +584,6 @@
                     imgEl.onerror = () => { imgEl.src = 'img/produto1.jpg'; };
                 }
 
-                // Miniaturas
                 const galeriaEl = document.querySelector('.galeria');
                 if (galeriaEl && fotos.length > 1) {
                     let miniaturasHtml = `<div class="miniaturas" style="display: flex; gap: 8px; margin-top: 10px; overflow-x: auto;">`;
@@ -563,7 +594,6 @@
                     galeriaEl.insertAdjacentHTML('beforeend', miniaturasHtml);
                 }
 
-                // Tamanhos
                 const boxTam = document.getElementById('detalhe-tamanhos');
                 if (boxTam) {
                     boxTam.innerHTML = '';
@@ -573,7 +603,6 @@
                     });
                 }
 
-                // Cores
                 const boxCor = document.getElementById('detalhe-cores');
                 if (boxCor) {
                     boxCor.innerHTML = '';
@@ -586,7 +615,6 @@
                     });
                 }
 
-                // Trava de Estoque (+ e -)
                 const estoque = parseInt(prod.estoque || 0);
                 const btnAdd = document.getElementById('btn-adicionar-sacola');
                 const inputQtd = document.getElementById('qtd-produto');
@@ -695,12 +723,13 @@
             }
 
             // ==========================================
-            // 3. CARREGAR E SALVAR AVALIAÇÕES
+            // 3. CARREGAR E SALVAR AVALIAÇÕES (NEON DB)
             // ==========================================
             const containerListaAv = document.getElementById('lista-avaliacoes-peca');
             const formAv = document.getElementById('form-avaliacao-cliente');
             const btnAbrirFormAv = document.getElementById('btn-abrir-form-avaliacao');
             const btnCancelarFormAv = document.getElementById('btn-cancelar-av');
+            const btnSubmitAv = document.getElementById('btn-submit-av');
             const estrelasEl = document.querySelectorAll('.estrela-opcao');
             const inputNotaVal = document.getElementById('nota-avaliacao-val');
 
@@ -727,15 +756,42 @@
                 };
             });
 
-            function carregarAvaliacoes() {
+            async function carregarAvaliacoes() {
                 if (!containerListaAv) return;
-                const todas = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
-                
-                // Filtra por ID ou Nome para conectar com comentários já existentes
-                const daPeca = todas.filter(a => 
-                    String(a.produtoId).trim() === prodIdFinal || 
-                    (a.produtoNome && a.produtoNome.toLowerCase() === nomeFinal.toLowerCase())
-                );
+
+                let daPeca = [];
+
+                // 1. Tenta carregar direto do Neon
+                try {
+                    const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+                    const sql = neon(NEON_DETALHES_CONN);
+                    const avBanco = await sql`
+                        SELECT * FROM avaliacoes 
+                        WHERE produto_id = ${prodIdFinal} OR LOWER(produto_nome) = ${nomeFinal.toLowerCase()}
+                        ORDER BY id DESC;
+                    `;
+                    if (Array.isArray(avBanco)) {
+                        daPeca = avBanco.map(a => ({
+                            id: a.id,
+                            produtoId: a.produto_id,
+                            produtoNome: a.produto_nome,
+                            autor: a.autor,
+                            texto: a.texto,
+                            nota: parseInt(a.nota || 5)
+                        }));
+                    }
+                } catch (e) {
+                    console.warn('Usando avaliações em cache local:', e);
+                }
+
+                // Fallback no LocalStorage
+                if (daPeca.length === 0) {
+                    const todas = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
+                    daPeca = todas.filter(a => 
+                        String(a.produtoId).trim() === prodIdFinal || 
+                        (a.produtoNome && a.produtoNome.toLowerCase() === nomeFinal.toLowerCase())
+                    );
+                }
 
                 atualizarEstrelasTopo(daPeca);
 
@@ -766,7 +822,7 @@
             carregarAvaliacoes();
 
             if (formAv) {
-                formAv.onsubmit = function (e) {
+                formAv.onsubmit = async function (e) {
                     e.preventDefault();
                     const autor = document.getElementById('autor-avaliacao').value.trim();
                     const texto = document.getElementById('texto-avaliacao').value.trim();
@@ -774,6 +830,24 @@
 
                     if (!autor || !texto) return;
 
+                    if (btnSubmitAv) {
+                        btnSubmitAv.disabled = true;
+                        btnSubmitAv.innerText = 'Enviando...';
+                    }
+
+                    // Salva no Neon
+                    try {
+                        const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+                        const sql = neon(NEON_DETALHES_CONN);
+                        await sql`
+                            INSERT INTO avaliacoes (produto_id, produto_nome, autor, texto, nota)
+                            VALUES (${prodIdFinal}, ${nomeFinal}, ${autor}, ${texto}, ${nota});
+                        `;
+                    } catch (e) {
+                        console.warn('Erro ao salvar avaliação no Neon:', e);
+                    }
+
+                    // Salva também no cache local
                     const nova = {
                         id: Date.now(),
                         produtoId: prodIdFinal,
@@ -783,14 +857,17 @@
                         nota,
                         data: new Date().toLocaleDateString('pt-BR')
                     };
-
                     const todas = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
                     todas.unshift(nova);
                     localStorage.setItem('vr_modas_avaliacoes', JSON.stringify(todas));
 
                     formAv.reset();
                     formAv.style.display = 'none';
-                    carregarAvaliacoes();
+                    if (btnSubmitAv) {
+                        btnSubmitAv.disabled = false;
+                        btnSubmitAv.innerText = 'Publicar Avaliação';
+                    }
+                    await carregarAvaliacoes();
                     alert("Obrigada pela sua avaliação! Ela já está visível para todas as clientes.");
                 };
             }
@@ -820,13 +897,5 @@
             }
         });
     </script>
-    <!-- Scripts Modulares -->
-    <script src="js/db.js"></script>
-    <script src="js/favoritos.js"></script>
-    <script src="js/sacola.js"></script>
-    <script src="js/detalhes.js"></script>
 </body>
-</html>
-</body>
-
 </html>

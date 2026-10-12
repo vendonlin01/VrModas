@@ -1,15 +1,24 @@
 /* =====================================================
    SACOLA, ENVIO (CASA/LOJA) & FINALIZAÇÃO - VR MODAS
-   (100% NATIVO NO SITE - SEM WHATSAPP)
+   Conectado ao Neon (PostgreSQL) para gravação de pedidos e baixa de estoque
    ===================================================== */
+
+const NEON_SACOLA_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
 
 document.addEventListener('DOMContentLoaded', () => {
     const carrinhoLateral = document.getElementById('carrinho-lateral');
     const btnAbrirCarrinho = document.getElementById('abrir-carrinho');
     const btnFecharCarrinho = document.getElementById('fechar-carrinho');
     
-    if (btnAbrirCarrinho) btnAbrirCarrinho.onclick = () => { renderizarSacola(); carrinhoLateral.classList.add('aberto'); };
-    if (btnFecharCarrinho) btnFecharCarrinho.onclick = () => carrinhoLateral.classList.remove('aberto');
+    if (btnAbrirCarrinho) {
+        btnAbrirCarrinho.onclick = () => { 
+            renderizarSacola(); 
+            if (carrinhoLateral) carrinhoLateral.classList.add('aberto'); 
+        };
+    }
+    if (btnFecharCarrinho && carrinhoLateral) {
+        btnFecharCarrinho.onclick = () => carrinhoLateral.classList.remove('aberto');
+    }
 
     const listaItens = document.getElementById('lista-itens');
     let totalCarrinho = 0; 
@@ -17,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let itensNoCarrinhoData = [];
 
     let metodoPagamentoSelecionado = 'pix';
-    let parcelaSelecionada = 1;
     let cupomAtivo = null;
 
     // Estado da modalidade: 'entrega' (Receber em Casa) ou 'retirada' (Retirar na Loja)
@@ -114,14 +122,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const htmlPagamento = `
             <div id="bloco-pagamento-sacola" style="background: #111; padding: 12px; border-radius: 8px; border: 1px solid #2a2a2a; margin-bottom: 12px;">
                 
-                <!-- OPÇÃO: RETIRADA VS ENTREGA EM CASA -->
                 <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Como deseja receber seu pedido?</label>
                 <div style="display: flex; gap: 6px; margin-bottom: 10px;">
                     <button type="button" id="btn-opcao-entrega" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${tipoEnvioSelecionado === 'entrega' ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${tipoEnvioSelecionado === 'entrega' ? '#000' : '#fff'}; cursor: pointer;">🏠 Receber em Casa</button>
                     <button type="button" id="btn-opcao-retirada" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${tipoEnvioSelecionado === 'retirada' ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${tipoEnvioSelecionado === 'retirada' ? '#000' : '#fff'}; cursor: pointer;">🏬 Retirar na Loja</button>
                 </div>
 
-                <!-- ENDEREÇO SE RECEBER EM CASA -->
                 <div id="painel-endereco-casa" style="display: ${tipoEnvioSelecionado === 'entrega' ? 'block' : 'none'}; background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #292929; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                         <span style="font-size: 11px; font-weight: 700; color: var(--dourado, #d4af37); text-transform: uppercase;">📍 Endereço de Entrega</span>
@@ -139,20 +145,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
-                <!-- AVISO DE RETIRADA NA LOJA -->
                 <div id="painel-aviso-retirada" style="display: ${tipoEnvioSelecionado === 'retirada' ? 'block' : 'none'}; background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #292929; margin-bottom: 10px;">
                     <span style="font-size: 11px; font-weight: 700; color: var(--dourado, #d4af37);">🏬 Retirada Gratuita no Ponto Físico</span>
                     <p style="font-size: 11px; color: #aaa; margin: 4px 0 0 0;">Você pode retirar as suas peças diretamente na loja física assim que o pedido for separado.</p>
                 </div>
 
-                <!-- CUPOM DE DESCONTO -->
                 <div style="display: flex; gap: 6px; margin-bottom: 8px;">
                     <input type="text" id="input-cupom-sacola" placeholder="Cupom de desconto" value="${cupomAtivo ? cupomAtivo.codigo : ''}" style="flex: 1; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px 10px; border-radius: 4px; font-size: 11px; text-transform: uppercase;">
                     <button type="button" id="btn-aplicar-cupom-sacola" style="background: var(--dourado, #d4af37); color: #000; border: none; padding: 7px 12px; border-radius: 4px; font-weight: 700; font-size: 11px; cursor: pointer;">Aplicar</button>
                 </div>
                 ${cupomAtivo ? `<div style="color: #4caf50; font-size: 11px; margin-bottom: 8px; font-weight: 700;">✓ Cupom ${cupomAtivo.codigo} aplicado (-R$ ${valorDesconto.toFixed(2)})</div>` : ''}
 
-                <!-- MÉTODO DE PAGAMENTO -->
                 <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Forma de Pagamento</label>
                 <div style="display: flex; gap: 6px; margin-bottom: 10px;">
                     <button type="button" class="btn-metodo-pag ${metodoPagamentoSelecionado === 'pix' ? 'ativo' : ''}" data-metodo="pix" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${metodoPagamentoSelecionado === 'pix' ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${metodoPagamentoSelecionado === 'pix' ? '#000' : '#fff'}; cursor: pointer;">💠 Pix</button>
@@ -168,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const valorEl = document.getElementById('valor-total');
         if (valorEl) valorEl.innerText = totalFinalCalculado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-        // Eventos dos botões de Envio
         const btnOptEntrega = document.getElementById('btn-opcao-entrega');
         const btnOptRetirada = document.getElementById('btn-opcao-retirada');
         if (btnOptEntrega && btnOptRetirada) {
@@ -176,22 +178,25 @@ document.addEventListener('DOMContentLoaded', () => {
             btnOptRetirada.onclick = () => { tipoEnvioSelecionado = 'retirada'; renderizarOpcoesPagamento(); };
         }
 
-        // Alterar Endereço
         const btnEditarEnd = document.getElementById('btn-editar-endereco-sacola');
         const formAltEnd = document.getElementById('form-alterar-endereco');
         const inputNovoEnd = document.getElementById('input-novo-endereco');
-        if (btnEditarEnd && formAltEnd) btnEditarEnd.onclick = () => { formAltEnd.style.display = 'block'; inputNovoEnd?.focus(); };
-        if (document.getElementById('btn-cancelar-novo-endereco')) document.getElementById('btn-cancelar-novo-endereco').onclick = () => { formAltEnd.style.display = 'none'; };
+        if (btnEditarEnd && formAltEnd) {
+            btnEditarEnd.onclick = () => { formAltEnd.style.display = 'block'; inputNovoEnd?.focus(); };
+        }
+        if (document.getElementById('btn-cancelar-novo-endereco')) {
+            document.getElementById('btn-cancelar-novo-endereco').onclick = () => { formAltEnd.style.display = 'none'; };
+        }
         if (document.getElementById('btn-salvar-novo-endereco')) {
             document.getElementById('btn-salvar-novo-endereco').onclick = () => {
                 enderecoEntregaCustom = inputNovoEnd.value.trim() || 'Retirada na Loja / A combinar';
                 formAltEnd.style.display = 'none';
-                document.getElementById('texto-endereco-sacola').innerText = enderecoEntregaCustom;
+                const txtEnd = document.getElementById('texto-endereco-sacola');
+                if (txtEnd) txtEnd.innerText = enderecoEntregaCustom;
                 if (typeof mostrarToast === 'function') mostrarToast("Endereço atualizado!");
             };
         }
 
-        // Cupom
         const btnCupom = document.getElementById('btn-aplicar-cupom-sacola');
         if (btnCupom) {
             btnCupom.onclick = function() {
@@ -208,7 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // Método Pagamento
         document.querySelectorAll('.btn-metodo-pag').forEach(btn => {
             btn.onclick = function() {
                 metodoPagamentoSelecionado = this.getAttribute('data-metodo');
@@ -224,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // ADICIONAR À SACOLA COM TRAVA DE ESTOQUE
+    // ADICIONAR À SACOLA
     // ==========================================
     const btnAdicionarSacola = document.getElementById('btn-adicionar-sacola');
     if (btnAdicionarSacola) {
@@ -287,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             renderizarSacola();
-            carrinhoLateral.classList.add('aberto');
+            if (carrinhoLateral) carrinhoLateral.classList.add('aberto');
             if (typeof mostrarToast === 'function') mostrarToast("Peça adicionada à sua sacola!");
         };
     }
@@ -323,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // CONFIRMAÇÃO VISUAL NO PRÓPRIO SITE
+    // CONFIRMAÇÃO VISUAL NO SITE
     // ==========================================
     function exibirConfirmacaoNoSite(pedido) {
         let modal = document.getElementById('modal-pedido-sucesso');
@@ -380,27 +384,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // FINALIZAR PEDIDO (SALVAR DIRETO NO SITE)
+    // FINALIZAR PEDIDO (GRAVAÇÃO DIRETA NO NEON)
     // ==========================================
     const btnFinalizarCompra = document.getElementById('btn-finalizar-compra') || document.querySelector('.btn-finalizar');
     if (btnFinalizarCompra) {
-        btnFinalizarCompra.onclick = () => {
+        btnFinalizarCompra.onclick = async () => {
             if (itensNoCarrinhoData.length === 0) {
                 if (typeof mostrarToast === 'function') mostrarToast("Adicione produtos na sacola antes de finalizar.");
                 return;
             }
 
+            btnFinalizarCompra.disabled = true;
+            btnFinalizarCompra.innerText = "Processando Pedido...";
+
             const clienteSessao = obterClienteAtual();
             const clienteNome = clienteSessao ? clienteSessao.nome : "Cliente Visitante";
             const clienteWhats = (clienteSessao && (clienteSessao.whatsapp || clienteSessao.telefone)) ? (clienteSessao.whatsapp || clienteSessao.telefone) : "Não informado";
+            const clienteEmail = clienteSessao ? clienteSessao.email : null;
             
             let clienteEndereco = (tipoEnvioSelecionado === 'retirada')
                 ? "🏬 Retirada na Loja Física (Sem frete)"
                 : (enderecoEntregaCustom || "A combinar na entrega");
-
-            const numeroPedido = `#VR-${Math.floor(1000 + Math.random() * 9000)}`;
-            const agora = new Date();
-            const dataHora = `${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 
             let descFinal = 0;
             if (cupomAtivo) {
@@ -408,8 +412,52 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const totalComDesconto = Math.max(0, totalCarrinho - descFinal);
 
+            let idPedidoCriado = Date.now();
+            const agora = new Date();
+            const dataHora = `${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+
+            // 1. Grava no Neon e dá baixa de estoque nas peças
+            try {
+                const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+                const sql = neon(NEON_SACOLA_CONN);
+
+                const resPedido = await sql`
+                    INSERT INTO pedidos (cliente_nome, cliente_whatsapp, cliente_email, endereco_entrega, itens, total, forma_pagamento, status)
+                    VALUES (
+                        ${clienteNome},
+                        ${clienteWhats},
+                        ${clienteEmail},
+                        ${clienteEndereco},
+                        ${JSON.stringify(itensNoCarrinhoData)}::jsonb,
+                        ${totalComDesconto},
+                        ${metodoPagamentoSelecionado.toUpperCase()},
+                        'Pendente'
+                    )
+                    RETURNING id;
+                `;
+
+                if (resPedido && resPedido.length > 0) {
+                    idPedidoCriado = resPedido[0].id;
+                }
+
+                // Baixa de estoque no Neon para cada item
+                for (const itemComprado of itensNoCarrinhoData) {
+                    if (itemComprado.idProduto) {
+                        await sql`
+                            UPDATE produtos 
+                            SET estoque = GREATEST(0, COALESCE(estoque, 0) - ${itemComprado.quantidade})
+                            WHERE id = ${parseInt(itemComprado.idProduto)};
+                        `;
+                    }
+                }
+            } catch (errNeon) {
+                console.warn("⚠️ Falha ao salvar pedido no Neon. Mantendo registro local:", errNeon);
+            }
+
+            const numeroPedido = `#VR-${idPedidoCriado}`;
+
             const novoPedido = {
-                id: Date.now(),
+                id: idPedidoCriado,
                 codigo: numeroPedido,
                 data: dataHora,
                 cliente: { nome: clienteNome, whatsapp: clienteWhats, endereco: clienteEndereco },
@@ -420,12 +468,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: "Pendente"
             };
 
-            // 1. Salva nos pedidos do administrador
+            // 2. Salva localmente (Admin)
             let pedidosAtuais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
             pedidosAtuais.unshift(novoPedido);
             localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
 
-            // 2. Baixa no estoque
+            // 3. Baixa local de estoque
             let bancoProdutos = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
             novoPedido.itens.forEach(itemComprado => {
                 const prodRef = bancoProdutos.find(p => String(p.id) === String(itemComprado.idProduto));
@@ -435,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             localStorage.setItem('vr_modas_db', JSON.stringify(bancoProdutos));
 
-            // 3. Notificação no site
+            // 4. Notificação
             const notificacoes = JSON.parse(localStorage.getItem('vr_modas_notificacoes_cliente')) || [];
             notificacoes.unshift({
                 id: Date.now(),
@@ -446,11 +494,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             localStorage.setItem('vr_modas_notificacoes_cliente', JSON.stringify(notificacoes));
 
-            // 4. Limpa sacola e abre modal
+            // 5. Limpa a sacola e exibe confirmação
             itensNoCarrinhoData = [];
             cupomAtivo = null;
             renderizarSacola();
             if (carrinhoLateral) carrinhoLateral.classList.remove('aberto');
+
+            btnFinalizarCompra.disabled = false;
+            btnFinalizarCompra.innerText = "Finalizar Compra";
 
             exibirConfirmacaoNoSite(novoPedido);
         };

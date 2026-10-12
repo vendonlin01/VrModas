@@ -82,7 +82,6 @@
             gap: 6px;
         }
 
-        /* Grade 2 colunas que vira 1 coluna com conforto em telas pequenas */
         .grid-campos {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -119,7 +118,7 @@
             padding: 12px 10px;
             border-radius: 6px;
             font-family: 'Montserrat', sans-serif;
-            font-size: 16px; /* Previne auto-zoom no mobile */
+            font-size: 16px;
             outline: none;
             transition: border-color 0.25s ease;
         }
@@ -147,10 +146,15 @@
             letter-spacing: 1px;
             cursor: pointer;
             margin-top: 24px;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, opacity 0.2s ease;
         }
 
-        .btn-cadastrar:active {
+        .btn-cadastrar:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .btn-cadastrar:active:not(:disabled) {
             transform: scale(0.98);
         }
 
@@ -167,7 +171,6 @@
             font-weight: 700;
         }
 
-        /* Celulares finos (≤ 420px): campos em 1 coluna para digitar com calma */
         @media (max-width: 420px) {
             .grid-campos {
                 grid-template-columns: 1fr;
@@ -254,7 +257,7 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-cadastrar">Concluir Cadastro</button>
+            <button type="submit" class="btn-cadastrar" id="btn-submit-cad">Concluir Cadastro</button>
         </form>
 
         <div class="cadastro-footer">
@@ -263,11 +266,14 @@
     </div>
 
     <script>
+        const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
+
         document.addEventListener('DOMContentLoaded', () => {
             const inputCpf = document.getElementById('cad-cpf');
             const inputWhats = document.getElementById('cad-whatsapp');
             const inputCep = document.getElementById('cad-cep');
             const form = document.getElementById('form-cadastro-cliente');
+            const btnSubmit = document.getElementById('btn-submit-cad');
 
             // 1. MÁSCARA DE CPF
             inputCpf.addEventListener('input', (e) => {
@@ -311,37 +317,85 @@
                 }
             });
 
-            // 4. GRAVAÇÃO DO CLIENTE
-            form.addEventListener('submit', (e) => {
+            // 4. GRAVAÇÃO DO CLIENTE (NEON + FALLBACK)
+            form.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
-                const email = document.getElementById('cad-email').value.trim().toLowerCase();
-                let usuarios = JSON.parse(localStorage.getItem('vr_modas_usuarios')) || [];
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = 'Gravando Cadastro...';
 
-                if (usuarios.some(u => u.email === email)) {
-                    alert('Este e-mail já está cadastrado! Faça login ou use outro.');
-                    return;
+                const nome = document.getElementById('cad-nome').value.trim();
+                const cpf = document.getElementById('cad-cpf').value.trim();
+                const nascimento = document.getElementById('cad-nasc').value || null;
+                const whatsapp = document.getElementById('cad-whatsapp').value.trim();
+                const email = document.getElementById('cad-email').value.trim().toLowerCase();
+                const senha = document.getElementById('cad-senha').value;
+
+                const enderecoObj = {
+                    cep: document.getElementById('cad-cep').value.trim(),
+                    rua: document.getElementById('cad-rua').value.trim(),
+                    numero: document.getElementById('cad-numero').value.trim(),
+                    bairro: document.getElementById('cad-bairro').value.trim(),
+                    cidade: document.getElementById('cad-cidade').value.trim()
+                };
+
+                const enderecoTexto = `${enderecoObj.rua}, Nº ${enderecoObj.numero} - ${enderecoObj.bairro}, ${enderecoObj.cidade} (CEP: ${enderecoObj.cep})`;
+
+                let idUsuarioCriado = Date.now();
+
+                try {
+                    // Grava no Neon
+                    const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+                    const sql = neon(NEON_CONNECTION_STRING);
+
+                    // Verifica se o e-mail já existe no banco
+                    const existente = await sql`SELECT id FROM usuarios WHERE LOWER(email) = ${email} LIMIT 1;`;
+                    if (existente.length > 0) {
+                        alert('Este e-mail já está cadastrado! Faça login ou use outro.');
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerText = 'Concluir Cadastro';
+                        return;
+                    }
+
+                    const resultado = await sql`
+                        INSERT INTO usuarios (nome, email, senha, whatsapp, endereco, role, cpf, nascimento, endereco_completo)
+                        VALUES (
+                            ${nome},
+                            ${email},
+                            ${senha},
+                            ${whatsapp},
+                            ${enderecoTexto},
+                            'cliente',
+                            ${cpf},
+                            ${nascimento},
+                            ${JSON.stringify(enderecoObj)}
+                        )
+                        RETURNING id;
+                    `;
+
+                    if (resultado.length > 0) {
+                        idUsuarioCriado = resultado[0].id;
+                    }
+                } catch (erroBanco) {
+                    console.warn('⚠️ Falha ao salvar direto no Neon. Gravando localmente:', erroBanco);
                 }
 
+                // Salva também localmente e inicia a sessão
                 const novoCliente = {
-                    id: Date.now(),
-                    nome: document.getElementById('cad-nome').value.trim(),
-                    cpf: document.getElementById('cad-cpf').value.trim(),
-                    nascimento: document.getElementById('cad-nasc').value,
-                    whatsapp: document.getElementById('cad-whatsapp').value.trim(),
-                    email: email,
-                    senha: document.getElementById('cad-senha').value,
-                    endereco: {
-                        cep: document.getElementById('cad-cep').value.trim(),
-                        rua: document.getElementById('cad-rua').value.trim(),
-                        numero: document.getElementById('cad-numero').value.trim(),
-                        bairro: document.getElementById('cad-bairro').value.trim(),
-                        cidade: document.getElementById('cad-cidade').value.trim()
-                    },
+                    id: idUsuarioCriado,
+                    nome,
+                    cpf,
+                    nascimento,
+                    whatsapp,
+                    email,
+                    senha,
+                    endereco: enderecoObj,
+                    enderecoTexto: enderecoTexto,
                     role: "cliente",
                     dataCadastro: new Date().toLocaleDateString('pt-BR')
                 };
 
+                let usuarios = JSON.parse(localStorage.getItem('vr_modas_usuarios')) || [];
                 usuarios.push(novoCliente);
                 localStorage.setItem('vr_modas_usuarios', JSON.stringify(usuarios));
 

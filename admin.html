@@ -13,6 +13,18 @@
     <!-- Biblioteca de Gráficos do Dashboard -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- GUARDA DE ROTA: Apenas Administrador pode acessar -->
+    <script>
+        (function() {
+            const usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo'));
+            const adminLogado = sessionStorage.getItem('vr_admin_logado');
+            if (!usuarioAtivo || usuarioAtivo.role !== 'admin' || !adminLogado) {
+                alert("Acesso restrito! Por favor, faça login com uma conta administrativa.");
+                window.location.href = 'login.html';
+            }
+        })();
+    </script>
+
     <style>
         .secao-admin {
             display: none;
@@ -138,6 +150,41 @@
             margin: 0;
         }
 
+        .badge-neon-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-top: 6px;
+        }
+
+        .btn-logout-sidebar {
+            margin-top: auto;
+            background: transparent;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: #ff5252;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout-sidebar:hover {
+            background: rgba(255, 68, 68, 0.15);
+            border-color: #ff5252;
+        }
+
         @media (max-width: 900px) {
             .grid-graficos {
                 grid-template-columns: 1fr;
@@ -151,13 +198,14 @@
     <div class="admin-layout">
 
         <!-- Barra Lateral / Topo Mobile -->
-        <aside class="admin-sidebar">
+        <aside class="admin-sidebar" style="display: flex; flex-direction: column;">
             <div class="admin-logo">
                 <div>
                     <span class="logo-vr">VR</span> <span class="logo-modas">PAINEL</span>
                 </div>
                 <a href="home.html" class="btn-voltar-loja-topo">⬅ Ver Loja</a>
             </div>
+
             <nav class="admin-nav" id="sidebar-nav">
                 <button type="button" class="nav-btn ativo" data-alvo="secao-dashboard">📊 Dashboard</button>
                 <button type="button" class="nav-btn" data-alvo="secao-cadastro">➕ Nova Peça</button>
@@ -166,14 +214,22 @@
                 <button type="button" class="nav-btn" data-alvo="secao-banners">🎨 Banners</button>
                 <button type="button" class="nav-btn" data-alvo="secao-config">⚙️ Configurações</button>
             </nav>
+
+            <button type="button" id="btn-logout-admin" class="btn-logout-sidebar">🚪 Desconectar</button>
         </aside>
 
         <!-- Área Central de Conteúdo -->
         <main class="admin-conteudo">
 
             <header class="admin-header">
-                <h1 id="titulo-secao-atual">Dashboard & Vendas</h1>
-                <p id="subtitulo-secao-atual">Visão geral do faturamento, pedidos e relatórios de desempenho.</p>
+                <div>
+                    <h1 id="titulo-secao-atual">Dashboard & Vendas</h1>
+                    <p id="subtitulo-secao-atual">Visão geral do faturamento, pedidos e relatórios de desempenho.</p>
+                </div>
+                <div class="badge-neon-status">
+                    <span style="display: inline-block; width: 7px; height: 7px; background: #4caf50; border-radius: 50%;"></span>
+                    <span>Neon PostgreSQL Conectado</span>
+                </div>
             </header>
 
             <!-- ====================================================
@@ -584,6 +640,17 @@
     <!-- Scripts Modulares -->
     <script src="js/db.js"></script>
     <script src="js/admin.js"></script>
+
+    <!-- Script de Logout do Painel -->
+    <script>
+        document.getElementById('btn-logout-admin').addEventListener('click', () => {
+            if (confirm("Deseja sair do painel administrativo?")) {
+                sessionStorage.removeItem('vr_usuario_ativo');
+                sessionStorage.removeItem('vr_admin_logado');
+                window.location.href = 'home.html';
+            }
+        });
+    </script>
 </body>
 
 </html>

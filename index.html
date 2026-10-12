@@ -6,7 +6,7 @@
     <title>VR Modas | Bem-vindo</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600;900&display=swap" rel="stylesheet">
     <style>
-        * {
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -152,11 +152,62 @@
         <div class="carregador-container">
             <div class="carregador-barra"></div>
         </div>
-        <span class="texto-carregando">A carregar coleção...</span>
+        <span class="texto-carregando" id="status-texto">Carregando coleção...</span>
     </main>
 
     <script>
-        // Inicia a transição de fade-out aos 3,3 segundos
+        const NEON_PRELOAD_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
+
+        // 1. Pré-carregamento em background durante a animação
+        async function preaquecerDadosNeon() {
+            try {
+                const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+                const sql = neon(NEON_PRELOAD_CONN);
+
+                // Busca simultânea de produtos e banners
+                const [produtosBanco, bannersBanco] = await Promise.all([
+                    sql`SELECT * FROM produtos ORDER BY id DESC;`,
+                    sql`SELECT * FROM banners WHERE ativo = true ORDER BY ordem ASC, id ASC;`
+                ]);
+
+                if (Array.isArray(produtosBanco) && produtosBanco.length > 0) {
+                    const formatados = produtosBanco.map(item => ({
+                        id: item.id,
+                        nome: item.nome,
+                        preco: parseFloat(item.preco),
+                        precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
+                        descricao: item.descricao || '',
+                        categoria: item.categoria || 'geral',
+                        estoque: item.estoque !== null ? parseInt(item.estoque) : 10,
+                        imagem: item.imagem || 'img/produto1.jpg',
+                        imagens: Array.isArray(item.imagens) ? item.imagens : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
+                        tamanhos: Array.isArray(item.tamanhos) ? item.tamanhos : ['P', 'M', 'G'],
+                        cores: Array.isArray(item.cores) ? item.cores : ['Padrão'],
+                        promocao: item.destaque || !!item.preco_promocional
+                    }));
+                    localStorage.setItem('vr_modas_db', JSON.stringify(formatados));
+                }
+
+                if (Array.isArray(bannersBanco) && bannersBanco.length > 0) {
+                    const bannersFormatados = bannersBanco.map(b => ({
+                        id: b.id,
+                        titulo: b.titulo || '',
+                        subtitulo: b.subtitulo || '',
+                        imagem: b.imagem,
+                        btnLink: b.btn_link || 'produtos.html',
+                        btnTexto: b.btn_texto || 'Ver Coleção'
+                    }));
+                    localStorage.setItem('vr_modas_banners', JSON.stringify(bannersFormatados));
+                }
+            } catch (erro) {
+                console.warn('Pré-aquecimento do Neon concluído com fallback local:', erro.message);
+            }
+        }
+
+        // Inicia a sincronização de fundo
+        preaquecerDadosNeon();
+
+        // 2. Animação e Redirecionamento suave para a home
         setTimeout(() => {
             const card = document.getElementById('splash-card');
             if (card) {
@@ -164,7 +215,6 @@
             }
         }, 3300);
 
-        // Redireciona para home.html aos 3,8 segundos
         setTimeout(() => {
             window.location.href = "home.html";
         }, 3800);

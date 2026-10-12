@@ -41,7 +41,7 @@
             </div>
         </div>
 
-        <!-- BARRA DE PESQUISA EXPANSÍVEL (SEMPRE VISÍVEL E COM EFEITO DE CRESCER) -->
+        <!-- BARRA DE PESQUISA EXPANSÍVEL -->
         <div class="barra-pesquisa-wrap">
             <div class="caixa-busca-animada" id="caixa-busca-container">
                 <span class="icone-lupa">🔍</span>
@@ -189,7 +189,8 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Scripts com db.js integrado -->
+    <script src="js/db.js"></script>
     <script src="js/favoritos.js"></script>
     <script src="js/catalogo.js"></script>
     <script src="js/sacola.js"></script>
@@ -219,7 +220,6 @@
             if (overlay) overlay.onclick = fecharFiltros;
             if (btnAplicar) btnAplicar.onclick = fecharFiltros;
 
-            // Efeito de crescer da barra de busca
             const inputBusca = document.getElementById('input-busca');
             const caixaBusca = document.getElementById('caixa-busca-container');
             const btnLimpar = document.getElementById('btn-limpar-busca');

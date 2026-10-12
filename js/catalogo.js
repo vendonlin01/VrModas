@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return txt.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
 
-    function renderizarVitrine(lista) {
+    window.renderizarVitrine = function(lista) {
         if (!vitrineProdutos) return;
         vitrineProdutos.innerHTML = ''; 
 
@@ -56,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const badgeEsgotadoHTML = estaEsgotado ? `<span class="badge-esgotado-foto">Esgotado</span>` : '';
             
-            // Botão com clique forçado via data-link para não falhar no mobile nem no desktop
             const btnAcaoHTML = estaEsgotado 
                 ? `<button type="button" class="btn-comprar btn-desativado" disabled>Esgotado</button>`
                 : `<a href="${linkDetalhes}" class="btn-comprar btn-link-detalhes" data-url="${linkDetalhes}">Ver Detalhes</a>`;
@@ -81,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `);
         });
 
-        // Evento garantido nos botões de favoritar
+        // Evento nos botões de favoritar
         vitrineProdutos.querySelectorAll('.btn-favoritar-card').forEach(btn => {
             btn.onclick = function(e) {
                 e.preventDefault();
@@ -92,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // Garantia de clique e redirecionamento no botão "Ver Detalhes"
+        // Clique no botão "Ver Detalhes"
         vitrineProdutos.querySelectorAll('.btn-link-detalhes').forEach(btn => {
             btn.onclick = function(e) {
                 const destino = this.getAttribute('data-url');
@@ -101,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
         });
-    }
+    };
 
     window.filtrarEOrdenarCatalogo = function() {
         if (!vitrineProdutos) return;
@@ -158,40 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             contagemTopo.innerText = `${resultado.length} peça(s) encontrada(s)`;
         }
 
-        // ==========================================
-    // BOTÃO "VER RESULTADOS" (FILTROS MOBILE / MODAL)
-    // ==========================================
-    document.addEventListener('click', (e) => {
-        const btnResultados = e.target.closest('#btn-ver-resultados, .btn-ver-resultados, [id*="ver-resultado"]');
-        
-        if (btnResultados || (e.target.tagName === 'BUTTON' && e.target.innerText.toLowerCase().includes('resultado'))) {
-            e.preventDefault();
-            
-            // 1. Aplica a filtragem e a ordenação
-            if (typeof window.filtrarEOrdenarCatalogo === 'function') {
-                window.filtrarEOrdenarCatalogo();
-            }
-
-            // 2. Fecha a gaveta ou modal de filtros no telemóvel
-            const gavetaFiltros = document.getElementById('filtros-gaveta') || 
-                                  document.querySelector('.gaveta-filtros') || 
-                                  document.querySelector('.painel-filtros') ||
-                                  document.getElementById('modal-filtros');
-            if (gavetaFiltros) {
-                gavetaFiltros.classList.remove('aberto');
-                gavetaFiltros.classList.remove('ativo');
-                gavetaFiltros.style.display = 'none';
-            }
-
-            // 3. Efetua um scroll suave até à vitrina para ver as peças
-            const vitrina = document.getElementById('vitrine-produtos') || document.getElementById('vitrine');
-            if (vitrina) {
-                vitrina.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-    });
-
-        renderizarVitrine(resultado);
+        window.renderizarVitrine(resultado);
     };
 
     // Botões de Categorias (Chips)
@@ -226,16 +192,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnAplicarFiltros) btnAplicarFiltros.onclick = (e) => { e.preventDefault(); window.filtrarEOrdenarCatalogo(); };
     if (selectOrdenacao) selectOrdenacao.onchange = window.filtrarEOrdenarCatalogo;
 
-    // Botão "Ver Resultados" de filtros móveis (gaveta de filtros)
-    const btnVerResultadosGaveta = document.getElementById('btn-ver-resultados') || document.querySelector('.btn-ver-resultados');
-    if (btnVerResultadosGaveta) {
-        btnVerResultadosGaveta.onclick = (e) => {
+    // Fechar gaveta de filtros mobile ao clicar em Ver Resultados
+    document.addEventListener('click', (e) => {
+        const btnResultados = e.target.closest('#btn-ver-resultados, .btn-ver-resultados');
+        if (btnResultados) {
             e.preventDefault();
             window.filtrarEOrdenarCatalogo();
+
             const gavetaFiltros = document.getElementById('filtros-gaveta') || document.querySelector('.gaveta-filtros');
-            if (gavetaFiltros) gavetaFiltros.classList.remove('aberto');
-        };
-    }
+            if (gavetaFiltros) {
+                gavetaFiltros.classList.remove('aberto', 'ativo');
+                gavetaFiltros.style.display = 'none';
+            }
+
+            const vitrina = document.getElementById('vitrine-produtos') || document.getElementById('vitrine');
+            if (vitrina) vitrina.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
 
     if (btnLimparFiltros) {
         btnLimparFiltros.onclick = () => {
@@ -255,6 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Carrega tudo ao iniciar
+    // Renderização inicial
     window.filtrarEOrdenarCatalogo();
 });
