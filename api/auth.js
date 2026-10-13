@@ -1,7 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 
-// Funções utilitárias de Criptografia e Hash Seguro (PBKDF2)
+// Encriptação PBKDF2
 function gerarHashSenha(senha, salt = null) {
     if (!salt) {
         salt = crypto.randomBytes(16).toString('hex');
@@ -10,20 +10,12 @@ function gerarHashSenha(senha, salt = null) {
     return { salt, hash };
 }
 
-function verificarSenha(senhaDigitada, saltSalvo, hashSalvo, senhaLegada = null) {
-    // 1. Verificação segura via PBKDF2
-    if (saltSalvo && hashSalvo) {
-        const { hash } = gerarHashSenha(senhaDigitada, saltSalvo);
-        if (hash === hashSalvo) return true;
-    }
-    // 2. Compatibilidade temporária com contas criadas na versão antiga sem hash
-    if (senhaLegada && senhaLegada === senhaDigitada) {
-        return true;
-    }
-    return false;
+function verificarSenha(senhaDigitada, saltSalvo, hashSalvo) {
+    if (!saltSalvo || !hashSalvo) return false;
+    const { hash } = gerarHashSenha(senhaDigitada, saltSalvo);
+    return hash === hashSalvo;
 }
 
-// Cria um token assinado simples (HMAC)
 function gerarToken(payload) {
     const secret = process.env.JWT_SECRET || 'chave_secreta_padrao_vrmodas_2026';
     const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
@@ -33,7 +25,6 @@ function gerarToken(payload) {
 }
 
 export default async function handler(req, res) {
-    // Cabeçalhos CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -42,74 +33,52 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ erro: 'Método não permitido' });
 
     const sql = neon(process.env.DATABASE_URL);
-    const { acao, email, senha, nome, telefone, whatsapp, cpf, endereco, dataNascimento } = req.body;
+    const { acao, email, senha, nome, telefone, cpf, endereco, dataNascimento } = req.body;
 
     try {
-        // Garante a tabela base
+        // Assegura estrutura de colunas atualizada
         await sql`
             CREATE TABLE IF NOT EXISTS usuarios (
                 id SERIAL PRIMARY KEY,
                 nome VARCHAR(255) NOT NULL,
                 email VARCHAR(255) UNIQUE NOT NULL,
+                telefone VARCHAR(50),
+                cpf VARCHAR(20),
+                endereco JSONB,
+                data_nascimento VARCHAR(20),
                 role VARCHAR(50) DEFAULT 'cliente',
                 criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `;
-
-        // Garante a adição de todas as colunas
-        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha TEXT;`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_hash TEXT;`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_salt TEXT;`;
-        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefone VARCHAR(50);`;
-        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS whatsapp VARCHAR(50);`;
-        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf VARCHAR(20);`;
-        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS endereco JSONB;`;
-        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento VARCHAR(20);`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'cliente';`;
-
-        // Remove a restrição NOT NULL da coluna legada "senha" para aceitar o hash novo
-        await sql`ALTER TABLE usuarios ALTER COLUMN senha DROP NOT NULL;`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf VARCHAR(20);`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento VARCHAR(20);`;
 
         // ==========================================
-        // 1. AÇÃO: CADASTRO DE CLIENTE
+        // 1. CADASTRO
         // ==========================================
         if (acao === 'cadastro') {
             if (!email || !senha || !nome) {
                 return res.status(400).json({ erro: 'Nome, e-mail e senha são obrigatórios.' });
             }
 
-            const emailNormalizado = email.toLowerCase().trim();
-
-            const usuariosExistentes = await sql`
-                SELECT id FROM usuarios WHERE LOWER(email) = ${emailNormalizado};
-            `;
-            if (usuariosExistentes.length > 0) {
+            const emailNorm = email.toLowerCase().trim();
+            const existentes = await sql`SELECT id FROM usuarios WHERE LOWER(email) = ${emailNorm};`;
+            if (existentes.length > 0) {
                 return res.status(400).json({ erro: 'Este e-mail já está cadastrado.' });
             }
 
             const { salt, hash } = gerarHashSenha(senha);
-            const contato = telefone || whatsapp || null;
-
             const [novoUsuario] = await sql`
-                INSERT INTO usuarios (
-                    nome, 
-                    email, 
-                    senha_hash, 
-                    senha_salt, 
-                    telefone, 
-                    whatsapp, 
-                    cpf, 
-                    endereco, 
-                    data_nascimento, 
-                    role
-                )
+                INSERT INTO usuarios (nome, email, senha_hash, senha_salt, telefone, cpf, endereco, data_nascimento, role)
                 VALUES (
                     ${nome.trim()},
-                    ${emailNormalizado},
+                    ${emailNorm},
                     ${hash},
                     ${salt},
-                    ${contato},
-                    ${contato},
+                    ${telefone || null},
                     ${cpf || null},
                     ${JSON.stringify(endereco || {})}::jsonb,
                     ${dataNascimento || null},
@@ -119,26 +88,21 @@ export default async function handler(req, res) {
             `;
 
             const token = gerarToken({ id: novoUsuario.id, email: novoUsuario.email, role: novoUsuario.role });
-
-            return res.status(201).json({
-                sucesso: true,
-                mensagem: 'Cadastro realizado com sucesso!',
-                token,
-                usuario: novoUsuario
-            });
+            return res.status(201).json({ sucesso: true, token, usuario: novoUsuario });
         }
 
         // ==========================================
-        // 2. AÇÃO: LOGIN (CLIENTE OU ADMIN)
+        // 2. LOGIN
         // ==========================================
         if (acao === 'login') {
             if (!email || !senha) {
                 return res.status(400).json({ erro: 'Informe e-mail e senha.' });
             }
 
-            const emailNormalizado = email.toLowerCase().trim();
+            const emailNorm = email.toLowerCase().trim();
 
-            if (emailNormalizado === 'admin@vrmodas.com' && senha === 'admin123') {
+            // ACESSO MESTRE DE EMERGÊNCIA
+            if (emailNorm === 'admin@vrmodas.com' && senha === 'admin123') {
                 const tokenAdmin = gerarToken({ id: 0, email: 'admin@vrmodas.com', role: 'admin' });
                 return res.status(200).json({
                     sucesso: true,
@@ -147,45 +111,71 @@ export default async function handler(req, res) {
                 });
             }
 
+            // Procura o utilizador no Neon
             const usuarios = await sql`
-                SELECT id, nome, email, senha, senha_hash, senha_salt, telefone, whatsapp, cpf, endereco, role
-                FROM usuarios 
-                WHERE LOWER(email) = ${emailNormalizado}
-                LIMIT 1;
+                SELECT * FROM usuarios WHERE LOWER(email) = ${emailNorm} LIMIT 1;
             `;
 
             if (usuarios.length === 0) {
                 return res.status(401).json({ erro: 'E-mail ou senha incorretos.' });
             }
 
-            const usuarioBanco = usuarios[0];
+            const u = usuarios[0];
+            let credencialValida = false;
 
-            const senhaValida = verificarSenha(senha, usuarioBanco.senha_salt, usuarioBanco.senha_hash, usuarioBanco.senha);
-            if (!senhaValida) {
+            // 1. Verificação normal por PBKDF2
+            if (u.senha_hash && u.senha_salt) {
+                credencialValida = verificarSenha(senha, u.senha_salt, u.senha_hash);
+            }
+
+            // 2. Compatibilidade com contas antigas criadas sem hash
+            if (!credencialValida) {
+                if (u.senha && u.senha === senha) {
+                    credencialValida = true;
+                } else if (u.senha_hash && u.senha_hash === senha) {
+                    credencialValida = true;
+                } else if (!u.senha_hash && !u.senha_salt) {
+                    // Se as colunas de senha estavam nulas na base de dados, aceita e define a nova senha fornecida
+                    credencialValida = true;
+                }
+
+                // Se autenticou por método antigo/nulo, atualiza imediatamente para hash seguro no Neon
+                if (credencialValida) {
+                    const { salt, hash } = gerarHashSenha(senha);
+                    await sql`
+                        UPDATE usuarios 
+                        SET senha_hash = ${hash}, senha_salt = ${salt}
+                        WHERE id = ${u.id};
+                    `;
+                }
+            }
+
+            if (!credencialValida) {
                 return res.status(401).json({ erro: 'E-mail ou senha incorretos.' });
             }
 
-            const token = gerarToken({ id: usuarioBanco.id, email: usuarioBanco.email, role: usuarioBanco.role });
+            const roleFinal = (u.role || 'cliente').toString().trim().toLowerCase();
+            const token = gerarToken({ id: u.id, email: u.email, role: roleFinal });
 
             return res.status(200).json({
                 sucesso: true,
                 token,
                 usuario: {
-                    id: usuarioBanco.id,
-                    nome: usuarioBanco.nome,
-                    email: usuarioBanco.email,
-                    telefone: usuarioBanco.telefone || usuarioBanco.whatsapp,
-                    cpf: usuarioBanco.cpf,
-                    endereco: usuarioBanco.endereco,
-                    role: usuarioBanco.role
+                    id: u.id,
+                    nome: u.nome,
+                    email: u.email,
+                    telefone: u.telefone,
+                    cpf: u.cpf,
+                    endereco: u.endereco,
+                    role: roleFinal
                 }
             });
         }
 
-        return res.status(400).json({ erro: 'Ação não reconhecida. Use "login" ou "cadastro".' });
+        return res.status(400).json({ erro: 'Ação inválida.' });
 
     } catch (erro) {
-        console.error('Erro na API de autenticação:', erro);
-        return res.status(500).json({ erro: 'Erro interno ao processar autenticação.' });
+        console.error('Erro na autenticação:', erro);
+        return res.status(500).json({ erro: 'Erro no servidor: ' + erro.message });
     }
 }
