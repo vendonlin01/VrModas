@@ -219,7 +219,6 @@
             btnSubmit.innerText = 'Autenticando...';
 
             try {
-                // 1. Chamada segura para a API do Servidor (sem expor credenciais)
                 const resposta = await fetch('/api/auth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -231,9 +230,9 @@
                 if (resposta.ok && dados.sucesso) {
                     const usuario = dados.usuario;
 
-                    // Salva token de autenticação
                     if (dados.token) {
                         sessionStorage.setItem('vr_auth_token', dados.token);
+                        localStorage.setItem('vr_auth_token', dados.token);
                     }
 
                     // Se for Administrador
@@ -246,7 +245,10 @@
                         };
                         sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoAdmin));
                         sessionStorage.setItem('vr_admin_logado', 'true');
-                        window.location.href = 'admin.html';
+                        localStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoAdmin));
+                        localStorage.setItem('vr_admin_logado', 'true');
+
+                        window.location.href = 'home.html';
                         return;
                     }
 
@@ -262,6 +264,9 @@
                     sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
                     sessionStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
                     sessionStorage.setItem('vr_cliente_logado', 'true');
+                    localStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
+                    localStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
+                    localStorage.setItem('vr_cliente_logado', 'true');
 
                     window.location.href = 'home.html';
                     return;
