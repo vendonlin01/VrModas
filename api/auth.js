@@ -11,6 +11,7 @@ function gerarHashSenha(senha, salt = null) {
 }
 
 function verificarSenha(senhaDigitada, saltSalvo, hashSalvo) {
+    if (!saltSalvo || !hashSalvo) return false;
     const { hash } = gerarHashSenha(senhaDigitada, saltSalvo);
     return hash === hashSalvo;
 }
@@ -37,14 +38,12 @@ export default async function handler(req, res) {
     const { acao, email, senha, nome, telefone, cpf, endereco, dataNascimento } = req.body;
 
     try {
-        // Garante que a tabela usuarios existe com colunas de salt e hash
+        // 1. Garante que a tabela usuarios existe
         await sql`
             CREATE TABLE IF NOT EXISTS usuarios (
                 id SERIAL PRIMARY KEY,
                 nome VARCHAR(255) NOT NULL,
                 email VARCHAR(255) UNIQUE NOT NULL,
-                senha_hash TEXT NOT NULL,
-                senha_salt TEXT NOT NULL,
                 telefone VARCHAR(50),
                 cpf VARCHAR(20),
                 endereco JSONB,
@@ -53,6 +52,13 @@ export default async function handler(req, res) {
                 criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `;
+
+        // 2. Adiciona as colunas necessárias se a tabela foi criada antes da atualização de segurança
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_hash TEXT;`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_salt TEXT;`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'cliente';`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf VARCHAR(20);`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento VARCHAR(20);`;
 
         // ==========================================
         // 1. AÇÃO: CADASTRO DE CLIENTE
