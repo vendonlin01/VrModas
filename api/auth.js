@@ -10,10 +10,17 @@ function gerarHashSenha(senha, salt = null) {
     return { salt, hash };
 }
 
-function verificarSenha(senhaDigitada, saltSalvo, hashSalvo) {
-    if (!saltSalvo || !hashSalvo) return false;
-    const { hash } = gerarHashSenha(senhaDigitada, saltSalvo);
-    return hash === hashSalvo;
+function verificarSenha(senhaDigitada, saltSalvo, hashSalvo, senhaLegada = null) {
+    // 1. Verificação segura via PBKDF2
+    if (saltSalvo && hashSalvo) {
+        const { hash } = gerarHashSenha(senhaDigitada, saltSalvo);
+        if (hash === hashSalvo) return true;
+    }
+    // 2. Compatibilidade temporária com contas criadas na versão antiga sem hash
+    if (senhaLegada && senhaLegada === senhaDigitada) {
+        return true;
+    }
+    return false;
 }
 
 // Cria um token assinado simples (HMAC)
@@ -26,7 +33,7 @@ function gerarToken(payload) {
 }
 
 export default async function handler(req, res) {
-    // Configuração de CORS
+    // Cabeçalhos CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -38,25 +45,19 @@ export default async function handler(req, res) {
     const { acao, email, senha, nome, telefone, whatsapp, cpf, endereco, dataNascimento } = req.body;
 
     try {
-        // 1. Garante que a tabela usuarios existe
+        // Garante a tabela base
         await sql`
             CREATE TABLE IF NOT EXISTS usuarios (
                 id SERIAL PRIMARY KEY,
                 nome VARCHAR(255) NOT NULL,
                 email VARCHAR(255) UNIQUE NOT NULL,
-                senha_hash TEXT,
-                senha_salt TEXT,
-                telefone VARCHAR(50),
-                whatsapp VARCHAR(50),
-                cpf VARCHAR(20),
-                endereco JSONB,
-                data_nascimento VARCHAR(20),
                 role VARCHAR(50) DEFAULT 'cliente',
                 criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `;
 
-        // 2. Adiciona todas as colunas que possam faltar de tabelas legadas
+        // Garante a adição de todas as colunas
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha TEXT;`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_hash TEXT;`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_salt TEXT;`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefone VARCHAR(50);`;
@@ -65,6 +66,9 @@ export default async function handler(req, res) {
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS endereco JSONB;`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento VARCHAR(20);`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'cliente';`;
+
+        // Remove a restrição NOT NULL da coluna legada "senha" para aceitar o hash novo
+        await sql`ALTER TABLE usuarios ALTER COLUMN senha DROP NOT NULL;`;
 
         // ==========================================
         // 1. AÇÃO: CADASTRO DE CLIENTE
@@ -76,7 +80,6 @@ export default async function handler(req, res) {
 
             const emailNormalizado = email.toLowerCase().trim();
 
-            // Verifica se o e-mail já existe
             const usuariosExistentes = await sql`
                 SELECT id FROM usuarios WHERE LOWER(email) = ${emailNormalizado};
             `;
@@ -84,7 +87,6 @@ export default async function handler(req, res) {
                 return res.status(400).json({ erro: 'Este e-mail já está cadastrado.' });
             }
 
-            // Gera hash com salt
             const { salt, hash } = gerarHashSenha(senha);
             const contato = telefone || whatsapp || null;
 
@@ -136,7 +138,6 @@ export default async function handler(req, res) {
 
             const emailNormalizado = email.toLowerCase().trim();
 
-            // CASO ESPECIAL: Credencial master inicial do lojista
             if (emailNormalizado === 'admin@vrmodas.com' && senha === 'admin123') {
                 const tokenAdmin = gerarToken({ id: 0, email: 'admin@vrmodas.com', role: 'admin' });
                 return res.status(200).json({
@@ -146,9 +147,8 @@ export default async function handler(req, res) {
                 });
             }
 
-            // Busca no banco
             const usuarios = await sql`
-                SELECT id, nome, email, senha_hash, senha_salt, telefone, whatsapp, cpf, endereco, role
+                SELECT id, nome, email, senha, senha_hash, senha_salt, telefone, whatsapp, cpf, endereco, role
                 FROM usuarios 
                 WHERE LOWER(email) = ${emailNormalizado}
                 LIMIT 1;
@@ -160,8 +160,7 @@ export default async function handler(req, res) {
 
             const usuarioBanco = usuarios[0];
 
-            // Verifica o hash da senha
-            const senhaValida = verificarSenha(senha, usuarioBanco.senha_salt, usuarioBanco.senha_hash);
+            const senhaValida = verificarSenha(senha, usuarioBanco.senha_salt, usuarioBanco.senha_hash, usuarioBanco.senha);
             if (!senhaValida) {
                 return res.status(401).json({ erro: 'E-mail ou senha incorretos.' });
             }
