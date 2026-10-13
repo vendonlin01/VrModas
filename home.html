@@ -211,6 +211,7 @@
            RESPONSIVIDADE (DESKTOP E CELULAR)
            ========================================= */
         @media (min-width: 769px) {
+
             .link-menu-lojista,
             .divisor-menu-mobile {
                 display: none !important;
@@ -398,7 +399,7 @@
 
             <!-- Linha e Botão Área do Lojista (Exclusivos para Celular na Gaveta) -->
             <hr class="divisor-menu-mobile">
-            <a href="admin.html" class="link-menu-lojista">
+            <a href="admin.html" id="link-menu-lojista" class="link-menu-lojista" style="display: none !important;">
                 <span>⚙️</span>
                 <span>Área do Lojista</span>
             </a>
@@ -407,10 +408,14 @@
         <!-- 5. Ações do Cabeçalho: Engrenagem, Perfil, Favoritos e Sacola -->
         <div class="acoes-header">
             <!-- Botão Engrenagem (Exclusivo Computador) -->
-            <a href="admin.html" class="btn-admin-topo" title="Área do Lojista / Painel">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <a href="admin.html" id="btn-admin-topo" class="btn-admin-topo" title="Área do Lojista / Painel"
+                style="display: none !important;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
                 </svg>
             </a>
 
@@ -425,7 +430,8 @@
                     <a href="login.html" id="link-login-dropdown">Entrar na Conta</a>
                     <a href="cadastro.html" id="link-cadastro-dropdown">Criar Conta</a>
                     <a href="pedidos.html" id="link-pedidos-dropdown" style="display: none;">🛍️ Minhas Compras</a>
-                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪 Sair</button>
+                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪
+                        Sair</button>
                 </div>
             </div>
 
@@ -554,7 +560,20 @@
             // 1. Verifica sessão ativa (Cliente ou Admin)
             function carregarDadosUsuario() {
                 const usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
-                                     JSON.parse(sessionStorage.getItem('vr_cliente_dados'));
+                    JSON.parse(sessionStorage.getItem('vr_cliente_dados'));
+
+                const btnAdminTopo = document.getElementById('btn-admin-topo');
+                const linkMenuLojista = document.getElementById('link-menu-lojista');
+                const ehAdmin = usuarioAtivo && (usuarioAtivo.role === 'admin' || sessionStorage.getItem('vr_admin_logado') === 'true');
+
+                // Exibe a Área do Lojista SOMENTE se for administrador
+                if (ehAdmin) {
+                    if (btnAdminTopo) btnAdminTopo.style.setProperty('display', 'inline-flex', 'important');
+                    if (linkMenuLojista) linkMenuLojista.style.setProperty('display', 'flex', 'important');
+                } else {
+                    if (btnAdminTopo) btnAdminTopo.style.setProperty('display', 'none', 'important');
+                    if (linkMenuLojista) linkMenuLojista.style.setProperty('display', 'none', 'important');
+                }
 
                 if (usuarioAtivo && usuarioAtivo.nome) {
                     const primeiroNome = usuarioAtivo.nome.split(' ')[0];
@@ -562,16 +581,12 @@
                         textoUsuario.innerText = primeiroNome;
                         textoUsuario.style.display = 'inline';
                     }
-                    if (dropdownNome) dropdownNome.innerText = `Olá, ${primeiroNome}`;
+                    if (dropdownNome) dropdownNome.innerText = ehAdmin ? `👑 ${primeiroNome} (Admin)` : `Olá, ${primeiroNome}`;
 
                     if (linkLogin) linkLogin.style.display = 'none';
                     if (linkCadastro) linkCadastro.style.display = 'none';
                     if (linkPedidos) linkPedidos.style.display = 'block';
                     if (btnSair) btnSair.style.display = 'block';
-
-                    if (usuarioAtivo.role === 'admin' && dropdownNome) {
-                        dropdownNome.innerText = `👑 ${primeiroNome} (Admin)`;
-                    }
                 } else {
                     if (textoUsuario) textoUsuario.style.display = 'none';
                     if (dropdownNome) dropdownNome.innerText = 'Olá, Visitante';
