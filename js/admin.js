@@ -68,6 +68,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     function alternarAbaAdmin(idAlvo) {
         if (!idAlvo) return;
 
+        // TRAVA DE SEGURANÇA: Apenas o dono (owner) pode entrar na seção de equipe
+        if (idAlvo === 'secao-equipe') {
+            const usuarioLogado = JSON.parse(sessionStorage.getItem('vr_usuario_ativo') || localStorage.getItem('usuarioLogado') || '{}');
+
+            if (usuarioLogado.role !== 'owner') {
+                alert('⛔ Acesso Restrito: Apenas o proprietário da VR Modas pode gerenciar e cadastrar a equipe de administradores.');
+                return; // Impede a abertura da aba
+            }
+        }
+
         botoesNav.forEach(btn => {
             btn.classList.toggle('ativo', btn.getAttribute('data-alvo') === idAlvo);
         });
@@ -97,7 +107,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (idAlvo === 'secao-equipe') carregarListaEquipe();
     }
-
     botoesNav.forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -111,10 +120,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     function comprimirImagem(file, callback) {
         const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = function(event) {
+        reader.onload = function (event) {
             const img = new Image();
             img.src = event.target.result;
-            img.onload = function() {
+            img.onload = function () {
                 const canvas = document.createElement('canvas');
                 const maxWidth = 700;
                 const scale = maxWidth / img.width;
@@ -161,7 +170,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (selectCategoria) {
-        selectCategoria.onchange = function() {
+        selectCategoria.onchange = function () {
             renderizarTamanhosPorCategoria(this.value);
         };
     }
@@ -195,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const ctxVendas = document.getElementById('graficoVendas');
             if (ctxVendas) {
                 if (chartVendas) chartVendas.destroy();
-                const labels = pedidos.slice(0, 7).reverse().map((p, i) => p.data ? p.data.split(' ')[0] : `Ped ${i+1}`);
+                const labels = pedidos.slice(0, 7).reverse().map((p, i) => p.data ? p.data.split(' ')[0] : `Ped ${i + 1}`);
                 const dataValores = pedidos.slice(0, 7).reverse().map(p => Number(p.total) || 0);
 
                 chartVendas = new Chart(ctxVendas, {
@@ -319,13 +328,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (inEstoqueCorOculto) inEstoqueCorOculto.value = resumoEstoque.join(', ');
     }
 
-    window.removerCorItem = function(index) {
+    window.removerCorItem = function (index) {
         listaCoresCadastradas.splice(index, 1);
         renderizarTagsCores();
     };
 
     if (btnAdicionarCor) {
-        btnAdicionarCor.onclick = function() {
+        btnAdicionarCor.onclick = function () {
             const nome = inputNomeCor.value.trim();
             const qtd = parseInt(inputQtdCor.value);
 
@@ -386,7 +395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         previewContainer.querySelectorAll('.btn-del-preview').forEach(btn => {
-            btn.onclick = function() {
+            btn.onclick = function () {
                 const idx = parseInt(this.getAttribute('data-index'));
                 fotosAtuais.splice(idx, 1);
                 renderizarPreviewFotos();
@@ -395,7 +404,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (inputFoto) {
-        inputFoto.onchange = function() {
+        inputFoto.onchange = function () {
             if (!this.files || this.files.length === 0) return;
             Array.from(this.files).forEach(file => {
                 comprimirImagem(file, (imgComprimida) => {
@@ -415,7 +424,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             btnSubmitProduto.disabled = false;
         }
         if (btnCancelarEdicao) btnCancelarEdicao.style.display = "none";
-        
+
         fotosAtuais = [];
         renderizarPreviewFotos();
 
@@ -439,22 +448,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btnCancelarEdicao) btnCancelarEdicao.onclick = resetarModoEdicao;
 
     if (formAdmin) {
-        formAdmin.onsubmit = async function(event) {
+        formAdmin.onsubmit = async function (event) {
             event.preventDefault();
             const idEditando = editandoIdInput ? editandoIdInput.value : '';
             const nome = document.getElementById('nome-produto').value.trim();
             const preco = parseFloat(document.getElementById('preco-produto').value);
             const precoPromocionalRaw = document.getElementById('preco-promocional-produto').value;
             const precoPromocional = precoPromocionalRaw ? parseFloat(precoPromocionalRaw) : null;
-            
+
             const categoria = document.getElementById('categoria-produto').value;
             const estoque = parseInt(document.getElementById('estoque-produto').value) || 0;
             const isPromocao = document.getElementById('destaque-promocao')?.checked || (precoPromocional !== null);
-            
+
             const cores = inCoresOculto ? inCoresOculto.value.trim() : (document.getElementById('cores-produto')?.value.trim() || '');
             const estoquePorCor = inEstoqueCorOculto ? inEstoqueCorOculto.value.trim() : (document.getElementById('estoque-por-cor-produto')?.value.trim() || '');
             const descricao = document.getElementById('descricao-produto').value.trim();
-            
+
             const tamanhos = [];
             document.querySelectorAll('.check-tamanho:checked').forEach(cb => tamanhos.push(cb.value));
 
@@ -576,7 +585,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.querySelectorAll('.btn-aba-cat').forEach(aba => {
-        aba.onclick = function() {
+        aba.onclick = function () {
             document.querySelectorAll('.btn-aba-cat').forEach(b => b.classList.remove('ativo'));
             this.classList.add('ativo');
             categoriaAdminAtiva = this.getAttribute('data-cat');
@@ -643,13 +652,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.querySelectorAll('.btn-editar-prod').forEach(btn => {
-            btn.onclick = function() {
+            btn.onclick = function () {
                 iniciarEdicaoProduto(this.getAttribute('data-id'));
             };
         });
 
         document.querySelectorAll('.btn-excluir-prod').forEach(btn => {
-            btn.onclick = async function() {
+            btn.onclick = async function () {
                 const idProd = this.getAttribute('data-id');
                 if (confirm("Deseja realmente remover este produto do banco de dados na nuvem?")) {
                     try {
@@ -677,14 +686,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('nome-produto').value = produto.nome;
         document.getElementById('preco-produto').value = produto.preco;
         document.getElementById('preco-promocional-produto').value = produto.precoPromocional || '';
-        
+
         atualizarCalculoDesconto();
 
         document.getElementById('categoria-produto').value = produto.categoria || '';
         renderizarTamanhosPorCategoria(produto.categoria || '', produto.tamanhos || []);
 
         document.getElementById('estoque-produto').value = produto.estoque || 0;
-        
+
         listaCoresCadastradas = [];
         if (Array.isArray(produto.cores)) {
             produto.cores.forEach(c => listaCoresCadastradas.push({ cor: c, qtd: 1 }));
@@ -773,7 +782,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         pedidos.forEach(ped => {
             const totalFormatado = Number(ped.total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             let resumoItens = (ped.itens || []).map(it => `• <strong>${it.quantidade}x</strong> ${it.nome} <span style="color: #aaa; font-size: 11px;">(${it.tamanho || 'Padrão'} / ${it.cor || 'Padrão'})</span>`).join('<br>');
-            
+
             const nomeCli = ped.cliente?.nome || "Cliente";
             const whatsCli = ped.cliente?.whatsapp || "Não informado";
             const corAtual = coresStatus[ped.status] || '#d4af37';
@@ -812,7 +821,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.querySelectorAll('.select-status-pedido').forEach(sel => {
-            sel.onchange = async function() {
+            sel.onchange = async function () {
                 const idPed = this.getAttribute('data-id');
                 const novoStatus = this.value;
                 try {
@@ -828,11 +837,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.querySelectorAll('.btn-imprimir-pedido').forEach(btn => {
-            btn.onclick = function() { imprimirComprovantePedido(this.getAttribute('data-id')); };
+            btn.onclick = function () { imprimirComprovantePedido(this.getAttribute('data-id')); };
         });
 
         document.querySelectorAll('.btn-excluir-pedido').forEach(btn => {
-            btn.onclick = async function() {
+            btn.onclick = async function () {
                 const idPed = this.getAttribute('data-id');
                 if (confirm("Remover este pedido do banco?")) {
                     try {
@@ -943,7 +952,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const listaBannersAdmin = document.getElementById('lista-banners-admin');
 
     if (inputFotoBanner && previewBanner) {
-        inputFotoBanner.onchange = function() {
+        inputFotoBanner.onchange = function () {
             previewBanner.innerHTML = '';
             if (this.files && this.files[0]) {
                 comprimirImagem(this.files[0], (bannerComprimido) => {
@@ -1004,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.querySelectorAll('.btn-remover-banner').forEach(btn => {
-            btn.onclick = async function() {
+            btn.onclick = async function () {
                 const idExcluir = this.getAttribute('data-id');
                 if (confirm("Remover este banner do banco?")) {
                     try {
@@ -1020,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (formBanner) {
-        formBanner.onsubmit = function(event) {
+        formBanner.onsubmit = function (event) {
             event.preventDefault();
             const titulo = document.getElementById('titulo-banner').value.trim();
             const subtitulo = document.getElementById('subtitulo-banner').value.trim();
@@ -1028,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const btnLink = document.getElementById('btn-link-banner').value.trim();
 
             if (inputFotoBanner.files && inputFotoBanner.files[0]) {
-                comprimirImagem(inputFotoBanner.files[0], async function(imagemComprimida) {
+                comprimirImagem(inputFotoBanner.files[0], async function (imagemComprimida) {
                     try {
                         const sql = await getSql();
                         await sql`
@@ -1068,7 +1077,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (formConfig) {
-        formConfig.onsubmit = async function(e) {
+        formConfig.onsubmit = async function (e) {
             e.preventDefault();
             const whatsappLimpo = inputWhatsConfig.value.replace(/\D/g, '');
             const emailLimpo = inputEmailConfig.value.trim();
@@ -1140,7 +1149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.querySelectorAll('.btn-excluir-cupom').forEach(btn => {
-            btn.onclick = async function() {
+            btn.onclick = async function () {
                 const id = this.getAttribute('data-id');
                 if (confirm("Remover este cupom do banco?")) {
                     try {
@@ -1156,7 +1165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (formCupom) {
-        formCupom.onsubmit = async function(e) {
+        formCupom.onsubmit = async function (e) {
             e.preventDefault();
             const codigo = document.getElementById('cupom-codigo').value.trim().toUpperCase();
             const tipo = document.getElementById('cupom-tipo').value;
@@ -1240,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             document.querySelectorAll('.btn-revogar-equipe').forEach(btn => {
-                btn.onclick = async function() {
+                btn.onclick = async function () {
                     const idMembro = this.getAttribute('data-id');
                     if (confirm("Deseja realmente revogar o acesso deste colaborador?")) {
                         try {
@@ -1267,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (formEquipe) {
-        formEquipe.onsubmit = async function(e) {
+        formEquipe.onsubmit = async function (e) {
             e.preventDefault();
             const email = inputEmailEquipe.value.trim().toLowerCase();
             if (!email) return;
@@ -1324,7 +1333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const inputRestaurarBackup = document.getElementById('input-restaurar-backup');
 
     if (btnExportarBackup) {
-        btnExportarBackup.onclick = function() {
+        btnExportarBackup.onclick = function () {
             const backupCompleto = {
                 dataBackup: new Date().toISOString(),
                 vr_modas_db: JSON.parse(localStorage.getItem('vr_modas_db')) || [],
@@ -1338,7 +1347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupCompleto, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `backup_vrmodas_${new Date().toISOString().slice(0,10)}.json`);
+            downloadAnchor.setAttribute("download", `backup_vrmodas_${new Date().toISOString().slice(0, 10)}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
@@ -1346,12 +1355,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (inputRestaurarBackup) {
-        inputRestaurarBackup.onchange = function(e) {
+        inputRestaurarBackup.onchange = function (e) {
             const file = e.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = function (event) {
                 try {
                     const dados = JSON.parse(event.target.result);
                     if (confirm("Isto irá substituir os dados locais pelo ficheiro de backup. Deseja continuar?")) {
