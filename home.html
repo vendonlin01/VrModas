@@ -417,8 +417,7 @@
                     <a href="login.html" id="link-login-dropdown">Entrar na Conta</a>
                     <a href="cadastro.html" id="link-cadastro-dropdown">Criar Conta</a>
                     <a href="pedidos.html" id="link-pedidos-dropdown" style="display: none;">🛍️ Minhas Compras</a>
-                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪
-                        Sair</button>
+                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪 Sair</button>
                 </div>
             </div>
 
@@ -537,21 +536,23 @@
             const menuUsuario = document.getElementById('menu-usuario');
             const btnSair = document.getElementById('btn-sair-sessao');
 
-            // 1. Verifica sessão ativa (Cliente ou Admin)
+            // 1. Verifica sessão ativa (Cliente, Admin ou Owner)
             function carregarDadosUsuario() {
                 let usuarioAtivo = null;
                 try {
                     usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
                                    JSON.parse(localStorage.getItem('vr_usuario_ativo')) ||
                                    JSON.parse(sessionStorage.getItem('vr_cliente_dados')) ||
-                                   JSON.parse(localStorage.getItem('vr_cliente_dados'));
+                                   JSON.parse(localStorage.getItem('vr_cliente_dados')) ||
+                                   JSON.parse(localStorage.getItem('usuarioLogado'));
                 } catch(e) {
                     console.error("Erro ao ler dados da sessão:", e);
                 }
 
-                const ehAdmin = (usuarioAtivo && usuarioAtivo.role === 'admin') || 
-                                sessionStorage.getItem('vr_admin_logado') === 'true' ||
-                                localStorage.getItem('vr_admin_logado') === 'true';
+                // Reconhece tanto admin quanto owner (dono)
+                const ehGestor = (usuarioAtivo && (usuarioAtivo.role === 'admin' || usuarioAtivo.role === 'owner')) || 
+                                 sessionStorage.getItem('vr_admin_logado') === 'true' ||
+                                 localStorage.getItem('vr_admin_logado') === 'true';
 
                 // Elementos da Área do Lojista
                 const btnAdminTopo = document.getElementById('btn-admin-topo');
@@ -560,7 +561,7 @@
 
                 const isMobile = window.innerWidth <= 768;
 
-                if (ehAdmin) {
+                if (ehGestor) {
                     if (btnAdminTopo) btnAdminTopo.style.display = isMobile ? 'none' : 'inline-flex';
                     if (linkMenuLojista) linkMenuLojista.style.display = isMobile ? 'flex' : 'none';
                     if (divisorMobile) divisorMobile.style.display = isMobile ? 'block' : 'none';
@@ -584,7 +585,13 @@
                         textoUsuario.style.display = 'inline';
                     }
                     if (dropdownNome) {
-                        dropdownNome.innerText = ehAdmin ? `👑 ${primeiroNome} (Admin)` : `Olá, ${primeiroNome}`;
+                        if (usuarioAtivo.role === 'owner') {
+                            dropdownNome.innerText = `👑 ${primeiroNome} (Dono)`;
+                        } else if (usuarioAtivo.role === 'admin') {
+                            dropdownNome.innerText = `🛡️ ${primeiroNome} (Admin)`;
+                        } else {
+                            dropdownNome.innerText = `Olá, ${primeiroNome}`;
+                        }
                     }
                     if (linkLogin) linkLogin.style.display = 'none';
                     if (linkCadastro) linkCadastro.style.display = 'none';
@@ -639,6 +646,7 @@
                     localStorage.removeItem('vr_cliente_dados');
                     localStorage.removeItem('vr_cliente_logado');
                     localStorage.removeItem('vr_admin_logado');
+                    localStorage.removeItem('usuarioLogado');
                     window.location.reload();
                 });
             }
