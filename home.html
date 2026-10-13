@@ -558,44 +558,82 @@
             if (!btnUsuario || !menuUsuario) return;
 
             // 1. Verifica sessão ativa (Cliente ou Admin)
-            function carregarDadosUsuario() {
-                const usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
-                    JSON.parse(sessionStorage.getItem('vr_cliente_dados'));
+           function carregarDadosUsuario() {
+            // 1. Procura a sessão em todos os locais possíveis
+            let usuarioAtivo = null;
+            try {
+                usuarioAtivo = JSON.parse(localStorage.getItem('vr_usuario_ativo')) ||
+                               JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
+                               JSON.parse(localStorage.getItem('vr_cliente_dados')) ||
+                               JSON.parse(sessionStorage.getItem('vr_cliente_dados'));
+            } catch(e) {
+                console.error("Erro ao ler dados da sessão:", e);
+            }
 
-                const btnAdminTopo = document.getElementById('btn-admin-topo');
-                const linkMenuLojista = document.getElementById('link-menu-lojista');
-                const ehAdmin = usuarioAtivo && (usuarioAtivo.role === 'admin' || sessionStorage.getItem('vr_admin_logado') === 'true');
+            const ehAdmin = (usuarioAtivo && usuarioAtivo.role === 'admin') || 
+                            localStorage.getItem('vr_admin_logado') === 'true' ||
+                            sessionStorage.getItem('vr_admin_logado') === 'true';
 
-                // Exibe a Área do Lojista SOMENTE se for administrador
-                if (ehAdmin) {
-                    if (btnAdminTopo) btnAdminTopo.style.setProperty('display', 'inline-flex', 'important');
-                    if (linkMenuLojista) linkMenuLojista.style.setProperty('display', 'flex', 'important');
-                } else {
-                    if (btnAdminTopo) btnAdminTopo.style.setProperty('display', 'none', 'important');
-                    if (linkMenuLojista) linkMenuLojista.style.setProperty('display', 'none', 'important');
-                }
+            // 2. Controlos no Computador (Engrenagem do Topo)
+            const btnAdminTopo = document.getElementById('btn-admin-topo');
+            if (btnAdminTopo) {
+                btnAdminTopo.style.setProperty('display', ehAdmin ? 'inline-flex' : 'none', 'important');
+            }
 
-                if (usuarioAtivo && usuarioAtivo.nome) {
-                    const primeiroNome = usuarioAtivo.nome.split(' ')[0];
-                    if (textoUsuario) {
-                        textoUsuario.innerText = primeiroNome;
-                        textoUsuario.style.display = 'inline';
+            // 3. Controlos no Telemóvel (Menu Lateral Hambúrguer)
+            let linkMenuLojista = document.getElementById('link-menu-lojista');
+            
+            if (ehAdmin) {
+                // Se for administrador e o link ainda não existir no menu mobile, cria e insere automaticamente
+                if (!linkMenuLojista) {
+                    const navMobile = document.querySelector('nav.menu-lateral, nav.navbar, .menu-conteudo, aside.menu, #menu-lateral, #sidebar');
+                    if (navMobile) {
+                        linkMenuLojista = document.createElement('a');
+                        linkMenuLojista.id = 'link-menu-lojista';
+                        linkMenuLojista.href = 'admin.html';
+                        linkMenuLojista.innerHTML = '<span style="font-size: 18px;">⚙️</span> <span>Área do Lojista</span>';
+                        linkMenuLojista.style.cssText = 'display: flex !important; align-items: center; gap: 10px; color: #d4af37; font-weight: bold; text-decoration: none; padding: 14px 16px; border-top: 1px solid rgba(212,175,55,0.2); margin-top: 15px; font-size: 14px;';
+                        navMobile.appendChild(linkMenuLojista);
                     }
-                    if (dropdownNome) dropdownNome.innerText = ehAdmin ? `👑 ${primeiroNome} (Admin)` : `Olá, ${primeiroNome}`;
-
-                    if (linkLogin) linkLogin.style.display = 'none';
-                    if (linkCadastro) linkCadastro.style.display = 'none';
-                    if (linkPedidos) linkPedidos.style.display = 'block';
-                    if (btnSair) btnSair.style.display = 'block';
                 } else {
-                    if (textoUsuario) textoUsuario.style.display = 'none';
-                    if (dropdownNome) dropdownNome.innerText = 'Olá, Visitante';
-                    if (linkLogin) linkLogin.style.display = 'block';
-                    if (linkCadastro) linkCadastro.style.display = 'block';
-                    if (linkPedidos) linkPedidos.style.display = 'none';
-                    if (btnSair) btnSair.style.display = 'none';
+                    linkMenuLojista.style.setProperty('display', 'flex', 'important');
+                }
+            } else {
+                if (linkMenuLojista) {
+                    linkMenuLojista.style.setProperty('display', 'none', 'important');
                 }
             }
+
+            // 4. Atualização dos textos de Utilizador / Saudação
+            const textoUsuario = document.getElementById('texto-usuario');
+            const dropdownNome = document.getElementById('dropdown-nome');
+            const linkLogin = document.getElementById('link-login-dropdown');
+            const linkCadastro = document.getElementById('link-cadastro-dropdown');
+            const linkPedidos = document.getElementById('link-pedidos-dropdown');
+            const btnSair = document.getElementById('btn-sair-sessao');
+
+            if (usuarioAtivo && usuarioAtivo.nome) {
+                const primeiroNome = usuarioAtivo.nome.split(' ')[0];
+                if (textoUsuario) {
+                    textoUsuario.innerText = primeiroNome;
+                    textoUsuario.style.display = 'inline';
+                }
+                if (dropdownNome) {
+                    dropdownNome.innerText = ehAdmin ? `👑 ${primeiroNome} (Admin)` : `Olá, ${primeiroNome}`;
+                }
+                if (linkLogin) linkLogin.style.display = 'none';
+                if (linkCadastro) linkCadastro.style.display = 'none';
+                if (linkPedidos) linkPedidos.style.display = 'block';
+                if (btnSair) btnSair.style.display = 'block';
+            } else {
+                if (textoUsuario) textoUsuario.style.display = 'none';
+                if (dropdownNome) dropdownNome.innerText = 'Olá, Visitante';
+                if (linkLogin) linkLogin.style.display = 'block';
+                if (linkCadastro) linkCadastro.style.display = 'block';
+                if (linkPedidos) linkPedidos.style.display = 'none';
+                if (btnSair) btnSair.style.display = 'none';
+            }
+        }
             carregarDadosUsuario();
 
             // 2. Alternar abertura do menu com suporte a clique e toque
