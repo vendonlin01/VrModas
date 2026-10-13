@@ -541,30 +541,29 @@
                 let usuarioAtivo = null;
                 try {
                     usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
-                                   JSON.parse(localStorage.getItem('vr_usuario_ativo')) ||
-                                   JSON.parse(sessionStorage.getItem('vr_cliente_dados')) ||
-                                   JSON.parse(localStorage.getItem('vr_cliente_dados')) ||
-                                   JSON.parse(localStorage.getItem('usuarioLogado'));
-                } catch(e) {
+                        JSON.parse(localStorage.getItem('vr_usuario_ativo')) ||
+                        JSON.parse(sessionStorage.getItem('vr_cliente_dados')) ||
+                        JSON.parse(localStorage.getItem('vr_cliente_dados')) ||
+                        JSON.parse(localStorage.getItem('usuarioLogado'));
+                } catch (e) {
                     console.error("Erro ao ler dados da sessão:", e);
                 }
 
-                // Reconhece tanto admin quanto owner (dono)
-                const ehGestor = (usuarioAtivo && (usuarioAtivo.role === 'admin' || usuarioAtivo.role === 'owner')) || 
-                                 sessionStorage.getItem('vr_admin_logado') === 'true' ||
-                                 localStorage.getItem('vr_admin_logado') === 'true';
+                // Reconhece tanto admin quanto owner (dono) ou chave direta de permissão
+                const ehGestor = (usuarioAtivo && (usuarioAtivo.role === 'admin' || usuarioAtivo.role === 'owner')) ||
+                    sessionStorage.getItem('vr_admin_logado') === 'true' ||
+                    localStorage.getItem('vr_admin_logado') === 'true';
 
                 // Elementos da Área do Lojista
                 const btnAdminTopo = document.getElementById('btn-admin-topo');
                 const linkMenuLojista = document.getElementById('link-menu-lojista');
                 const divisorMobile = document.getElementById('divisor-menu-mobile');
 
-                const isMobile = window.innerWidth <= 768;
-
+                // Libera ambos os botões sempre que for gestor (sem travar por resolução de tela)
                 if (ehGestor) {
-                    if (btnAdminTopo) btnAdminTopo.style.display = isMobile ? 'none' : 'inline-flex';
-                    if (linkMenuLojista) linkMenuLojista.style.display = isMobile ? 'flex' : 'none';
-                    if (divisorMobile) divisorMobile.style.display = isMobile ? 'block' : 'none';
+                    if (linkMenuLojista) linkMenuLojista.style.display = 'flex';
+                    if (divisorMobile) divisorMobile.style.display = 'block';
+                    if (btnAdminTopo) btnAdminTopo.style.display = 'inline-flex';
                 } else {
                     if (btnAdminTopo) btnAdminTopo.style.display = 'none';
                     if (linkMenuLojista) linkMenuLojista.style.display = 'none';

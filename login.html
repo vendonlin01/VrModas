@@ -230,7 +230,9 @@
                 if (resposta.ok && dados.sucesso) {
                     const usuario = dados.usuario;
                     const roleNormalizada = (usuario.role || '').toString().trim().toLowerCase();
-                    const ehAdmin = roleNormalizada === 'admin' || email === 'admin@vrmodas.com';
+                    
+                    // Reconhece 'owner' e 'admin'
+                    const ehGestor = roleNormalizada === 'owner' || roleNormalizada === 'admin';
 
                     if (dados.token) {
                         sessionStorage.setItem('vr_auth_token', dados.token);
@@ -240,19 +242,21 @@
                     const dadosSessao = {
                         id: usuario.id,
                         email: usuario.email,
-                        nome: usuario.nome || (ehAdmin ? 'Administrador VR Modas' : 'Cliente'),
+                        nome: usuario.nome || (ehGestor ? 'Administrador VR Modas' : 'Cliente'),
                         whatsapp: usuario.telefone || usuario.whatsapp || '',
                         endereco: usuario.endereco || {},
-                        role: ehAdmin ? 'admin' : 'cliente'
+                        role: roleNormalizada, // Mantém 'owner' ou 'admin' exacto
+                        permissoes: usuario.permissoes || {}
                     };
 
-                    // Grava em sessionStorage e localStorage para compatibilidade completa
+                    // Grava os dados da sessão
                     sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(dadosSessao));
                     sessionStorage.setItem('vr_cliente_dados', JSON.stringify(dadosSessao));
                     localStorage.setItem('vr_usuario_ativo', JSON.stringify(dadosSessao));
                     localStorage.setItem('vr_cliente_dados', JSON.stringify(dadosSessao));
+                    localStorage.setItem('usuarioLogado', JSON.stringify(dadosSessao));
 
-                    if (ehAdmin) {
+                    if (ehGestor) {
                         sessionStorage.setItem('vr_admin_logado', 'true');
                         localStorage.setItem('vr_admin_logado', 'true');
                     } else {
