@@ -1,7 +1,7 @@
 /* =====================================================
    PAINEL DO LOJISTA (ADMIN) - VR MODAS
    Conectado 100% ao Banco de Dados Neon (PostgreSQL)
-   Dashboard, Gestão de Estoque, Pedidos, Banners & Configs
+   Dashboard, Gestão de Estoque, Pedidos, Banners, Configs & Equipe
    ===================================================== */
 
 const NEON_ADMIN_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
@@ -18,6 +18,36 @@ async function getSql() {
 document.addEventListener('DOMContentLoaded', async () => {
 
     // ==========================================
+    // 0. CONTROLO DE PERMISSÕES & NÍVEIS DE ACESSO
+    // ==========================================
+    const usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo') || localStorage.getItem('usuarioLogado') || '{}');
+    const isOwner = usuarioAtivo.role === 'owner';
+    const permissoes = usuarioAtivo.permissoes || {};
+
+    const btnNavDashboard = document.getElementById('btn-nav-dashboard');
+    const btnNavCadastro = document.getElementById('btn-nav-cadastro');
+    const btnNavCatalogo = document.getElementById('btn-nav-catalogo');
+    const btnNavPedidos = document.getElementById('btn-nav-pedidos');
+    const btnNavBanners = document.getElementById('btn-nav-banners');
+    const btnNavConfig = document.getElementById('btn-nav-config');
+    const btnNavEquipe = document.getElementById('btn-nav-equipe');
+
+    // Apenas o dono enxerga a gestão de equipe
+    if (btnNavEquipe) {
+        btnNavEquipe.style.display = isOwner ? 'inline-flex' : 'none';
+    }
+
+    // Se for colaborador admin, oculta as abas desmarcadas
+    if (!isOwner) {
+        if (btnNavDashboard && permissoes.dashboard === false) btnNavDashboard.style.display = 'none';
+        if (btnNavCadastro && permissoes.produtos === false) btnNavCadastro.style.display = 'none';
+        if (btnNavCatalogo && permissoes.produtos === false) btnNavCatalogo.style.display = 'none';
+        if (btnNavPedidos && permissoes.pedidos === false) btnNavPedidos.style.display = 'none';
+        if (btnNavBanners && permissoes.banners === false) btnNavBanners.style.display = 'none';
+        if (btnNavConfig && permissoes.configuracoes === false) btnNavConfig.style.display = 'none';
+    }
+
+    // ==========================================
     // 1. SISTEMA DE NAVEGAÇÃO ENTRE ABAS
     // ==========================================
     const botoesNav = document.querySelectorAll('#sidebar-nav .nav-btn');
@@ -31,7 +61,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         'secao-catalogo': { titulo: 'Catálogo & Estoque', sub: 'Gerencie peças cadastradas, preços e monitore estoque baixo.' },
         'secao-pedidos': { titulo: 'Pedidos dos Clientes', sub: 'Acompanhe as compras feitas pela sacola, altere status e emita comprovantes.' },
         'secao-banners': { titulo: 'Banners da Vitrine', sub: 'Gerencie os sliders e chamadas promocionais da tela inicial.' },
-        'secao-config': { titulo: 'Configurações & Backup', sub: 'Defina canais oficiais de suporte, códigos promocionais e cópias de segurança.' }
+        'secao-config': { titulo: 'Configurações & Backup', sub: 'Defina canais oficiais de suporte, códigos promocionais e cópias de segurança.' },
+        'secao-equipe': { titulo: 'Gestão de Equipe & Permissões', sub: 'Controle os acessos dos administradores da loja.' }
     };
 
     function alternarAbaAdmin(idAlvo) {
@@ -64,6 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             carregarConfiguracoes();
             carregarEAtualizarListaCupons();
         }
+        if (idAlvo === 'secao-equipe') carregarListaEquipe();
     }
 
     botoesNav.forEach(btn => {
@@ -440,7 +472,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const sql = await getSql();
 
                 if (idEditando) {
-                    // ATUALIZAÇÃO NO NEON
                     await sql`
                         UPDATE produtos 
                         SET nome = ${nome},
@@ -457,7 +488,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         WHERE id = ${parseInt(idEditando)};
                     `;
                 } else {
-                    // INSERÇÃO NO NEON
                     await sql`
                         INSERT INTO produtos (nome, preco, preco_promocional, categoria, estoque, descricao, imagem, imagens, tamanhos, cores, destaque)
                         VALUES (
@@ -482,7 +512,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert("Erro ao gravar no banco na nuvem. Verifique o console.");
             }
 
-            // Sincroniza e recarrega os dados locais
             if (typeof sincronizarProdutosNeon === 'function') {
                 await sincronizarProdutosNeon();
             } else {
@@ -1151,7 +1180,145 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==========================================
-    // 10. BACKUP & RESTAURAÇÃO (.JSON)
+    // 10. GESTÃO DE EQUIPE & ADMINISTRADORES (NEON DB)
+    // ==========================================
+    const formEquipe = document.getElementById('form-gestao-equipe');
+    const inputEmailEquipe = document.getElementById('equipe-email');
+    const listaEquipeAdmin = document.getElementById('lista-equipe-admin');
+
+    async function carregarListaEquipe() {
+        if (!listaEquipeAdmin) return;
+        listaEquipeAdmin.innerHTML = '<p style="color: var(--cinza-texto);">Carregando colaboradores...</p>';
+
+        try {
+            const sql = await getSql();
+            const membros = await sql`
+                SELECT id, nome, email, role, permissoes 
+                FROM usuarios 
+                WHERE role IN ('admin', 'owner')
+                ORDER BY role DESC, id ASC;
+            `;
+
+            if (!membros || membros.length === 0) {
+                listaEquipeAdmin.innerHTML = '<p style="color: var(--cinza-texto);">Nenhum colaborador encontrado.</p>';
+                return;
+            }
+
+            listaEquipeAdmin.innerHTML = '';
+            membros.forEach(m => {
+                const ehDono = m.role === 'owner';
+                const perms = (typeof m.permissoes === 'object' && m.permissoes !== null) ? m.permissoes : (m.permissoes ? JSON.parse(m.permissoes) : {});
+
+                const tagsPermissoes = ehDono ? '<span style="color: #4caf50; font-size: 11px;">✓ Acesso Irrestrito</span>' : [
+                    perms.dashboard ? '📊 Dashboard' : null,
+                    perms.produtos ? '👗 Produtos' : null,
+                    perms.pedidos ? '🛍️ Pedidos' : null,
+                    perms.banners ? '🎨 Banners' : null,
+                    perms.configuracoes ? '⚙️ Configs' : null
+                ].filter(Boolean).map(t => `<span style="background: #222; border: 1px solid #444; padding: 2px 6px; border-radius: 4px; font-size: 10px; color: #ddd; margin-right: 4px;">${t}</span>`).join('') || '<span style="color: #888; font-size: 11px;">Nenhum módulo liberado</span>';
+
+                listaEquipeAdmin.insertAdjacentHTML('beforeend', `
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: #141414; padding: 14px 18px; border-radius: 6px; border: 1px solid #2a2a2a; margin-bottom: 8px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <strong style="color: #fff; font-size: 14px;">${m.nome || 'Usuário'}</strong>
+                                <span style="font-size: 10px; padding: 2px 6px; border-radius: 10px; background: ${ehDono ? '#d4af37' : '#333'}; color: ${ehDono ? '#000' : '#fff'}; font-weight: bold;">
+                                    ${ehDono ? '👑 PROPRIETÁRIO' : '🛡️ ADMIN'}
+                                </span>
+                            </div>
+                            <p style="color: var(--cinza-texto); font-size: 12px; margin: 3px 0 6px 0;">${m.email}</p>
+                            <div>${tagsPermissoes}</div>
+                        </div>
+
+                        ${!ehDono ? `
+                            <button class="btn-revogar-equipe" data-id="${m.id}" style="background: transparent; color: #ff4444; border: 1px solid #ff4444; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">
+                                Revogar Acesso
+                            </button>
+                        ` : ''}
+                    </div>
+                `);
+            });
+
+            document.querySelectorAll('.btn-revogar-equipe').forEach(btn => {
+                btn.onclick = async function() {
+                    const idMembro = this.getAttribute('data-id');
+                    if (confirm("Deseja realmente revogar o acesso deste colaborador?")) {
+                        try {
+                            const sql = await getSql();
+                            await sql`
+                                UPDATE usuarios 
+                                SET role = 'cliente', permissoes = '{}'::jsonb 
+                                WHERE id = ${parseInt(idMembro)} AND role != 'owner';
+                            `;
+                            alert("Acesso administrativo revogado!");
+                            carregarListaEquipe();
+                        } catch (err) {
+                            console.error("Erro ao revogar:", err);
+                            alert("Erro ao revogar acesso.");
+                        }
+                    }
+                };
+            });
+
+        } catch (e) {
+            console.error("Erro ao listar equipe:", e);
+            listaEquipeAdmin.innerHTML = '<p style="color: #ff4444;">Erro ao carregar colaboradores do banco.</p>';
+        }
+    }
+
+    if (formEquipe) {
+        formEquipe.onsubmit = async function(e) {
+            e.preventDefault();
+            const email = inputEmailEquipe.value.trim().toLowerCase();
+            if (!email) return;
+
+            const permissoesObj = {
+                dashboard: document.getElementById('perm-dashboard')?.checked || false,
+                produtos: document.getElementById('perm-produtos')?.checked || false,
+                pedidos: document.getElementById('perm-pedidos')?.checked || false,
+                banners: document.getElementById('perm-banners')?.checked || false,
+                configuracoes: document.getElementById('perm-config')?.checked || false
+            };
+
+            const btnSubmit = document.getElementById('btn-salvar-equipe');
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = "Salvando no Neon...";
+            }
+
+            try {
+                const sql = await getSql();
+                const [usuarioExiste] = await sql`SELECT id, role FROM usuarios WHERE email = ${email};`;
+
+                if (!usuarioExiste) {
+                    alert("Usuário não encontrado! O colaborador precisa criar uma conta comum na loja antes de ser promovido.");
+                } else if (usuarioExiste.role === 'owner') {
+                    alert("Este e-mail pertence ao proprietário da loja e não pode ter suas permissões alteradas.");
+                } else {
+                    await sql`
+                        UPDATE usuarios 
+                        SET role = 'admin', permissoes = ${JSON.stringify(permissoesObj)}::jsonb
+                        WHERE email = ${email};
+                    `;
+                    alert(`Permissões salvas para ${email}!`);
+                    formEquipe.reset();
+                    if (document.getElementById('perm-produtos')) document.getElementById('perm-produtos').checked = true;
+                    carregarListaEquipe();
+                }
+            } catch (err) {
+                console.error("Erro ao cadastrar membro da equipe:", err);
+                alert("Erro ao salvar permissões no banco.");
+            } finally {
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerText = "Salvar Permissões do Colaborador";
+                }
+            }
+        };
+    }
+
+    // ==========================================
+    // 11. BACKUP & RESTAURAÇÃO (.JSON)
     // ==========================================
     const btnExportarBackup = document.getElementById('btn-exportar-backup');
     const inputRestaurarBackup = document.getElementById('input-restaurar-backup');

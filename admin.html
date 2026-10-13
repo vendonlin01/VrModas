@@ -13,12 +13,14 @@
     <!-- Biblioteca de Gráficos do Dashboard -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- GUARDA DE ROTA: Apenas Administrador pode acessar -->
+    <!-- GUARDA DE ROTA: Apenas Administrador ou Proprietário pode acessar -->
     <script>
         (function() {
-            const usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo'));
-            const adminLogado = sessionStorage.getItem('vr_admin_logado');
-            if (!usuarioAtivo || usuarioAtivo.role !== 'admin' || !adminLogado) {
+            const usuarioAtivo = JSON.parse(sessionStorage.getItem('vr_usuario_ativo') || localStorage.getItem('usuarioLogado') || '{}');
+            const adminLogado = sessionStorage.getItem('vr_admin_logado') || localStorage.getItem('vr_admin_logado');
+            const ehAdminOuOwner = usuarioAtivo.role === 'admin' || usuarioAtivo.role === 'owner';
+
+            if (!usuarioAtivo || !ehAdminOuOwner || !adminLogado) {
                 alert("Acesso restrito! Por favor, faça login com uma conta administrativa.");
                 window.location.href = 'login.html';
             }
@@ -149,7 +151,6 @@
             font-size: 13px;
             margin: 0;
         }
-
       
         .btn-logout-sidebar {
             margin-top: auto;
@@ -195,12 +196,14 @@
             </div>
 
             <nav class="admin-nav" id="sidebar-nav">
-                <button type="button" class="nav-btn ativo" data-alvo="secao-dashboard">📊 Dashboard</button>
-                <button type="button" class="nav-btn" data-alvo="secao-cadastro">➕ Nova Peça</button>
-                <button type="button" class="nav-btn" data-alvo="secao-catalogo">📦 Catálogo</button>
-                <button type="button" class="nav-btn" data-alvo="secao-pedidos">🛍️ Pedidos</button>
-                <button type="button" class="nav-btn" data-alvo="secao-banners">🎨 Banners</button>
-                <button type="button" class="nav-btn" data-alvo="secao-config">⚙️ Configurações</button>
+                <button type="button" class="nav-btn ativo" id="btn-nav-dashboard" data-alvo="secao-dashboard">📊 Dashboard</button>
+                <button type="button" class="nav-btn" id="btn-nav-cadastro" data-alvo="secao-cadastro">➕ Nova Peça</button>
+                <button type="button" class="nav-btn" id="btn-nav-catalogo" data-alvo="secao-catalogo">📦 Catálogo</button>
+                <button type="button" class="nav-btn" id="btn-nav-pedidos" data-alvo="secao-pedidos">🛍️ Pedidos</button>
+                <button type="button" class="nav-btn" id="btn-nav-banners" data-alvo="secao-banners">🎨 Banners</button>
+                <button type="button" class="nav-btn" id="btn-nav-config" data-alvo="secao-config">⚙️ Configurações</button>
+                <!-- Botão visível exclusivamente para o dono -->
+                <button type="button" class="nav-btn" id="btn-nav-equipe" data-alvo="secao-equipe" style="display: none;">👥 Equipe</button>
             </nav>
 
             <button type="button" id="btn-logout-admin" class="btn-logout-sidebar">🚪 Desconectar</button>
@@ -618,6 +621,56 @@
                 </div>
             </section>
 
+            <!-- ====================================================
+                 7. SEÇÃO: GESTÃO DE EQUIPE & ADMINISTRADORES (PROPRIETÁRIO)
+                 ==================================================== -->
+            <section id="secao-equipe" class="secao-admin">
+                <div class="admin-card">
+                    <h2>👥 Gestão de Equipe & Permissões</h2>
+                    <p class="subtexto-card">Defina os colaboradores da loja e escolha exatamente quais módulos cada um pode acessar.</p>
+
+                    <!-- Formulário de Cadastro / Atualização de Membro -->
+                    <div style="background: #0d0d0d; border: 1px solid #262626; border-radius: 8px; padding: 20px; margin-bottom: 25px; max-width: 620px;">
+                        <h3 style="color: var(--dourado, #d4af37); font-size: 15px; margin-bottom: 12px; font-weight: 700;">Convidar ou Configurar Administrador</h3>
+                        
+                        <form id="form-gestao-equipe">
+                            <div class="grupo-input" style="margin-bottom: 15px;">
+                                <label style="font-size: 12px; color: #bbb; display: block; margin-bottom: 6px;">E-mail do Colaborador (precisa ter conta cadastrada na loja) *</label>
+                                <input type="email" id="equipe-email" placeholder="exemplo@gmail.com" required style="width: 100%; padding: 10px; background: #141414; border: 1px solid #333; color: #fff; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+                            </div>
+
+                            <label style="font-size: 12px; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px; text-transform: uppercase;">Módulos com Acesso Permitido:</label>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; background: #141414; border: 1px solid #282828; padding: 14px; border-radius: 6px; margin-bottom: 18px;">
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-dashboard" style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 📊 Dashboard & Vendas
+                                </label>
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-produtos" checked style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 👗 Produtos & Catálogo
+                                </label>
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-pedidos" style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 🛍️ Pedidos & Envios
+                                </label>
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-banners" style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 🎨 Banners da Home
+                                </label>
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-config" style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> ⚙️ Configurações Gerais
+                                </label>
+                            </div>
+
+                            <button type="submit" id="btn-salvar-equipe" class="btn-salvar" style="width: 100%;">Salvar Permissões do Colaborador</button>
+                        </form>
+                    </div>
+
+                    <!-- Tabela de Membros -->
+                    <h3 style="color: var(--dourado, #d4af37); font-size: 16px; margin-bottom: 12px;">Membros Ativos da Equipe</h3>
+                    <div id="lista-equipe-admin" style="display: flex; flex-direction: column; gap: 10px;">
+                        <p style="color: var(--cinza-texto);">Carregando colaboradores...</p>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -631,6 +684,8 @@
             if (confirm("Deseja sair do painel administrativo?")) {
                 sessionStorage.removeItem('vr_usuario_ativo');
                 sessionStorage.removeItem('vr_admin_logado');
+                localStorage.removeItem('usuarioLogado');
+                localStorage.removeItem('vr_admin_logado');
                 window.location.href = 'home.html';
             }
         });
