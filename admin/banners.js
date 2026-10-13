@@ -1,7 +1,37 @@
 // ==========================================
 // MÓDULO: GESTOR DE BANNERS DA VITRINE (INTEGRADO AO NEON)
 // ==========================================
-import { comprimirImagem } from './produtos.js';
+
+// Função própria de compressão para garantir que fotos do celular não ultrapassem o limite da Vercel
+function comprimirFotoBanner(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            // Banners para web ficam perfeitos com 1280px de largura
+            const MAX_WIDTH = 1280;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > MAX_WIDTH) {
+                height = Math.round((height * MAX_WIDTH) / width);
+                width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Exporta como JPEG com qualidade 0.75 (leve e nítido)
+            const base64Leve = canvas.toDataURL('image/jpeg', 0.75);
+            callback(base64Leve);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
 
 export function iniciarModuloBanners() {
     const formBanner = document.getElementById('form-cadastro-banner');
@@ -13,8 +43,8 @@ export function iniciarModuloBanners() {
         inputFotoBanner.onchange = function() {
             previewBanner.innerHTML = '';
             if (this.files && this.files[0]) {
-                comprimirImagem(this.files[0], (bannerComprimido) => {
-                    previewBanner.innerHTML = `<img src="${bannerComprimido}" style="width: 100%; max-height: 150px; object-fit: cover; border-radius: 6px; border: 2px solid #d4af37;">`;
+                comprimirFotoBanner(this.files[0], (bannerComprimido) => {
+                    previewBanner.innerHTML = `<img src="${bannerComprimido}" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 6px; border: 2px solid #d4af37; margin-top: 10px;">`;
                 });
             }
         };
@@ -30,7 +60,7 @@ export function iniciarModuloBanners() {
             const banners = await resposta.json();
 
             if (!Array.isArray(banners) || banners.length === 0) {
-                listaBannersAdmin.innerHTML = '<p style="color: var(--cinza-texto);">Nenhum banner ativo. A Home ficará sem slider.</p>';
+                listaBannersAdmin.innerHTML = '<p style="color: var(--cinza-texto);">Nenhum banner ativo no momento.</p>';
                 return;
             }
 
@@ -84,43 +114,55 @@ export function iniciarModuloBanners() {
             const titulo = document.getElementById('titulo-banner')?.value || '';
             const subtitulo = document.getElementById('subtitulo-banner')?.value || '';
             const btnLink = document.getElementById('btn-link-banner')?.value || '';
+            const btnSubmit = formBanner.querySelector('button[type="submit"]');
 
-            if (inputFotoBanner.files && inputFotoBanner.files[0]) {
-                comprimirImagem(inputFotoBanner.files[0], async function(imagemComprimida) {
-                    const payload = {
-                        titulo,
-                        subtitulo,
-                        link: btnLink,
-                        imagem_desktop: imagemComprimida,
-                        imagem_mobile: imagemComprimida,
-                        ordem: 1,
-                        ativo: true
-                    };
-
-                    try {
-                        const resposta = await fetch('/api/banners', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
-                        const resultado = await resposta.json();
-
-                        if (resposta.ok) {
-                            if (typeof mostrarToast === 'function') mostrarToast("Novo banner salvo no banco!");
-                            formBanner.reset();
-                            if (previewBanner) previewBanner.innerHTML = '';
-                            atualizarListaBanners();
-                        } else {
-                            alert("Erro ao salvar banner: " + (resultado.erro || "Falha desconhecida"));
-                        }
-                    } catch (err) {
-                        alert("Falha de conexão com o servidor ao cadastrar banner.");
-                    }
-                });
-            } else {
+            if (!inputFotoBanner.files || !inputFotoBanner.files[0]) {
                 alert("Selecione uma imagem para o banner.");
+                return;
             }
+
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = "Publicando no banco...";
+            }
+
+            comprimirFotoBanner(inputFotoBanner.files[0], async function(imagemComprimida) {
+                const payload = {
+                    titulo,
+                    subtitulo,
+                    link: btnLink,
+                    imagem_desktop: imagemComprimida,
+                    imagem_mobile: imagemComprimida,
+                    ordem: 1,
+                    ativo: true
+                };
+
+                try {
+                    const resposta = await fetch('/api/banners', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const resultado = await resposta.json();
+
+                    if (resposta.ok) {
+                        alert("Banner salvo com sucesso no banco!");
+                        formBanner.reset();
+                        if (previewBanner) previewBanner.innerHTML = '';
+                        atualizarListaBanners();
+                    } else {
+                        alert("Erro ao salvar banner: " + (resultado.erro || "Falha desconhecida"));
+                    }
+                } catch (err) {
+                    alert("Falha de conexão com a API.");
+                } finally {
+                    if (btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerText = "PUBLICAR BANNER NA HOME";
+                    }
+                }
+            });
         };
     }
 }
