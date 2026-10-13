@@ -229,44 +229,36 @@
 
                 if (resposta.ok && dados.sucesso) {
                     const usuario = dados.usuario;
+                    const roleNormalizada = (usuario.role || '').toString().trim().toLowerCase();
+                    const ehAdmin = roleNormalizada === 'admin' || email === 'admin@vrmodas.com';
 
                     if (dados.token) {
                         sessionStorage.setItem('vr_auth_token', dados.token);
                         localStorage.setItem('vr_auth_token', dados.token);
                     }
 
-                    // Se for Administrador
-                    if (usuario.role === 'admin') {
-                        const sessaoAdmin = {
-                            id: usuario.id,
-                            email: usuario.email,
-                            role: 'admin',
-                            nome: usuario.nome || 'Administrador VR Modas'
-                        };
-                        sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoAdmin));
-                        sessionStorage.setItem('vr_admin_logado', 'true');
-                        localStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoAdmin));
-                        localStorage.setItem('vr_admin_logado', 'true');
-
-                        window.location.href = 'home.html';
-                        return;
-                    }
-
-                    // Se for Cliente comum
-                    const sessaoCliente = {
+                    const dadosSessao = {
                         id: usuario.id,
                         email: usuario.email,
-                        nome: usuario.nome,
-                        whatsapp: usuario.telefone || usuario.whatsapp,
-                        endereco: usuario.endereco,
-                        role: 'cliente'
+                        nome: usuario.nome || (ehAdmin ? 'Administrador VR Modas' : 'Cliente'),
+                        whatsapp: usuario.telefone || usuario.whatsapp || '',
+                        endereco: usuario.endereco || {},
+                        role: ehAdmin ? 'admin' : 'cliente'
                     };
-                    sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
-                    sessionStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
-                    sessionStorage.setItem('vr_cliente_logado', 'true');
-                    localStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
-                    localStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
-                    localStorage.setItem('vr_cliente_logado', 'true');
+
+                    // Grava em sessionStorage e localStorage para compatibilidade completa
+                    sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(dadosSessao));
+                    sessionStorage.setItem('vr_cliente_dados', JSON.stringify(dadosSessao));
+                    localStorage.setItem('vr_usuario_ativo', JSON.stringify(dadosSessao));
+                    localStorage.setItem('vr_cliente_dados', JSON.stringify(dadosSessao));
+
+                    if (ehAdmin) {
+                        sessionStorage.setItem('vr_admin_logado', 'true');
+                        localStorage.setItem('vr_admin_logado', 'true');
+                    } else {
+                        sessionStorage.removeItem('vr_admin_logado');
+                        localStorage.removeItem('vr_admin_logado');
+                    }
 
                     window.location.href = 'home.html';
                     return;
