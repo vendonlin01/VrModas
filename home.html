@@ -21,6 +21,14 @@
             display: inline-block;
         }
 
+        @media (max-width: 768px) {
+            .btn-admin-topo {
+                display: none !important;
+            }
+
+            /* ... o resto das suas regras continuam iguais ... */
+        }
+
         .btn-usuario {
             background: transparent;
             border: 1px solid #333;
@@ -417,7 +425,8 @@
                     <a href="login.html" id="link-login-dropdown">Entrar na Conta</a>
                     <a href="cadastro.html" id="link-cadastro-dropdown">Criar Conta</a>
                     <a href="pedidos.html" id="link-pedidos-dropdown" style="display: none;">🛍️ Minhas Compras</a>
-                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪 Sair</button>
+                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪
+                        Sair</button>
                 </div>
             </div>
 
@@ -559,11 +568,14 @@
                 const linkMenuLojista = document.getElementById('link-menu-lojista');
                 const divisorMobile = document.getElementById('divisor-menu-mobile');
 
-                // Libera ambos os botões sempre que for gestor (sem travar por resolução de tela)
+                const isMobile = window.innerWidth <= 768;
+
                 if (ehGestor) {
-                    if (linkMenuLojista) linkMenuLojista.style.display = 'flex';
-                    if (divisorMobile) divisorMobile.style.display = 'block';
-                    if (btnAdminTopo) btnAdminTopo.style.display = 'inline-flex';
+                    // No celular: mostra na gaveta do menu e esconde a engrenagem do topo
+                    // No computador: esconde na gaveta e mostra a engrenagem no topo
+                    if (linkMenuLojista) linkMenuLojista.style.display = isMobile ? 'flex' : 'none';
+                    if (divisorMobile) divisorMobile.style.display = isMobile ? 'block' : 'none';
+                    if (btnAdminTopo) btnAdminTopo.style.display = isMobile ? 'none' : 'inline-flex';
                 } else {
                     if (btnAdminTopo) btnAdminTopo.style.display = 'none';
                     if (linkMenuLojista) linkMenuLojista.style.display = 'none';
