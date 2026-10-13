@@ -26,7 +26,7 @@ function gerarToken(payload) {
 }
 
 export default async function handler(req, res) {
-    // Permite CORS
+    // Configuração de CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ erro: 'Método não permitido' });
 
     const sql = neon(process.env.DATABASE_URL);
-    const { acao, email, senha, nome, telefone, cpf, endereco, dataNascimento } = req.body;
+    const { acao, email, senha, nome, telefone, whatsapp, cpf, endereco, dataNascimento } = req.body;
 
     try {
         // 1. Garante que a tabela usuarios existe
@@ -44,7 +44,10 @@ export default async function handler(req, res) {
                 id SERIAL PRIMARY KEY,
                 nome VARCHAR(255) NOT NULL,
                 email VARCHAR(255) UNIQUE NOT NULL,
+                senha_hash TEXT,
+                senha_salt TEXT,
                 telefone VARCHAR(50),
+                whatsapp VARCHAR(50),
                 cpf VARCHAR(20),
                 endereco JSONB,
                 data_nascimento VARCHAR(20),
@@ -53,12 +56,15 @@ export default async function handler(req, res) {
             );
         `;
 
-        // 2. Adiciona as colunas necessárias se a tabela foi criada antes da atualização de segurança
+        // 2. Adiciona todas as colunas que possam faltar de tabelas legadas
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_hash TEXT;`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_salt TEXT;`;
-        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'cliente';`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefone VARCHAR(50);`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS whatsapp VARCHAR(50);`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS cpf VARCHAR(20);`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS endereco JSONB;`;
         await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS data_nascimento VARCHAR(20);`;
+        await sql`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'cliente';`;
 
         // ==========================================
         // 1. AÇÃO: CADASTRO DE CLIENTE
@@ -80,15 +86,28 @@ export default async function handler(req, res) {
 
             // Gera hash com salt
             const { salt, hash } = gerarHashSenha(senha);
+            const contato = telefone || whatsapp || null;
 
             const [novoUsuario] = await sql`
-                INSERT INTO usuarios (nome, email, senha_hash, senha_salt, telefone, cpf, endereco, data_nascimento, role)
+                INSERT INTO usuarios (
+                    nome, 
+                    email, 
+                    senha_hash, 
+                    senha_salt, 
+                    telefone, 
+                    whatsapp, 
+                    cpf, 
+                    endereco, 
+                    data_nascimento, 
+                    role
+                )
                 VALUES (
                     ${nome.trim()},
                     ${emailNormalizado},
                     ${hash},
                     ${salt},
-                    ${telefone || null},
+                    ${contato},
+                    ${contato},
                     ${cpf || null},
                     ${JSON.stringify(endereco || {})}::jsonb,
                     ${dataNascimento || null},
@@ -117,7 +136,7 @@ export default async function handler(req, res) {
 
             const emailNormalizado = email.toLowerCase().trim();
 
-            // CASO ESPECIAL: Credencial master inicial do lojista se ainda não houver admin no banco
+            // CASO ESPECIAL: Credencial master inicial do lojista
             if (emailNormalizado === 'admin@vrmodas.com' && senha === 'admin123') {
                 const tokenAdmin = gerarToken({ id: 0, email: 'admin@vrmodas.com', role: 'admin' });
                 return res.status(200).json({
@@ -129,7 +148,7 @@ export default async function handler(req, res) {
 
             // Busca no banco
             const usuarios = await sql`
-                SELECT id, nome, email, senha_hash, senha_salt, telefone, cpf, endereco, role
+                SELECT id, nome, email, senha_hash, senha_salt, telefone, whatsapp, cpf, endereco, role
                 FROM usuarios 
                 WHERE LOWER(email) = ${emailNormalizado}
                 LIMIT 1;
@@ -156,7 +175,7 @@ export default async function handler(req, res) {
                     id: usuarioBanco.id,
                     nome: usuarioBanco.nome,
                     email: usuarioBanco.email,
-                    telefone: usuarioBanco.telefone,
+                    telefone: usuarioBanco.telefone || usuarioBanco.whatsapp,
                     cpf: usuarioBanco.cpf,
                     endereco: usuarioBanco.endereco,
                     role: usuarioBanco.role
