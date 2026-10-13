@@ -1,5 +1,5 @@
 // ==========================================
-// MÓDULO: CADASTRO E EDIÇÃO DE PRODUTOS
+// MÓDULO: CADASTRO E EDIÇÃO DE PRODUTOS (SEGURO VIA API)
 // ==========================================
 export function comprimirImagem(file, callback) {
     const reader = new FileReader();
@@ -37,6 +37,7 @@ export function iniciarModuloProdutos(aoSalvarSucesso) {
             fotosEmEdicao = [];
             Array.from(this.files).forEach(file => {
                 comprimirImagem(file, (imgComprimida) => {
+                    fotosEmEdicao.push(imgComprimida);
                     previewContainer.innerHTML += `<img src="${imgComprimida}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 2px solid #d4af37;">`;
                 });
             });
@@ -57,7 +58,7 @@ export function iniciarModuloProdutos(aoSalvarSucesso) {
         const checkPromo = document.getElementById('destaque-promocao');
         if (checkPromo) checkPromo.checked = !!produto.promocao;
 
-        document.getElementById('cores-produto').value = produto.cores || '';
+        document.getElementById('cores-produto').value = Array.isArray(produto.cores) ? produto.cores.join(', ') : (produto.cores || '');
         document.getElementById('descricao-produto').value = produto.descricao || '';
 
         const tamanhosProduto = produto.tamanhos || [];
@@ -81,7 +82,10 @@ export function iniciarModuloProdutos(aoSalvarSucesso) {
     function resetarModoEdicao() {
         if (editandoIdInput) editandoIdInput.value = "";
         if (tituloFormProduto) tituloFormProduto.innerText = "➕ Cadastrar Nova Peça";
-        if (btnSubmitProduto) btnSubmitProduto.innerText = "Salvar Peça no Catálogo";
+        if (btnSubmitProduto) {
+            btnSubmitProduto.innerText = "Salvar Peça no Catálogo";
+            btnSubmitProduto.disabled = false;
+        }
         if (btnCancelarEdicao) btnCancelarEdicao.style.display = "none";
         if (previewContainer) previewContainer.innerHTML = '';
         const checkPromo = document.getElementById('destaque-promocao');
@@ -93,56 +97,106 @@ export function iniciarModuloProdutos(aoSalvarSucesso) {
     if (btnCancelarEdicao) btnCancelarEdicao.onclick = resetarModoEdicao;
 
     if (formAdmin) {
-        formAdmin.onsubmit = function(event) {
+        formAdmin.onsubmit = async function(event) {
             event.preventDefault();
             const idEditando = editandoIdInput ? editandoIdInput.value : '';
             const nome = document.getElementById('nome-produto').value.trim();
             const preco = parseFloat(document.getElementById('preco-produto').value);
+            const precoPromocional = parseFloat(document.getElementById('preco-promocional-produto')?.value) || null;
             const categoria = document.getElementById('categoria-produto').value;
-            const estoque = parseInt(document.getElementById('estoque-produto').value);
+            const estoque = parseInt(document.getElementById('estoque-produto').value) || 0;
             const isPromocao = document.getElementById('destaque-promocao')?.checked || false;
-            const cores = document.getElementById('cores-produto').value.trim();
+            
+            const coresInput = document.getElementById('cores-produto').value.trim();
+            const cores = coresInput ? coresInput.split(',').map(c => c.trim()) : ['Padrão'];
+
             const descricao = document.getElementById('descricao-produto').value.trim();
             const tamanhos = [];
             document.querySelectorAll('.check-tamanho:checked').forEach(cb => tamanhos.push(cb.value));
 
+            if (btnSubmitProduto) {
+                btnSubmitProduto.disabled = true;
+                btnSubmitProduto.innerText = "Salvando...";
+            }
+
+            let imagensFinais = (fotosEmEdicao.length > 0) ? fotosEmEdicao : ["img/produto1.jpg"];
+
+            if (inputFoto && inputFoto.files && inputFoto.files.length > 0) {
+                imagensFinais = await Promise.all(Array.from(inputFoto.files).map(file => new Promise(res => {
+                    comprimirImagem(file, res);
+                })));
+            }
+
             const dadosComuns = {
-                nome, preco, categoria, estoque, promocao: isPromocao, cores, tamanhos, descricao
+                id: idEditando || undefined,
+                nome,
+                preco,
+                precoPromocional,
+                categoria,
+                estoque,
+                promocao: isPromocao,
+                cores,
+                tamanhos,
+                descricao,
+                imagem: imagensFinais[0],
+                imagens: imagensFinais
             };
 
-            if (inputFoto.files && inputFoto.files.length > 0) {
-                Promise.all(Array.from(inputFoto.files).map(file => new Promise(res => {
-                    comprimirImagem(file, res);
-                }))).then(imagensComprimidas => {
-                    salvarOuAtualizarProduto(idEditando, { ...dadosComuns, imagens: imagensComprimidas });
-                });
-            } else {
-                const imagensFinais = (fotosEmEdicao.length > 0) ? fotosEmEdicao : ["img/produto1.jpg"];
-                salvarOuAtualizarProduto(idEditando, { ...dadosComuns, imagens: imagensFinais });
-            }
+            await salvarOuAtualizarProduto(idEditando, dadosComuns);
         };
 
-        function salvarOuAtualizarProduto(idEditando, dados) {
-            let banco = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
+        async function salvarOuAtualizarProduto(idEditando, dados) {
+            let salvouNaApi = false;
 
+            // 1. Envia requisição para a API segura (/api/produtos)
             try {
+                const metodo = idEditando ? 'PUT' : 'POST';
+                const resposta = await fetch('/api/produtos', {
+                    method: metodo,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+
+                if (resposta.ok) {
+                    const itemSalvo = await resposta.json();
+                    salvouNaApi = true;
+                    if (itemSalvo && itemSalvo.id) {
+                        dados.id = itemSalvo.id;
+                    }
+                }
+            } catch (erroApi) {
+                console.warn("API indisponível ou offline. Usando cache local temporário:", erroApi);
+            }
+
+            // 2. Atualiza o cache local (localStorage) para resposta imediata na UI
+            try {
+                let banco = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
+
                 if (idEditando) {
                     const idx = banco.findIndex(p => String(p.id) === String(idEditando));
                     if (idx !== -1) {
                         banco[idx] = { ...banco[idx], ...dados, id: banco[idx].id };
-                        if (typeof mostrarToast === 'function') mostrarToast(`Peça "${dados.nome}" atualizada!`);
                     }
                 } else {
-                    const novoProduto = { id: Date.now(), ...dados };
-                    banco.push(novoProduto);
-                    if (typeof mostrarToast === 'function') mostrarToast(`Peça "${dados.nome}" cadastrada com sucesso!`);
+                    const novoProduto = { id: dados.id || Date.now(), ...dados };
+                    banco.unshift(novoProduto);
                 }
 
                 localStorage.setItem('vr_modas_db', JSON.stringify(banco));
+
+                const msg = idEditando ? `Peça "${dados.nome}" atualizada!` : `Peça "${dados.nome}" cadastrada com sucesso!`;
+                if (typeof mostrarToast === 'function') mostrarToast(msg);
+                else alert(msg);
+
                 resetarModoEdicao();
                 if (typeof aoSalvarSucesso === 'function') aoSalvarSucesso();
             } catch (err) {
-                alert("Armazenamento local cheio. Tente imagens menores.");
+                alert("Armazenamento local cheio. Tente comprimir as fotos.");
+            } finally {
+                if (btnSubmitProduto) {
+                    btnSubmitProduto.disabled = false;
+                    btnSubmitProduto.innerText = idEditando ? "Atualizar Peça no Catálogo" : "Salvar Peça no Catálogo";
+                }
             }
         }
     }

@@ -17,7 +17,7 @@
 
         body {
             background: radial-gradient(circle at top, #1a1a1a 0%, #0a0a0a 100%);
-            color: var(--branco);
+            color: var(--branco, #fff);
             font-family: 'Montserrat', sans-serif;
             min-height: 100vh;
             display: flex;
@@ -52,24 +52,24 @@
             letter-spacing: 1.5px;
         }
 
-        .logo-box .logo-vr { color: var(--dourado); }
-        .logo-box .logo-modas { color: var(--branco); }
+        .logo-box .logo-vr { color: var(--dourado, #d4af37); }
+        .logo-box .logo-modas { color: var(--branco, #fff); }
 
         .cadastro-header h1 {
-            color: var(--branco);
+            color: var(--branco, #fff);
             font-size: 19px;
             margin-bottom: 4px;
             font-weight: 700;
         }
 
         .cadastro-header p {
-            color: var(--cinza-texto);
+            color: var(--cinza-texto, #aaa);
             font-size: 12px;
             line-height: 1.4;
         }
 
         .secao-titulo {
-            color: var(--dourado);
+            color: var(--dourado, #d4af37);
             font-size: 12px;
             text-transform: uppercase;
             font-weight: 700;
@@ -114,7 +114,7 @@
             width: 100%;
             background: #0f0f0f;
             border: 1px solid #333;
-            color: var(--branco);
+            color: var(--branco, #fff);
             padding: 12px 10px;
             border-radius: 6px;
             font-family: 'Montserrat', sans-serif;
@@ -124,7 +124,7 @@
         }
 
         .campo-grupo input:focus {
-            border-color: var(--dourado);
+            border-color: var(--dourado, #d4af37);
             box-shadow: 0 0 8px rgba(212, 175, 55, 0.25);
         }
 
@@ -135,8 +135,8 @@
 
         .btn-cadastrar {
             width: 100%;
-            background: linear-gradient(135deg, var(--dourado) 0%, #b5952f 100%);
-            color: var(--preto);
+            background: linear-gradient(135deg, var(--dourado, #d4af37) 0%, #b5952f 100%);
+            color: var(--preto, #000);
             padding: 14px;
             border: none;
             border-radius: 6px;
@@ -162,11 +162,11 @@
             text-align: center;
             margin-top: 18px;
             font-size: 13px;
-            color: var(--cinza-texto);
+            color: var(--cinza-texto, #aaa);
         }
 
         .cadastro-footer a {
-            color: var(--dourado);
+            color: var(--dourado, #d4af37);
             text-decoration: none;
             font-weight: 700;
         }
@@ -266,8 +266,6 @@
     </div>
 
     <script>
-        const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
-
         document.addEventListener('DOMContentLoaded', () => {
             const inputCpf = document.getElementById('cad-cpf');
             const inputWhats = document.getElementById('cad-whatsapp');
@@ -317,7 +315,7 @@
                 }
             });
 
-            // 4. GRAVAÇÃO DO CLIENTE (NEON + FALLBACK)
+            // 4. GRAVAÇÃO SEGURA VIA API (/api/auth)
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
@@ -326,8 +324,8 @@
 
                 const nome = document.getElementById('cad-nome').value.trim();
                 const cpf = document.getElementById('cad-cpf').value.trim();
-                const nascimento = document.getElementById('cad-nasc').value || null;
-                const whatsapp = document.getElementById('cad-whatsapp').value.trim();
+                const dataNascimento = document.getElementById('cad-nasc').value || null;
+                const telefone = document.getElementById('cad-whatsapp').value.trim();
                 const email = document.getElementById('cad-email').value.trim().toLowerCase();
                 const senha = document.getElementById('cad-senha').value;
 
@@ -341,70 +339,66 @@
 
                 const enderecoTexto = `${enderecoObj.rua}, Nº ${enderecoObj.numero} - ${enderecoObj.bairro}, ${enderecoObj.cidade} (CEP: ${enderecoObj.cep})`;
 
-                let idUsuarioCriado = Date.now();
-
                 try {
-                    // Grava no Neon
-                    const { neon } = await import('https://esm.sh/@neondatabase/serverless');
-                    const sql = neon(NEON_CONNECTION_STRING);
+                    // Envia requisição para a API segura
+                    const resposta = await fetch('/api/auth', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            acao: 'cadastro',
+                            nome,
+                            email,
+                            senha,
+                            telefone,
+                            cpf,
+                            dataNascimento,
+                            endereco: { ...enderecoObj, enderecoFormatado: enderecoTexto }
+                        })
+                    });
 
-                    // Verifica se o e-mail já existe no banco
-                    const existente = await sql`SELECT id FROM usuarios WHERE LOWER(email) = ${email} LIMIT 1;`;
-                    if (existente.length > 0) {
-                        alert('Este e-mail já está cadastrado! Faça login ou use outro.');
+                    const dados = await resposta.json();
+
+                    if (!resposta.ok || !dados.sucesso) {
+                        alert(dados.erro || 'Falha ao realizar cadastro.');
                         btnSubmit.disabled = false;
                         btnSubmit.innerText = 'Concluir Cadastro';
                         return;
                     }
 
-                    const resultado = await sql`
-                        INSERT INTO usuarios (nome, email, senha, whatsapp, endereco, role, cpf, nascimento, endereco_completo)
-                        VALUES (
-                            ${nome},
-                            ${email},
-                            ${senha},
-                            ${whatsapp},
-                            ${enderecoTexto},
-                            'cliente',
-                            ${cpf},
-                            ${nascimento},
-                            ${JSON.stringify(enderecoObj)}
-                        )
-                        RETURNING id;
-                    `;
-
-                    if (resultado.length > 0) {
-                        idUsuarioCriado = resultado[0].id;
+                    // Sessão autenticada com sucesso
+                    if (dados.token) {
+                        sessionStorage.setItem('vr_auth_token', dados.token);
                     }
-                } catch (erroBanco) {
-                    console.warn('⚠️ Falha ao salvar direto no Neon. Gravando localmente:', erroBanco);
+
+                    const sessaoCliente = {
+                        id: dados.usuario.id,
+                        nome: dados.usuario.nome,
+                        email: dados.usuario.email,
+                        whatsapp: dados.usuario.telefone,
+                        cpf,
+                        endereco: enderecoObj,
+                        enderecoTexto,
+                        role: 'cliente'
+                    };
+
+                    sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
+                    sessionStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
+                    sessionStorage.setItem('vr_cliente_logado', 'true');
+
+                    // Mantém cache local sincronizado para fallback
+                    let usuariosLocais = JSON.parse(localStorage.getItem('vr_modas_usuarios')) || [];
+                    usuariosLocais.push(sessaoCliente);
+                    localStorage.setItem('vr_modas_usuarios', JSON.stringify(usuariosLocais));
+
+                    alert('Cadastro concluído com sucesso! Bem-vindo(a) à VR Modas.');
+                    window.location.href = 'home.html';
+
+                } catch (erro) {
+                    console.error('Erro ao comunicar com a API:', erro);
+                    alert('Erro ao conectar ao servidor. Verifique sua conexão e tente novamente.');
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerText = 'Concluir Cadastro';
                 }
-
-                // Salva também localmente e inicia a sessão
-                const novoCliente = {
-                    id: idUsuarioCriado,
-                    nome,
-                    cpf,
-                    nascimento,
-                    whatsapp,
-                    email,
-                    senha,
-                    endereco: enderecoObj,
-                    enderecoTexto: enderecoTexto,
-                    role: "cliente",
-                    dataCadastro: new Date().toLocaleDateString('pt-BR')
-                };
-
-                let usuarios = JSON.parse(localStorage.getItem('vr_modas_usuarios')) || [];
-                usuarios.push(novoCliente);
-                localStorage.setItem('vr_modas_usuarios', JSON.stringify(usuarios));
-
-                sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(novoCliente));
-                sessionStorage.setItem('vr_cliente_logado', 'true');
-                sessionStorage.setItem('vr_cliente_dados', JSON.stringify(novoCliente));
-
-                alert('Cadastro concluído com sucesso! Bem-vindo(a) à VR Modas.');
-                window.location.href = 'home.html';
             });
         });
     </script>

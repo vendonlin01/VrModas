@@ -1,0 +1,19 @@
+{
+  "name": "vr.modas-",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "dependencies":{ 
+    "@neondatabase/serverless": "^0.10.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0"
+  }
+}
