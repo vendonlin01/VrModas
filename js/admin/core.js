@@ -47,7 +47,9 @@ function verificarAutenticacaoAdmin() {
 function aplicarPermissoesInterface() {
     if (!usuarioAdminLogado) return;
 
-    const ehDono = usuarioAdminLogado.role === 'owner';
+    // Se a role for owner, admin ou não estiver explicitamente restrita, concede acesso total às abas operacionais
+    const ehDono = usuarioAdminLogado.role === 'owner' || !usuarioAdminLogado.role;
+    const ehAdmin = usuarioAdminLogado.role === 'admin';
     const permissoes = usuarioAdminLogado.permissoes || {};
 
     const regrasBotoes = [
@@ -62,14 +64,17 @@ function aplicarPermissoesInterface() {
     regrasBotoes.forEach(item => {
         const btn = document.getElementById(item.id);
         if (btn) {
-            const temAcesso = ehDono || permissoes[item.perm] === true;
-            btn.style.display = temAcesso ? 'inline-flex' : 'none';
+            // Se for proprietário ou administrador com permissão (ou sem restrições explícitas), mostra o botão
+            const temAcesso = ehDono || permissoes[item.perm] === true || (ehAdmin && Object.keys(permissoes).length === 0);
+            btn.style.setProperty('display', temAcesso ? 'inline-flex' : 'none', 'important');
         }
     });
 
+    // Apenas o proprietário tem acesso à gestão de equipa
     const btnEquipe = document.getElementById('btn-nav-equipe');
     if (btnEquipe) {
-        btnEquipe.style.display = ehDono ? 'inline-flex' : 'none';
+        const podeVerEquipe = ehDono || usuarioAdminLogado.role === 'owner';
+        btnEquipe.style.setProperty('display', podeVerEquipe ? 'inline-flex' : 'none', 'important');
     }
 }
 
@@ -81,7 +86,7 @@ function alternarAbaAdmin(idAlvo) {
 
     const ehDono = usuarioAdminLogado && usuarioAdminLogado.role === 'owner';
 
-    // Trava de segurança para a aba de equipe
+    // Trava de segurança para a aba de equipa
     if (idAlvo === 'secao-equipe' && !ehDono) {
         alert('⛔ Acesso Restrito: Apenas o proprietário da VR Modas pode gerir a equipa.');
         return;
@@ -93,7 +98,7 @@ function alternarAbaAdmin(idAlvo) {
         btn.classList.toggle('ativo', btn.getAttribute('data-alvo') === idAlvo);
     });
 
-    // Oculta forçadamente todas as seções e exibe apenas a clicada
+    // Oculta forçadamente todas as secções e exibe unicamente a selecionada
     const secoes = document.querySelectorAll('.secao-admin, .secao-conteudo');
     secoes.forEach(sec => {
         if (sec.id === idAlvo) {
@@ -105,7 +110,7 @@ function alternarAbaAdmin(idAlvo) {
         }
     });
 
-    // Atualiza títulos do cabeçalho
+    // Atualiza cabeçalho de título da página
     const tituloSecao = document.getElementById('titulo-secao-atual');
     const subtituloSecao = document.getElementById('subtitulo-secao-atual');
     if (mapaTitulos[idAlvo]) {
