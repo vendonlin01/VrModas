@@ -6,6 +6,20 @@
 let instanciaGraficoVendas = null;
 let instanciaGraficoCategorias = null;
 
+/**
+ * Função utilitária que remove acentos e verifica se o pedido foi pago/concluído
+ */
+function ehStatusConcluidoOuPago(statusRaw) {
+    if (!statusRaw) return false;
+    const s = String(statusRaw)
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+
+    return s.includes('concluid') || s.includes('pago') || s.includes('finaliz');
+}
+
 async function atualizarDashboard() {
     const elFaturamento = document.getElementById('dash-faturamento');
     const elPedidos = document.getElementById('dash-total-pedidos');
@@ -13,25 +27,25 @@ async function atualizarDashboard() {
     const elTotalProdutos = document.getElementById('dash-total-produtos');
 
     try {
-        const sql = await getSql();
+        const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
+        if (!sql) throw new Error("Conexão SQL não inicializada");
 
-        // 1. Busca todos os pedidos e produtos do banco
+        // 1. Busca todos os pedidos e produtos do Neon
         const pedidos = await sql`SELECT * FROM pedidos;`;
         const produtos = await sql`SELECT * FROM produtos;`;
 
         // --- CÁLCULO DOS CARDS ---
-        let faturamento = 0;
-        let pedidosConcluidos = 0;
+        let faturamentoConcluido = 0;
+        let qtdPedidosConcluidos = 0;
 
         pedidos.forEach(p => {
-            const status = (p.status || '').toLowerCase();
+            const status = p.status || '';
             const valor = Number(p.total || p.valor_total || 0);
 
-            if (status !== 'cancelado') {
-                faturamento += valor;
-            }
-            if (status === 'concluido' || status === 'pago') {
-                pedidosConcluidos++;
+            // Regra: Somente pedidos concluídos/pagos entram no faturamento e no contador
+            if (ehStatusConcluidoOuPago(status)) {
+                faturamentoConcluido += valor;
+                qtdPedidosConcluidos++;
             }
         });
 
@@ -50,10 +64,18 @@ async function atualizarDashboard() {
         });
 
         // Atualiza os cartões na tela
-        if (elFaturamento) elFaturamento.innerText = faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        if (elPedidos) elPedidos.innerText = pedidosConcluidos;
-        if (elEstoqueBaixo) elEstoqueBaixo.innerText = estoqueBaixo;
-        if (elTotalProdutos) elTotalProdutos.innerText = totalProdutos;
+        if (elFaturamento) {
+            elFaturamento.innerText = faturamentoConcluido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        if (elPedidos) {
+            elPedidos.innerText = qtdPedidosConcluidos;
+        }
+        if (elEstoqueBaixo) {
+            elEstoqueBaixo.innerText = estoqueBaixo;
+        }
+        if (elTotalProdutos) {
+            elTotalProdutos.innerText = totalProdutos;
+        }
 
         // --- RENDERIZAÇÃO DOS GRÁFICOS ---
         renderizarGraficoVendas(pedidos);
@@ -63,15 +85,15 @@ async function atualizarDashboard() {
         console.error('Erro ao atualizar métricas do Dashboard:', erro);
     }
 }
+window.atualizarDashboard = atualizarDashboard;
 
 /**
- * Gráfico 1: Faturamento e Histórico de Vendas (Linha)
+ * Gráfico 1: Faturamento e Histórico de Vendas (Linha) - Apenas Vendas Concluídas
  */
 function renderizarGraficoVendas(pedidos) {
     const canvas = document.getElementById('graficoVendas');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    // Agrupa faturamento dos últimos 6 meses ou pedidos recentes
     const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     const hoje = new Date();
     const rotulos = [];
@@ -83,11 +105,14 @@ function renderizarGraficoVendas(pedidos) {
     }
 
     pedidos.forEach(p => {
+        // Apenas pedidos concluídos/pagos entram no histórico do gráfico
+        if (!ehStatusConcluidoOuPago(p.status)) return;
+
         const dataCrua = p.criado_em || p.data_criacao || p.data || p.created_at;
         const data = dataCrua ? new Date(dataCrua) : new Date();
         const diffMeses = (hoje.getFullYear() - data.getFullYear()) * 12 + (hoje.getMonth() - data.getMonth());
         
-        if (diffMeses >= 0 && diffMeses < 6 && (p.status || '').toLowerCase() !== 'cancelado') {
+        if (diffMeses >= 0 && diffMeses < 6) {
             const indice = 5 - diffMeses;
             totaisPorMes[indice] += Number(p.total || p.valor_total || 0);
         }
@@ -102,7 +127,7 @@ function renderizarGraficoVendas(pedidos) {
         data: {
             labels: rotulos,
             datasets: [{
-                label: 'Faturamento (R$)',
+                label: 'Faturamento Pago (R$)',
                 data: totaisPorMes,
                 borderColor: '#d4af37',
                 backgroundColor: 'rgba(212, 175, 55, 0.15)',
