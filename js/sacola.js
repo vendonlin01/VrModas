@@ -400,7 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const clienteSessao = obterClienteAtual();
             const clienteNome = clienteSessao ? clienteSessao.nome : "Cliente Visitante";
             const clienteWhats = (clienteSessao && (clienteSessao.whatsapp || clienteSessao.telefone)) ? (clienteSessao.whatsapp || clienteSessao.telefone) : "Não informado";
-            const clienteEmail = clienteSessao ? clienteSessao.email : null;
             
             let clienteEndereco = (tipoEnvioSelecionado === 'retirada')
                 ? "🏬 Retirada na Loja Física (Sem frete)"
@@ -416,21 +415,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const agora = new Date();
             const dataHora = `${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 
-            // 1. Grava no Neon e dá baixa de estoque nas peças
+            // Estrutura de itens com metadados de envio e pagamento embutidos no JSONB
+            const dadosItensCompletos = {
+                itens: itensNoCarrinhoData,
+                endereco_entrega: clienteEndereco,
+                forma_pagamento: metodoPagamentoSelecionado.toUpperCase(),
+                tipo_envio: tipoEnvioSelecionado
+            };
+
+            // 1. Grava no Neon de forma segura utilizando as colunas existentes
             try {
                 const { neon } = await import('https://esm.sh/@neondatabase/serverless');
                 const sql = neon(NEON_SACOLA_CONN);
 
+                // Executa a inserção direcionando para 'cliente_telefone'
                 const resPedido = await sql`
-                    INSERT INTO pedidos (cliente_nome, cliente_whatsapp, cliente_email, endereco_entrega, itens, total, forma_pagamento, status)
-                    VALUES (
+                    INSERT INTO pedidos (
+                        cliente_nome, 
+                        cliente_telefone, 
+                        total, 
+                        itens, 
+                        status
+                    ) VALUES (
                         ${clienteNome},
                         ${clienteWhats},
-                        ${clienteEmail},
-                        ${clienteEndereco},
-                        ${JSON.stringify(itensNoCarrinhoData)}::jsonb,
                         ${totalComDesconto},
-                        ${metodoPagamentoSelecionado.toUpperCase()},
+                        ${JSON.stringify(dadosItensCompletos)}::jsonb,
                         'Pendente'
                     )
                     RETURNING id;
