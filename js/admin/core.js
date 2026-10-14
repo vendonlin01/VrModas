@@ -50,7 +50,6 @@ function aplicarPermissoesInterface() {
     const ehDono = usuarioAdminLogado.role === 'owner';
     const permissoes = usuarioAdminLogado.permissoes || {};
 
-    // Mapeamento dos botões do menu com as suas permissões
     const regrasBotoes = [
         { id: 'btn-nav-dashboard', perm: 'dashboard' },
         { id: 'btn-nav-cadastro', perm: 'produtos' },
@@ -63,52 +62,50 @@ function aplicarPermissoesInterface() {
     regrasBotoes.forEach(item => {
         const btn = document.getElementById(item.id);
         if (btn) {
-            // O proprietário tem acesso a tudo; o colaborador depende do JSON de permissões
             const temAcesso = ehDono || permissoes[item.perm] === true;
-            btn.style.display = temAcesso ? 'flex' : 'none';
+            btn.style.display = temAcesso ? 'inline-flex' : 'none';
         }
     });
 
-    // A aba 'Equipe' só fica visível e acessível para o dono
     const btnEquipe = document.getElementById('btn-nav-equipe');
     if (btnEquipe) {
-        btnEquipe.style.display = ehDono ? 'flex' : 'none';
+        btnEquipe.style.display = ehDono ? 'inline-flex' : 'none';
     }
 }
 
 /**
- * 3. Alternador de Abas do Painel
+ * 3. Alternador de Abas do Painel com Isolamento Estrito
  */
 function alternarAbaAdmin(idAlvo) {
     if (!idAlvo) return;
 
     const ehDono = usuarioAdminLogado && usuarioAdminLogado.role === 'owner';
 
-    // Trava de segurança para a aba de equipa
+    // Trava de segurança para a aba de equipe
     if (idAlvo === 'secao-equipe' && !ehDono) {
         alert('⛔ Acesso Restrito: Apenas o proprietário da VR Modas pode gerir a equipa.');
         return;
     }
 
-    // Atualiza o estado dos botões da barra lateral
+    // Atualiza os botões do menu superior
     const botoesNav = document.querySelectorAll('.admin-nav .nav-btn');
     botoesNav.forEach(btn => {
         btn.classList.toggle('ativo', btn.getAttribute('data-alvo') === idAlvo);
     });
 
-    // Alterna a exibição das secções de conteúdo (compatível com as classes secao-admin e secao-conteudo)
+    // Oculta forçadamente todas as seções e exibe apenas a clicada
     const secoes = document.querySelectorAll('.secao-admin, .secao-conteudo');
     secoes.forEach(sec => {
         if (sec.id === idAlvo) {
             sec.classList.add('ativa');
-            sec.style.display = 'block';
+            sec.style.setProperty('display', 'block', 'important');
         } else {
             sec.classList.remove('ativa');
-            sec.style.display = 'none';
+            sec.style.setProperty('display', 'none', 'important');
         }
     });
 
-    // Atualiza cabeçalho de título da página
+    // Atualiza títulos do cabeçalho
     const tituloSecao = document.getElementById('titulo-secao-atual');
     const subtituloSecao = document.getElementById('subtitulo-secao-atual');
     if (mapaTitulos[idAlvo]) {
@@ -116,13 +113,14 @@ function alternarAbaAdmin(idAlvo) {
         if (subtituloSecao) subtituloSecao.innerText = mapaTitulos[idAlvo].sub;
     }
 
-    // Carrega os dados sob demanda de cada módulo
+    // Carregamento de dados sob demanda
     if (idAlvo === 'secao-dashboard' && typeof atualizarDashboard === 'function') atualizarDashboard();
     if (idAlvo === 'secao-catalogo' && typeof carregarEAtualizarTabelaProdutos === 'function') carregarEAtualizarTabelaProdutos();
     if (idAlvo === 'secao-pedidos' && typeof carregarEAtualizarTabelaPedidos === 'function') carregarEAtualizarTabelaPedidos();
     if (idAlvo === 'secao-banners' && typeof carregarEAtualizarListaBanners === 'function') carregarEAtualizarListaBanners();
     if (idAlvo === 'secao-equipe' && typeof carregarListaEquipe === 'function') carregarListaEquipe();
 }
+window.alternarAbaAdmin = alternarAbaAdmin;
 
 /**
  * 4. Inicialização de Eventos
@@ -130,7 +128,7 @@ function alternarAbaAdmin(idAlvo) {
 document.addEventListener('DOMContentLoaded', () => {
     if (!verificarAutenticacaoAdmin()) return;
 
-    // Configura o clique dos botões do menu
+    // Escuta de cliques nos botões do menu
     const botoesNav = document.querySelectorAll('.admin-nav .nav-btn');
     botoesNav.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -140,7 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Botão de terminar sessão no painel (compatível com ambos os ids)
+    // Garante que logo na abertura apenas a aba inicial (Dashboard) fique visível
+    alternarAbaAdmin('secao-dashboard');
+
+    // Botão de desconectar
     const btnLogout = document.getElementById('btn-admin-logout') || document.getElementById('btn-logout-admin');
     if (btnLogout) {
         btnLogout.addEventListener('click', () => {
