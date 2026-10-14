@@ -1,10 +1,9 @@
 // ==========================================================================
-// VR MODAS - RELATÓRIOS, INTERVALOS & FECHAMENTO DE CAIXA (NEON DB)
+// VR MODAS - RELATÓRIOS, INTERVALOS & FECHAMENTO DE CAIXA (COMPACTO MOBILE)
 // js/admin/relatorios.js
 // ==========================================================================
 
-// Padrão: data local atual garantida
-let modoIntervaloAtivo = 'hoje'; // 'hoje' | 'ontem' | '7dias' | '15dias' | '30dias' | 'custom'
+let modoIntervaloAtivo = 'hoje';
 let dataInicioRelatorio = obterDataLocalHoje();
 let dataFimRelatorio = obterDataLocalHoje();
 let pedidosFiltradosPeriodo = [];
@@ -18,101 +17,92 @@ function obterDataLocalHoje() {
 }
 
 /**
- * 1. Injeta a estrutura completa com botões de períodos rápidos
+ * 1. Injeta a estrutura completa com container refinado para mobile
  */
 function injetarEstruturaRelatorios() {
     const container = document.getElementById('secao-relatorios');
     if (!container || container.innerHTML.trim() !== '') return;
 
     container.innerHTML = `
-        <div class="admin-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+        <div class="admin-card" style="padding: 16px 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
                 <div>
-                    <h2 style="margin: 0; font-size: 18px;">📅 Relatório de Vendas & Fechamento de Caixa</h2>
-                    <p class="subtexto-card" style="margin: 4px 0 0 0;">Consulte métricas consolidadas por período ou feche o caixa diário da VR Modas.</p>
+                    <h2 style="margin: 0; font-size: 17px;">📅 Relatório de Vendas & Caixa</h2>
+                    <p class="subtexto-card" style="margin: 3px 0 0 0; font-size: 12px;">Métricas consolidadas por período da VR Modas.</p>
                 </div>
-                <button type="button" id="btn-imprimir-fechamento-dia" style="background: var(--dourado, #d4af37); color: #000; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3);">
+                <button type="button" id="btn-imprimir-fechamento-dia" style="background: var(--dourado, #d4af37); color: #000; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 700; font-size: 11.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
                     🖨️ Imprimir Fechamento
                 </button>
             </div>
 
-            <!-- Filtros de Período (Hoje, 7D, 15D, 30D + Calendário) -->
-            <div style="background: #0e0e0e; border: 1px solid #292929; padding: 14px; border-radius: 8px; margin-bottom: 22px;">
-                <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 10px;">Filtrar Período:</label>
+            <!-- Filtros de Período -->
+            <div style="background: #0e0e0e; border: 1px solid #242424; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                <label style="font-size: 10.5px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Filtrar Período:</label>
                 
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                    <button type="button" class="btn-filtro-periodo ativo" data-periodo="hoje" style="background: var(--dourado, #d4af37); color: #000; border: 1px solid var(--dourado, #d4af37); padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Hoje</button>
-                    <button type="button" class="btn-filtro-periodo" data-periodo="ontem" style="background: #181818; color: #fff; border: 1px solid #333; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Ontem</button>
-                    <button type="button" class="btn-filtro-periodo" data-periodo="7dias" style="background: #181818; color: #fff; border: 1px solid #333; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">7 Dias</button>
-                    <button type="button" class="btn-filtro-periodo" data-periodo="15dias" style="background: #181818; color: #fff; border: 1px solid #333; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">15 Dias</button>
-                    <button type="button" class="btn-filtro-periodo" data-periodo="30dias" style="background: #181818; color: #fff; border: 1px solid #333; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">30 Dias</button>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                    <button type="button" class="btn-filtro-periodo ativo" data-periodo="hoje" style="background: var(--dourado, #d4af37); color: #000; border: 1px solid var(--dourado, #d4af37); padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Hoje</button>
+                    <button type="button" class="btn-filtro-periodo" data-periodo="ontem" style="background: #181818; color: #fff; border: 1px solid #333; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Ontem</button>
+                    <button type="button" class="btn-filtro-periodo" data-periodo="7dias" style="background: #181818; color: #fff; border: 1px solid #333; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">7 Dias</button>
+                    <button type="button" class="btn-filtro-periodo" data-periodo="15dias" style="background: #181818; color: #fff; border: 1px solid #333; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">15 Dias</button>
+                    <button type="button" class="btn-filtro-periodo" data-periodo="30dias" style="background: #181818; color: #fff; border: 1px solid #333; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">30 Dias</button>
 
-                    <div style="display: inline-flex; align-items: center; gap: 6px; margin-left: auto;">
-                        <small style="color: #888; font-size: 11px;">Dia específico:</small>
-                        <input type="date" id="filtro-data-relatorio" style="background: #181818; border: 1px solid #3a3a3a; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; font-family: 'Montserrat', sans-serif;">
+                    <div style="display: inline-flex; align-items: center; gap: 5px; margin-left: auto;">
+                        <input type="date" id="filtro-data-relatorio" style="background: #181818; border: 1px solid #333; color: #fff; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; font-family: 'Montserrat', sans-serif;">
                     </div>
                 </div>
 
-                <div id="aviso-periodo-atual" style="margin-top: 8px; font-size: 11.5px; color: #888;">
-                    Período selecionado: <strong style="color: var(--dourado, #d4af37);" id="texto-periodo-vigente">Hoje</strong>
+                <div id="aviso-periodo-atual" style="margin-top: 6px; font-size: 11px; color: #777;">
+                    Período: <strong style="color: var(--dourado, #d4af37);" id="texto-periodo-vigente">Hoje</strong>
                 </div>
             </div>
 
-            <!-- Cards de Métricas Consolidadas -->
-            <div class="dashboard-cards" style="margin-bottom: 25px;">
-                <div class="dash-card borda-dourada">
-                    <h3>Faturamento do Período</h3>
-                    <p id="relatorio-total-dia">R$ 0,00</p>
+            <!-- Cards de Métricas -->
+            <div class="dashboard-cards" style="margin-bottom: 16px; gap: 8px;">
+                <div class="dash-card borda-dourada" style="padding: 12px 10px;">
+                    <h3 style="font-size: 10px; margin-bottom: 6px;">Faturamento</h3>
+                    <p id="relatorio-total-dia" style="font-size: 18px;">R$ 0,00</p>
                 </div>
-                <div class="dash-card borda-azul">
-                    <h3>Vendas Concluídas</h3>
-                    <p id="relatorio-pedidos-dia">0</p>
+                <div class="dash-card borda-azul" style="padding: 12px 10px;">
+                    <h3 style="font-size: 10px; margin-bottom: 6px;">Concluídos</h3>
+                    <p id="relatorio-pedidos-dia" style="font-size: 18px;">0</p>
                 </div>
-                <div class="dash-card borda-verde">
-                    <h3>Peças Vendidas</h3>
-                    <p id="relatorio-pecas-dia">0 un</p>
+                <div class="dash-card borda-verde" style="padding: 12px 10px;">
+                    <h3 style="font-size: 10px; margin-bottom: 6px;">Peças Vendidas</h3>
+                    <p id="relatorio-pecas-dia" style="font-size: 18px;">0 un</p>
                 </div>
-                <div class="dash-card borda-vermelha">
-                    <h3>Ticket Médio</h3>
-                    <p id="relatorio-ticket-medio">R$ 0,00</p>
+                <div class="dash-card borda-vermelha" style="padding: 12px 10px;">
+                    <h3 style="font-size: 10px; margin-bottom: 6px;">Ticket Médio</h3>
+                    <p id="relatorio-ticket-medio" style="font-size: 18px;">R$ 0,00</p>
                 </div>
             </div>
 
             <!-- Resumo de Formas de Pagamento -->
-            <div style="background: #111; border: 1px solid #282828; border-radius: 8px; padding: 18px; margin-bottom: 25px;">
-                <h3 style="color: var(--dourado, #d4af37); font-size: 14px; margin: 0 0 12px 0; text-transform: uppercase;">💳 Formas de Pagamento Recebidas</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
-                    <div style="background: #181818; padding: 12px; border-radius: 6px; border: 1px solid #333;">
-                        <small style="color: #888; font-size: 11px;">PIX</small>
-                        <strong id="rel-pag-pix" style="display: block; font-size: 16px; color: #4cd137; margin-top: 4px;">R$ 0,00</strong>
+            <div style="background: #101010; border: 1px solid #222; border-radius: 8px; padding: 12px; margin-bottom: 18px;">
+                <h3 style="color: var(--dourado, #d4af37); font-size: 11.5px; margin: 0 0 8px 0; text-transform: uppercase;">💳 Formas de Pagamento</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                    <div style="background: #161616; padding: 8px; border-radius: 6px; border: 1px solid #2a2a2a; text-align: center;">
+                        <small style="color: #777; font-size: 10px; display: block;">PIX</small>
+                        <strong id="rel-pag-pix" style="font-size: 13.5px; color: #4cd137;">R$ 0,00</strong>
                     </div>
-                    <div style="background: #181818; padding: 12px; border-radius: 6px; border: 1px solid #333;">
-                        <small style="color: #888; font-size: 11px;">Crédito</small>
-                        <strong id="rel-pag-credito" style="display: block; font-size: 16px; color: #4a90e2; margin-top: 4px;">R$ 0,00</strong>
+                    <div style="background: #161616; padding: 8px; border-radius: 6px; border: 1px solid #2a2a2a; text-align: center;">
+                        <small style="color: #777; font-size: 10px; display: block;">Crédito</small>
+                        <strong id="rel-pag-credito" style="font-size: 13.5px; color: #4a90e2;">R$ 0,00</strong>
                     </div>
-                    <div style="background: #181818; padding: 12px; border-radius: 6px; border: 1px solid #333;">
-                        <small style="color: #888; font-size: 11px;">Débito</small>
-                        <strong id="rel-pag-debito" style="display: block; font-size: 16px; color: #e67e22; margin-top: 4px;">R$ 0,00</strong>
+                    <div style="background: #161616; padding: 8px; border-radius: 6px; border: 1px solid #2a2a2a; text-align: center;">
+                        <small style="color: #777; font-size: 10px; display: block;">Débito</small>
+                        <strong id="rel-pag-debito" style="font-size: 13.5px; color: #e67e22;">R$ 0,00</strong>
                     </div>
                 </div>
             </div>
 
-            <!-- Tabela dos Pedidos do Período -->
-            <h3 style="font-size: 15px; margin: 0 0 12px 0; color: #fff;">📦 Histórico de Pedidos no Período</h3>
-            <div class="tabela-container">
-                <table class="tabela-produtos">
-                    <thead>
-                        <tr>
-                            <th>Pedido / Data</th>
-                            <th>Cliente</th>
-                            <th>Itens / Peças</th>
-                            <th>Pagamento</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lista-pedidos-relatorio-dia"></tbody>
-                </table>
+            <!-- Box Elegante de Extrato de Vendas (Scroll Limpo & Compacto) -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="font-size: 13px; margin: 0; color: #ddd; text-transform: uppercase; letter-spacing: 0.5px;">📦 Extrato de Pedidos</h3>
+                <span id="contagem-pedidos-box" style="font-size: 11px; color: #777;">0 registro(s)</span>
+            </div>
+
+            <div id="container-extrato-pedidos" style="background: #0d0d0d; border: 1px solid #222; border-radius: 8px; padding: 6px; max-height: 380px; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 6px;">
+                <p style="text-align: center; color: #777; font-size: 12px; padding: 20px 0; margin: 0;">A carregar extrato...</p>
             </div>
         </div>
     `;
@@ -121,7 +111,7 @@ function injetarEstruturaRelatorios() {
 }
 
 /**
- * 2. Configura cliques nos botões de 7D, 15D, 30D e calendário
+ * 2. Eventos dos Botões de Período
  */
 function configurarEventosFiltros() {
     const botoesPeriodo = document.querySelectorAll('.btn-filtro-periodo');
@@ -160,7 +150,7 @@ function configurarEventosFiltros() {
             modoIntervaloAtivo = 'custom';
             dataInicioRelatorio = e.target.value;
             dataFimRelatorio = e.target.value;
-            atualizarTextoPeriodoVigente(`Data selecionada: ${formatarDataBr(dataInicioRelatorio)}`);
+            atualizarTextoPeriodoVigente(`Data: ${formatarDataBr(dataInicioRelatorio)}`);
             carregarRelatorioDataSelecionada();
         };
     }
@@ -171,11 +161,10 @@ function configurarEventosFiltros() {
 }
 
 /**
- * 3. Calcula datas inicial e final para os botões rápidos
+ * 3. Cálculos de Datas
  */
 function definirIntervaloDatas(periodo) {
     modoIntervaloAtivo = periodo;
-    const hoje = new Date();
     dataFimRelatorio = obterDataLocalHoje();
 
     if (periodo === 'hoje') {
@@ -221,12 +210,13 @@ function formatarDataParaIso(d) {
 }
 
 /**
- * 4. Consulta os pedidos no Neon dentro da faixa de datas selecionada
+ * 4. Carrega Vendas e Renderiza Cards Compactos
  */
 async function carregarRelatorioDataSelecionada() {
     injetarEstruturaRelatorios();
 
-    const tabelaCorpo = document.getElementById('lista-pedidos-relatorio-dia');
+    const containerExtrato = document.getElementById('container-extrato-pedidos');
+    const elContagem = document.getElementById('contagem-pedidos-box');
     const elTotal = document.getElementById('relatorio-total-dia');
     const elQtdPedidos = document.getElementById('relatorio-pedidos-dia');
     const elPecas = document.getElementById('relatorio-pecas-dia');
@@ -235,15 +225,14 @@ async function carregarRelatorioDataSelecionada() {
     const elCredito = document.getElementById('rel-pag-credito');
     const elDebito = document.getElementById('rel-pag-debito');
 
-    if (tabelaCorpo) {
-        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 25px;">Consultando vendas no Neon...</td></tr>`;
+    if (containerExtrato) {
+        containerExtrato.innerHTML = `<p style="text-align: center; color: #777; font-size: 12px; padding: 20px 0; margin: 0;">Buscando vendas no Neon...</p>`;
     }
 
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
         if (!sql) throw new Error("Conexão SQL não inicializada");
 
-        // Busca pedidos dentro da faixa [dataInicioRelatorio, dataFimRelatorio]
         const pedidos = await sql`
             SELECT * FROM pedidos 
             WHERE criado_em::date >= ${dataInicioRelatorio}::date 
@@ -278,7 +267,6 @@ async function carregarRelatorioDataSelecionada() {
                 arrayItens = [];
             }
 
-            // Somente pedidos concluídos/pagos somam no faturamento real
             if (statusNorm.includes('concluid') || statusNorm.includes('pago')) {
                 totalFaturamento += valor;
                 pedidosConcluidosCount++;
@@ -306,15 +294,18 @@ async function carregarRelatorioDataSelecionada() {
         if (elCredito) elCredito.innerText = totalCredito.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         if (elDebito) elDebito.innerText = totalDebito.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-        if (!tabelaCorpo) return;
+        if (elContagem) elContagem.innerText = `${pedidosFiltradosPeriodo.length} registro(s)`;
+
+        if (!containerExtrato) return;
 
         if (pedidosFiltradosPeriodo.length === 0) {
-            tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 30px;">Nenhum pedido registrado no período selecionado.</td></tr>`;
+            containerExtrato.innerHTML = `<p style="text-align: center; color: #777; font-size: 12px; padding: 25px 0; margin: 0;">Nenhum pedido no período selecionado.</p>`;
             return;
         }
 
-        tabelaCorpo.innerHTML = pedidosFiltradosPeriodo.map(p => {
-            const dataHora = p.criado_em ? new Date(p.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '--:--';
+        // Renderização dos cards compactos estilo extrato bancário
+        containerExtrato.innerHTML = pedidosFiltradosPeriodo.map(p => {
+            const dataHora = p.criado_em ? new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
             const totalFmt = Number(p.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             let arrayItens = [];
@@ -331,44 +322,59 @@ async function carregarRelatorioDataSelecionada() {
                 arrayItens = [];
             }
 
-            const resumoPecas = arrayItens.map(i => `${i.quantidade || 1}x ${i.nome}`).join(', ') || 'Peças diversas';
-            const isCancelado = String(p.status || '').toLowerCase().includes('cancel');
-            const isConcluido = String(p.status || '').toLowerCase().normalize('NFD').includes('concluid');
+            const resumoPecas = arrayItens.map(i => `${i.quantidade || 1}x ${i.nome}`).join(', ') || 'Peça';
+            const statusNorm = String(p.status || '').toLowerCase().normalize('NFD');
+            const isCancelado = statusNorm.includes('cancel');
+            const isConcluido = statusNorm.includes('concluid') || statusNorm.includes('pago');
+
+            const corBadge = isCancelado ? '#ff4d4d' : (isConcluido ? '#4cd137' : '#e67e22');
+            const bgBadge = isCancelado ? 'rgba(255,77,77,0.1)' : (isConcluido ? 'rgba(76,209,55,0.1)' : 'rgba(230,126,34,0.1)');
 
             return `
-                <tr>
-                    <td>
-                        <strong style="color: var(--dourado, #d4af37);">#${p.id}</strong>
-                        <small style="color: #777; display: block;">${dataHora}</small>
-                    </td>
-                    <td>${p.cliente_nome || 'Cliente'}</td>
-                    <td style="color: #bbb; font-size: 12px;">${resumoPecas}</td>
-                    <td><span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06);">${formaPag}</span></td>
-                    <td style="color: var(--dourado, #d4af37); font-weight: 700;">${totalFmt}</td>
-                    <td>
-                        <span style="font-size: 11px; font-weight: 700; color: ${isCancelado ? '#ff4444' : isConcluido ? '#4cd137' : '#e67e22'};">
+                <div style="background: #141414; border: 1px solid #242424; border-radius: 6px; padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <!-- Lado Esquerdo: Info do Pedido & Cliente -->
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                            <strong style="color: var(--dourado, #d4af37); font-size: 12.5px;">#${p.id}</strong>
+                            <span style="color: #777; font-size: 11px;">• ${dataHora}</span>
+                            <span style="font-size: 10px; padding: 1px 5px; border-radius: 3px; background: #222; color: #aaa; text-transform: uppercase;">${formaPag}</span>
+                        </div>
+                        <div style="font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${p.cliente_nome || 'Cliente'}
+                        </div>
+                        <div style="font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${resumoPecas}
+                        </div>
+                    </div>
+
+                    <!-- Lado Direito: Valor & Status -->
+                    <div style="text-align: right; flex-shrink: 0;">
+                        <div style="color: var(--dourado, #d4af37); font-weight: 700; font-size: 13.5px; margin-bottom: 3px;">
+                            ${totalFmt}
+                        </div>
+                        <span style="font-size: 10px; font-weight: 700; color: ${corBadge}; background: ${bgBadge}; border: 1px solid ${corBadge}; padding: 2px 6px; border-radius: 4px; display: inline-block;">
                             ${p.status || 'Pendente'}
                         </span>
-                    </td>
-                </tr>
+                    </div>
+                </div>
             `;
         }).join('');
 
     } catch (e) {
         console.error('Erro ao carregar relatório do período:', e);
-        if (tabelaCorpo) {
-            tabelaCorpo.innerHTML = `<tr><td colspan="6" style="color: #ff5252; text-align: center; padding: 20px;">Falha ao carregar relatório: ${e.message}</td></tr>`;
+        if (containerExtrato) {
+            containerExtrato.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 15px; font-size: 12px; margin: 0;">Falha: ${e.message}</p>`;
         }
     }
 }
 window.carregarRelatorioDataSelecionada = carregarRelatorioDataSelecionada;
 
 /**
- * 5. Impressão do Fechamento de Caixa do Período
+ * 5. Impressão de Fechamento de Caixa
  */
 function imprimirFechamentoDoDia() {
     if (!pedidosFiltradosPeriodo || pedidosFiltradosPeriodo.length === 0) {
-        alert('Não há vendas registradas no período selecionado para emitir fechamento.');
+        alert('Não há vendas no período selecionado para emitir fechamento.');
         return;
     }
 
@@ -405,7 +411,7 @@ function imprimirFechamentoDoDia() {
             else pix += total;
         }
 
-        const hora = p.criado_em ? new Date(p.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+        const hora = p.criado_em ? new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
 
         return `
             <tr>
@@ -428,10 +434,10 @@ function imprimirFechamentoDoDia() {
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
-            <title>Fechamento de Vendas - VR Modas - ${periodoStr}</title>
+            <title>Fechamento de Caixa - VR Modas - ${periodoStr}</title>
             <style>
                 body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 25px; color: #111; font-size: 13px; }
-                .recibo { max-width: 540px; margin: 0 auto; border: 1px solid #ccc; padding: 20px; border-radius: 6px; }
+                .recibo { max-width: 520px; margin: 0 auto; border: 1px solid #ccc; padding: 20px; border-radius: 6px; }
                 h1 { margin: 0; font-size: 20px; text-align: center; }
                 .sub { text-align: center; color: #666; font-size: 12px; margin-top: 4px; margin-bottom: 16px; }
                 .totais { background: #f8f8f8; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 16px; line-height: 1.6; }
@@ -454,7 +460,7 @@ function imprimirFechamentoDoDia() {
                     <div>• <strong>Cartão de Débito:</strong> ${debito.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                 </div>
 
-                <h3>Extrato de Pedidos do Período</h3>
+                <h3>Extrato de Vendas do Período</h3>
                 <table>
                     <thead>
                         <tr>
@@ -482,7 +488,7 @@ function formatarDataBr(dataIso) {
     return dataIso;
 }
 
-// Inicialização automática: injeta e carrega o dia de hoje sem necessidade de clique
+// Inicialização automática: injeta e carrega 'hoje'
 document.addEventListener('DOMContentLoaded', () => {
     injetarEstruturaRelatorios();
     definirIntervaloDatas('hoje');
