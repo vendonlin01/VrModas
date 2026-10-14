@@ -4,8 +4,22 @@
 // ==========================================================================
 
 let listaImagensProdutoBase64 = [];
+let coresAdicionadas = []; // Lista de { nome: string, qtd: number }
 let categoriaAtivaAdmin = 'todos';
 let listaProdutosGeral = [];
+
+// Grade de tamanhos por categoria
+const gradeTamanhosPorCategoria = {
+    'vestidos': ['PP', 'P', 'M', 'G', 'GG', 'Único'],
+    'conjuntos': ['PP', 'P', 'M', 'G', 'GG', 'Único'],
+    'calcas': ['34', '36', '38', '40', '42', '44', '46'],
+    'camisas': ['1', '2', '3', '4', 'P', 'M', 'G', 'GG'],
+    'bermudas': ['36', '38', '40', '42', '44', '46'],
+    'bolsas': ['Único'],
+    'cintos': ['P', 'M', 'G', 'Único'],
+    'joias': ['Ajustável', 'Único'],
+    'acessorios': ['Único']
+};
 
 /**
  * 1. Converte e compacta imagens selecionadas para Base64
@@ -19,7 +33,6 @@ function configurarUploadImagensProduto() {
         const ficheiros = Array.from(e.target.files);
         for (const ficheiro of ficheiros) {
             if (!ficheiro.type.startsWith('image/')) continue;
-
             const base64 = await redimensionarEConverterImagem(ficheiro);
             listaImagensProdutoBase64.push(base64);
         }
@@ -72,7 +85,132 @@ function removerImagemUpload(index) {
 }
 
 /**
- * 2. Carregar e Renderizar Lista de Produtos no Catálogo
+ * 2. Gerenciador Dinâmico de Cores & Estoque com o Botão (+)
+ */
+function configurarGerenciadorCores() {
+    const btnAddCor = document.getElementById('btn-adicionar-cor');
+    const inputNomeCor = document.getElementById('input-nome-cor');
+    const inputQtdCor = document.getElementById('input-qtd-cor');
+
+    if (!btnAddCor) return;
+
+    btnAddCor.addEventListener('click', () => {
+        const nomeCor = inputNomeCor.value.trim();
+        const qtdCor = parseInt(inputQtdCor.value, 10);
+
+        if (!nomeCor) {
+            alert('Digite o nome da cor (Ex: Azul Marinho, Bege, etc).');
+            inputNomeCor.focus();
+            return;
+        }
+
+        if (isNaN(qtdCor) || qtdCor <= 0) {
+            alert('Digite uma quantidade válida para esta cor.');
+            inputQtdCor.focus();
+            return;
+        }
+
+        coresAdicionadas.push({ nome: nomeCor, qtd: qtdCor });
+        inputNomeCor.value = '';
+        inputQtdCor.value = '';
+        inputNomeCor.focus();
+
+        renderizarCoresAdicionadas();
+    });
+}
+
+function renderizarCoresAdicionadas() {
+    const container = document.getElementById('lista-cores-adicionadas');
+    const inputEstoqueGeral = document.getElementById('estoque-produto');
+    const inputCoresOculto = document.getElementById('cores-produto');
+    const inputEstoqueCorOculto = document.getElementById('estoque-por-cor-produto');
+
+    if (!container) return;
+
+    if (coresAdicionadas.length === 0) {
+        container.innerHTML = '<span style="color: #666; font-size: 11.5px; font-style: italic;">Nenhuma cor adicionada ainda. Digite o nome, quantidade e aperte (+).</span>';
+        if (inputEstoqueGeral) inputEstoqueGeral.value = 0;
+        if (inputCoresOculto) inputCoresOculto.value = '';
+        if (inputEstoqueCorOculto) inputEstoqueCorOculto.value = '';
+        return;
+    }
+
+    let somaEstoque = 0;
+    container.innerHTML = coresAdicionadas.map((c, idx) => {
+        somaEstoque += c.qtd;
+        return `
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: #1c1c1c; border: 1px solid var(--dourado, #d4af37); padding: 5px 10px; border-radius: 16px; font-size: 12px; color: #fff;">
+                <strong>${c.nome}</strong>: <span style="color: var(--dourado, #d4af37);">${c.qtd} un</span>
+                <button type="button" onclick="removerCorAdicionada(${idx})" style="background: transparent; border: none; color: #ff5252; cursor: pointer; font-size: 14px; margin-left: 4px; line-height: 1;">&times;</button>
+            </div>
+        `;
+    }).join('');
+
+    // Atualiza automaticamente a soma do estoque geral (campo readonly)
+    if (inputEstoqueGeral) inputEstoqueGeral.value = somaEstoque;
+    if (inputCoresOculto) inputCoresOculto.value = JSON.stringify(coresAdicionadas.map(c => c.nome));
+    if (inputEstoqueCorOculto) inputEstoqueCorOculto.value = JSON.stringify(coresAdicionadas);
+}
+
+function removerCorAdicionada(idx) {
+    coresAdicionadas.splice(idx, 1);
+    renderizarCoresAdicionadas();
+}
+window.removerCorAdicionada = removerCorAdicionada;
+
+/**
+ * 3. Gerador Dinâmico de Tamanhos Conforme a Categoria
+ */
+function configurarTamanhosPorCategoria() {
+    const selectCategoria = document.getElementById('categoria-produto');
+    const containerTamanhos = document.getElementById('container-tamanhos-dinamicos');
+    if (!selectCategoria || !containerTamanhos) return;
+
+    selectCategoria.addEventListener('change', () => {
+        const cat = selectCategoria.value;
+        const listaTamanhos = gradeTamanhosPorCategoria[cat] || ['P', 'M', 'G', 'GG', 'Único'];
+
+        containerTamanhos.innerHTML = `
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                ${listaTamanhos.map(tam => `
+                    <label style="display: inline-flex; align-items: center; gap: 5px; background: #181818; border: 1px solid #333; padding: 6px 12px; border-radius: 6px; cursor: pointer; color: #fff; font-size: 12px; font-weight: 700;">
+                        <input type="checkbox" class="check-tamanho" value="${tam}" style="accent-color: var(--dourado, #d4af37); width: 14px; height: 14px;">
+                        ${tam}
+                    </label>
+                `).join('')}
+            </div>
+        `;
+    });
+}
+
+/**
+ * 4. Cálculo Dinâmico do Desconto Promocional
+ */
+function configurarCalculoDesconto() {
+    const inputPreco = document.getElementById('preco-produto');
+    const inputPromo = document.getElementById('preco-promocional-produto');
+    const avisoDesconto = document.getElementById('aviso-desconto');
+
+    function calcular() {
+        if (!inputPreco || !inputPromo || !avisoDesconto) return;
+        const pNormal = parseFloat(inputPreco.value) || 0;
+        const pPromo = parseFloat(inputPromo.value) || 0;
+
+        if (pNormal > 0 && pPromo > 0 && pPromo < pNormal) {
+            const perc = Math.round(((pNormal - pPromo) / pNormal) * 100);
+            avisoDesconto.innerText = `Economia de ${perc}% para o cliente!`;
+            avisoDesconto.style.display = 'block';
+        } else {
+            avisoDesconto.style.display = 'none';
+        }
+    }
+
+    if (inputPreco) inputPreco.addEventListener('input', calcular);
+    if (inputPromo) inputPromo.addEventListener('input', calcular);
+}
+
+/**
+ * 5. Carregar e Renderizar Lista de Produtos no Catálogo & Estoque
  */
 async function carregarEAtualizarTabelaProdutos() {
     const tabelaCorpo = document.getElementById('lista-produtos-admin') || document.getElementById('tabela-produtos-corpo');
@@ -123,6 +261,15 @@ function filtrarERenderizarTabelaProdutos() {
             else if (p.imagem) primeiraImagem = p.imagem;
         } catch (e) {}
 
+        // Trata cores
+        let resumoCores = '';
+        try {
+            const coresArr = typeof p.cores === 'string' ? JSON.parse(p.cores) : p.cores;
+            if (Array.isArray(coresArr) && coresArr.length > 0) {
+                resumoCores = `<br><small style="color: #888;">Cores: ${coresArr.map(c => typeof c === 'object' ? `${c.nome} (${c.qtd})` : c).join(', ')}</small>`;
+            }
+        } catch(e) {}
+
         return `
             <tr>
                 <td>
@@ -140,11 +287,10 @@ function filtrarERenderizarTabelaProdutos() {
                 <td style="color: var(--dourado, #d4af37); font-weight: 700;">${precoFmt}</td>
                 <td>
                     <input type="number" min="0" value="${p.estoque || 0}" onchange="atualizarEstoqueRapido(${p.id}, this.value)" style="width: 65px; background: #111; border: 1px solid #333; color: #fff; padding: 4px 6px; border-radius: 4px; text-align: center; font-weight: 700;">
+                    ${resumoCores}
                 </td>
                 <td>
-                    <!-- BOTÃO DE EDITAR -->
                     <button type="button" onclick="prepararEdicaoProduto(${p.id})" title="Editar Peça" style="background: transparent; border: 1px solid var(--dourado, #d4af37); color: var(--dourado, #d4af37); padding: 5px 8px; border-radius: 4px; cursor: pointer; margin-right: 4px;">✏️</button>
-                    <!-- BOTÃO DE EXCLUIR -->
                     <button type="button" onclick="excluirProdutoAdmin(${p.id})" title="Excluir Peça" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 5px 8px; border-radius: 4px; cursor: pointer;">🗑️</button>
                 </td>
             </tr>
@@ -170,7 +316,7 @@ function atualizarContadoresCategorias(produtos) {
 }
 
 /**
- * 3. Preparar Edição de Produto (Carrega os dados de volta para o formulário)
+ * 6. Preparar Edição de Produto (Carrega cores, tamanhos e fotos de volta ao formulário)
  */
 function prepararEdicaoProduto(idProduto) {
     const produto = listaProdutosGeral.find(p => p.id == idProduto);
@@ -179,7 +325,6 @@ function prepararEdicaoProduto(idProduto) {
         return;
     }
 
-    // Preenche os campos do formulário
     const inputEditId = document.getElementById('editando-id');
     const inputNome = document.getElementById('nome-produto');
     const selectCategoria = document.getElementById('categoria-produto');
@@ -191,28 +336,49 @@ function prepararEdicaoProduto(idProduto) {
 
     if (inputEditId) inputEditId.value = produto.id;
     if (inputNome) inputNome.value = produto.nome || '';
-    if (selectCategoria) selectCategoria.value = (produto.categoria || '').toLowerCase();
+    if (selectCategoria) {
+        selectCategoria.value = (produto.categoria || '').toLowerCase();
+        selectCategoria.dispatchEvent(new Event('change')); // Gera a grade de tamanhos
+    }
     if (textareaDescricao) textareaDescricao.value = produto.descricao || '';
     if (inputPreco) inputPreco.value = produto.preco || '';
     if (inputPrecoPromo) inputPrecoPromo.value = produto.preco_promocional || '';
     if (checkDestaque) checkDestaque.checked = !!produto.destaque;
     if (inputEstoque) inputEstoque.value = produto.estoque || 0;
 
-    // Carrega as fotos existentes
+    // Carrega tamanhos marcados
+    setTimeout(() => {
+        try {
+            const tamanhosArr = typeof produto.tamanhos === 'string' ? JSON.parse(produto.tamanhos) : (produto.tamanhos || []);
+            document.querySelectorAll('.check-tamanho').forEach(chk => {
+                chk.checked = tamanhosArr.includes(chk.value);
+            });
+        } catch(e) {}
+    }, 100);
+
+    // Carrega as cores
+    coresAdicionadas = [];
+    try {
+        const coresRaw = typeof produto.cores === 'string' ? JSON.parse(produto.cores) : (produto.cores || []);
+        coresAdicionadas = coresRaw.map(c => {
+            if (typeof c === 'object' && c !== null) return { nome: c.nome, qtd: Number(c.qtd) || 1 };
+            return { nome: String(c), qtd: 1 };
+        });
+    } catch(e) {}
+    renderizarCoresAdicionadas();
+
+    // Carrega fotos
     listaImagensProdutoBase64 = [];
     try {
         const arrImgs = typeof produto.imagens === 'string' ? JSON.parse(produto.imagens) : produto.imagens;
-        if (Array.isArray(arrImgs)) {
-            listaImagensProdutoBase64 = [...arrImgs];
-        } else if (produto.imagem) {
-            listaImagensProdutoBase64 = [produto.imagem];
-        }
+        if (Array.isArray(arrImgs)) listaImagensProdutoBase64 = [...arrImgs];
+        else if (produto.imagem) listaImagensProdutoBase64 = [produto.imagem];
     } catch (e) {
         if (produto.imagem) listaImagensProdutoBase64 = [produto.imagem];
     }
     renderizarPreviewImagens();
 
-    // Altera títulos e botões para modo de edição
+    // Altera botões e títulos
     const tituloForm = document.getElementById('titulo-form-produto');
     const btnSubmit = document.getElementById('btn-submit-produto');
     const btnCancelar = document.getElementById('btn-cancelar-edicao');
@@ -221,7 +387,6 @@ function prepararEdicaoProduto(idProduto) {
     if (btnSubmit) btnSubmit.innerText = '💾 Atualizar Peça no Catálogo';
     if (btnCancelar) btnCancelar.style.display = 'inline-block';
 
-    // Alterna para a aba do formulário
     if (typeof alternarAbaAdmin === 'function') {
         alternarAbaAdmin('secao-cadastro');
     }
@@ -230,7 +395,7 @@ function prepararEdicaoProduto(idProduto) {
 window.prepararEdicaoProduto = prepararEdicaoProduto;
 
 /**
- * 4. Cancelar Edição de Produto (Restaura o formulário para modo de criação)
+ * 7. Cancelar Edição
  */
 function cancelarEdicaoProduto() {
     const inputEditId = document.getElementById('editando-id');
@@ -243,7 +408,9 @@ function cancelarEdicaoProduto() {
     if (form) form.reset();
 
     listaImagensProdutoBase64 = [];
+    coresAdicionadas = [];
     renderizarPreviewImagens();
+    renderizarCoresAdicionadas();
 
     if (tituloForm) tituloForm.innerText = '➕ Cadastrar Nova Peça';
     if (btnSubmit) btnSubmit.innerText = '💾 Salvar Peça no Catálogo';
@@ -256,7 +423,7 @@ function cancelarEdicaoProduto() {
 window.cancelarEdicaoProduto = cancelarEdicaoProduto;
 
 /**
- * 5. Salvar ou Atualizar Produto (Trata criação e atualização no mesmo formulário)
+ * 8. Salvar ou Atualizar Produto (INSERT ou UPDATE no Neon)
  */
 async function salvarProduto(e) {
     e.preventDefault();
@@ -270,15 +437,35 @@ async function salvarProduto(e) {
     const descricao = document.getElementById('descricao-produto')?.value.trim() || '';
     const destaque = document.getElementById('destaque-promocao')?.checked || false;
 
-    if (!nome || !preco || listaImagensProdutoBase64.length === 0) {
-        alert('Por favor, preencha o nome, o preço e adicione pelo menos uma imagem.');
+    // Tamanhos selecionados
+    const tamanhos = Array.from(document.querySelectorAll('.check-tamanho:checked')).map(chk => chk.value);
+
+    // Validações
+    if (!nome) {
+        alert('Por favor, informe o nome do produto.');
+        return;
+    }
+    if (!categoria) {
+        alert('Por favor, selecione a categoria do produto.');
+        return;
+    }
+    if (!preco || preco <= 0) {
+        alert('Por favor, informe um preço válido.');
+        return;
+    }
+    if (coresAdicionadas.length === 0 && estoque === 0) {
+        alert('Adicione pelo menos uma cor com quantidade usando o botão (+) ou defina o estoque.');
+        return;
+    }
+    if (listaImagensProdutoBase64.length === 0) {
+        alert('Por favor, envie pelo menos uma foto para a peça.');
         return;
     }
 
     const btnSubmit = document.getElementById('btn-submit-produto');
     if (btnSubmit) {
         btnSubmit.disabled = true;
-        btnSubmit.innerText = editandoId ? 'A atualizar no Neon...' : 'A guardar no Neon...';
+        btnSubmit.innerText = editandoId ? 'Atualizando peça...' : 'Salvando peça no catálogo...';
     }
 
     try {
@@ -298,7 +485,9 @@ async function salvarProduto(e) {
                     descricao = ${descricao},
                     destaque = ${destaque},
                     imagens = ${JSON.stringify(listaImagensProdutoBase64)},
-                    imagem = ${listaImagensProdutoBase64[0] || 'img/produto1.jpg'}
+                    imagem = ${listaImagensProdutoBase64[0] || 'img/produto1.jpg'},
+                    tamanhos = ${JSON.stringify(tamanhos)},
+                    cores = ${JSON.stringify(coresAdicionadas)}
                 WHERE id = ${editandoId};
             `;
             alert('✨ Peça atualizada com sucesso!');
@@ -307,21 +496,22 @@ async function salvarProduto(e) {
             await sql`
                 INSERT INTO produtos (
                     nome, categoria, preco, preco_promocional, estoque, descricao, 
-                    destaque, imagens, imagem
+                    destaque, imagens, imagem, tamanhos, cores
                 ) VALUES (
                     ${nome}, ${categoria}, ${preco}, ${precoPromocional}, ${estoque}, ${descricao},
-                    ${destaque}, ${JSON.stringify(listaImagensProdutoBase64)}, ${listaImagensProdutoBase64[0] || 'img/produto1.jpg'}
+                    ${destaque}, ${JSON.stringify(listaImagensProdutoBase64)}, ${listaImagensProdutoBase64[0] || 'img/produto1.jpg'},
+                    ${JSON.stringify(tamanhos)}, ${JSON.stringify(coresAdicionadas)}
                 );
             `;
-            alert('✨ Peça registada no catálogo com sucesso!');
+            alert('✨ Peça cadastrada com sucesso no catálogo!');
         }
 
         cancelarEdicaoProduto();
         await carregarEAtualizarTabelaProdutos();
 
     } catch (err) {
-        console.error('Erro ao guardar produto:', err);
-        alert('Falha ao guardar peça no Neon DB: ' + err.message);
+        console.error('Erro ao salvar produto:', err);
+        alert('Falha ao salvar produto no Neon: ' + err.message);
     } finally {
         if (btnSubmit) {
             btnSubmit.disabled = false;
@@ -330,7 +520,7 @@ async function salvarProduto(e) {
 }
 
 /**
- * 6. Atualizar estoque rápido
+ * 9. Atualizar estoque rápido
  */
 async function atualizarEstoqueRapido(idProduto, novoEstoque) {
     try {
@@ -348,7 +538,7 @@ async function atualizarEstoqueRapido(idProduto, novoEstoque) {
 window.atualizarEstoqueRapido = atualizarEstoqueRapido;
 
 /**
- * 7. Excluir produto
+ * 10. Excluir produto
  */
 async function excluirProdutoAdmin(idProduto) {
     if (!confirm('Deseja realmente excluir este produto?')) return;
@@ -363,9 +553,12 @@ async function excluirProdutoAdmin(idProduto) {
 }
 window.excluirProdutoAdmin = excluirProdutoAdmin;
 
-// Inicializa escutas e eventos no carregamento
+// Inicialização completa de eventos
 document.addEventListener('DOMContentLoaded', () => {
     configurarUploadImagensProduto();
+    configurarGerenciadorCores();
+    configurarTamanhosPorCategoria();
+    configurarCalculoDesconto();
     carregarEAtualizarTabelaProdutos();
 
     const formProduto = document.getElementById('form-cadastro-produto');
