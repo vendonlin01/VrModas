@@ -1,13 +1,24 @@
 // ==========================================================================
-// VR MODAS - MÓDULO ISOLADO DE RELATÓRIOS & FECHAMENTO DE CAIXA
+// VR MODAS - RELATÓRIOS, INTERVALOS & FECHAMENTO DE CAIXA (NEON DB)
 // js/admin/relatorios.js
 // ==========================================================================
 
-let dataSelecionadaRelatorio = new Date().toISOString().split('T')[0];
-let pedidosDoDiaAtual = [];
+// Padrão: data local atual garantida
+let modoIntervaloAtivo = 'hoje'; // 'hoje' | 'ontem' | '7dias' | '15dias' | '30dias' | 'custom'
+let dataInicioRelatorio = obterDataLocalHoje();
+let dataFimRelatorio = obterDataLocalHoje();
+let pedidosFiltradosPeriodo = [];
+
+function obterDataLocalHoje() {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const dia = String(agora.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
 
 /**
- * 1. Injeta o HTML completo da seção de relatórios diretamente na tag vazia
+ * 1. Injeta a estrutura completa com botões de períodos rápidos
  */
 function injetarEstruturaRelatorios() {
     const container = document.getElementById('secao-relatorios');
@@ -17,34 +28,44 @@ function injetarEstruturaRelatorios() {
         <div class="admin-card">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
                 <div>
-                    <h2 style="margin: 0; font-size: 18px;">📅 Relatório Diário & Fechamento de Caixa</h2>
-                    <p class="subtexto-card" style="margin: 4px 0 0 0;">Selecione qualquer dia no calendário para auditar as vendas e fechar o caixa.</p>
+                    <h2 style="margin: 0; font-size: 18px;">📅 Relatório de Vendas & Fechamento de Caixa</h2>
+                    <p class="subtexto-card" style="margin: 4px 0 0 0;">Consulte métricas consolidadas por período ou feche o caixa diário da VR Modas.</p>
                 </div>
-                <button type="button" id="btn-imprimir-fechamento-dia" style="background: var(--dourado, #d4af37); color: #000; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                    🖨️ Imprimir Fechamento do Dia
+                <button type="button" id="btn-imprimir-fechamento-dia" style="background: var(--dourado, #d4af37); color: #000; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3);">
+                    🖨️ Imprimir Fechamento
                 </button>
             </div>
 
-            <!-- Seletor Rápido de Data & Calendário -->
-            <div style="display: flex; gap: 12px; align-items: center; background: #0e0e0e; border: 1px solid #292929; padding: 14px; border-radius: 8px; margin-bottom: 22px; flex-wrap: wrap;">
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700;">Data do Relatório:</label>
-                    <input type="date" id="filtro-data-relatorio" style="background: #181818; border: 1px solid #3a3a3a; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 700; font-family: 'Montserrat', sans-serif;">
+            <!-- Filtros de Período (Hoje, 7D, 15D, 30D + Calendário) -->
+            <div style="background: #0e0e0e; border: 1px solid #292929; padding: 14px; border-radius: 8px; margin-bottom: 22px;">
+                <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 10px;">Filtrar Período:</label>
+                
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                    <button type="button" class="btn-filtro-periodo ativo" data-periodo="hoje" style="background: var(--dourado, #d4af37); color: #000; border: 1px solid var(--dourado, #d4af37); padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Hoje</button>
+                    <button type="button" class="btn-filtro-periodo" data-periodo="ontem" style="background: #181818; color: #fff; border: 1px solid #333; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Ontem</button>
+                    <button type="button" class="btn-filtro-periodo" data-periodo="7dias" style="background: #181818; color: #fff; border: 1px solid #333; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">7 Dias</button>
+                    <button type="button" class="btn-filtro-periodo" data-periodo="15dias" style="background: #181818; color: #fff; border: 1px solid #333; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">15 Dias</button>
+                    <button type="button" class="btn-filtro-periodo" data-periodo="30dias" style="background: #181818; color: #fff; border: 1px solid #333; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">30 Dias</button>
+
+                    <div style="display: inline-flex; align-items: center; gap: 6px; margin-left: auto;">
+                        <small style="color: #888; font-size: 11px;">Dia específico:</small>
+                        <input type="date" id="filtro-data-relatorio" style="background: #181818; border: 1px solid #3a3a3a; color: #fff; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; font-family: 'Montserrat', sans-serif;">
+                    </div>
                 </div>
-                <div style="display: flex; gap: 8px; align-self: flex-end;">
-                    <button type="button" id="btn-data-hoje" style="background: #222; border: 1px solid #444; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Hoje</button>
-                    <button type="button" id="btn-data-ontem" style="background: #222; border: 1px solid #444; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Ontem</button>
+
+                <div id="aviso-periodo-atual" style="margin-top: 8px; font-size: 11.5px; color: #888;">
+                    Período selecionado: <strong style="color: var(--dourado, #d4af37);" id="texto-periodo-vigente">Hoje</strong>
                 </div>
             </div>
 
-            <!-- Cards do Dia Selecionado -->
+            <!-- Cards de Métricas Consolidadas -->
             <div class="dashboard-cards" style="margin-bottom: 25px;">
                 <div class="dash-card borda-dourada">
-                    <h3>Faturamento do Dia</h3>
+                    <h3>Faturamento do Período</h3>
                     <p id="relatorio-total-dia">R$ 0,00</p>
                 </div>
                 <div class="dash-card borda-azul">
-                    <h3>Pedidos Concluídos</h3>
+                    <h3>Vendas Concluídas</h3>
                     <p id="relatorio-pedidos-dia">0</p>
                 </div>
                 <div class="dash-card borda-verde">
@@ -57,9 +78,9 @@ function injetarEstruturaRelatorios() {
                 </div>
             </div>
 
-            <!-- Resumo de Pagamentos -->
+            <!-- Resumo de Formas de Pagamento -->
             <div style="background: #111; border: 1px solid #282828; border-radius: 8px; padding: 18px; margin-bottom: 25px;">
-                <h3 style="color: var(--dourado, #d4af37); font-size: 14px; margin: 0 0 12px 0; text-transform: uppercase;">💳 Resumo de Pagamentos do Dia</h3>
+                <h3 style="color: var(--dourado, #d4af37); font-size: 14px; margin: 0 0 12px 0; text-transform: uppercase;">💳 Formas de Pagamento Recebidas</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
                     <div style="background: #181818; padding: 12px; border-radius: 6px; border: 1px solid #333;">
                         <small style="color: #888; font-size: 11px;">PIX</small>
@@ -76,13 +97,13 @@ function injetarEstruturaRelatorios() {
                 </div>
             </div>
 
-            <!-- Tabela de Pedidos que saíram na data -->
-            <h3 style="font-size: 15px; margin: 0 0 12px 0; color: #fff;">📦 Pedidos Realizados nesta Data</h3>
+            <!-- Tabela dos Pedidos do Período -->
+            <h3 style="font-size: 15px; margin: 0 0 12px 0; color: #fff;">📦 Histórico de Pedidos no Período</h3>
             <div class="tabela-container">
                 <table class="tabela-produtos">
                     <thead>
                         <tr>
-                            <th>Pedido / Hora</th>
+                            <th>Pedido / Data</th>
                             <th>Cliente</th>
                             <th>Itens / Peças</th>
                             <th>Pagamento</th>
@@ -100,36 +121,46 @@ function injetarEstruturaRelatorios() {
 }
 
 /**
- * 2. Liga os eventos do calendário e botões
+ * 2. Configura cliques nos botões de 7D, 15D, 30D e calendário
  */
 function configurarEventosFiltros() {
+    const botoesPeriodo = document.querySelectorAll('.btn-filtro-periodo');
     const inputData = document.getElementById('filtro-data-relatorio');
-    const btnHoje = document.getElementById('btn-data-hoje');
-    const btnOntem = document.getElementById('btn-data-ontem');
     const btnImprimir = document.getElementById('btn-imprimir-fechamento-dia');
 
+    botoesPeriodo.forEach(btn => {
+        btn.onclick = () => {
+            botoesPeriodo.forEach(b => {
+                b.classList.remove('ativo');
+                b.style.background = '#181818';
+                b.style.color = '#fff';
+                b.style.borderColor = '#333';
+            });
+
+            btn.classList.add('ativo');
+            btn.style.background = 'var(--dourado, #d4af37)';
+            btn.style.color = '#000';
+            btn.style.borderColor = 'var(--dourado, #d4af37)';
+
+            const periodo = btn.getAttribute('data-periodo');
+            definirIntervaloDatas(periodo);
+            carregarRelatorioDataSelecionada();
+        };
+    });
+
     if (inputData) {
-        inputData.value = dataSelecionadaRelatorio;
+        inputData.value = dataInicioRelatorio;
         inputData.onchange = (e) => {
-            dataSelecionadaRelatorio = e.target.value;
-            carregarRelatorioDataSelecionada();
-        };
-    }
-
-    if (btnHoje) {
-        btnHoje.onclick = () => {
-            dataSelecionadaRelatorio = new Date().toISOString().split('T')[0];
-            if (inputData) inputData.value = dataSelecionadaRelatorio;
-            carregarRelatorioDataSelecionada();
-        };
-    }
-
-    if (btnOntem) {
-        btnOntem.onclick = () => {
-            const ontem = new Date();
-            ontem.setDate(ontem.getDate() - 1);
-            dataSelecionadaRelatorio = ontem.toISOString().split('T')[0];
-            if (inputData) inputData.value = dataSelecionadaRelatorio;
+            botoesPeriodo.forEach(b => {
+                b.classList.remove('ativo');
+                b.style.background = '#181818';
+                b.style.color = '#fff';
+                b.style.borderColor = '#333';
+            });
+            modoIntervaloAtivo = 'custom';
+            dataInicioRelatorio = e.target.value;
+            dataFimRelatorio = e.target.value;
+            atualizarTextoPeriodoVigente(`Data selecionada: ${formatarDataBr(dataInicioRelatorio)}`);
             carregarRelatorioDataSelecionada();
         };
     }
@@ -140,7 +171,57 @@ function configurarEventosFiltros() {
 }
 
 /**
- * 3. Busca vendas da data selecionada no Neon e calcula métricas
+ * 3. Calcula datas inicial e final para os botões rápidos
+ */
+function definirIntervaloDatas(periodo) {
+    modoIntervaloAtivo = periodo;
+    const hoje = new Date();
+    dataFimRelatorio = obterDataLocalHoje();
+
+    if (periodo === 'hoje') {
+        dataInicioRelatorio = dataFimRelatorio;
+        atualizarTextoPeriodoVigente(`Hoje (${formatarDataBr(dataInicioRelatorio)})`);
+    } else if (periodo === 'ontem') {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        dataInicioRelatorio = formatarDataParaIso(d);
+        dataFimRelatorio = dataInicioRelatorio;
+        atualizarTextoPeriodoVigente(`Ontem (${formatarDataBr(dataInicioRelatorio)})`);
+    } else if (periodo === '7dias') {
+        const d = new Date();
+        d.setDate(d.getDate() - 6);
+        dataInicioRelatorio = formatarDataParaIso(d);
+        atualizarTextoPeriodoVigente(`Últimos 7 dias (${formatarDataBr(dataInicioRelatorio)} até ${formatarDataBr(dataFimRelatorio)})`);
+    } else if (periodo === '15dias') {
+        const d = new Date();
+        d.setDate(d.getDate() - 14);
+        dataInicioRelatorio = formatarDataParaIso(d);
+        atualizarTextoPeriodoVigente(`Últimos 15 dias (${formatarDataBr(dataInicioRelatorio)} até ${formatarDataBr(dataFimRelatorio)})`);
+    } else if (periodo === '30dias') {
+        const d = new Date();
+        d.setDate(d.getDate() - 29);
+        dataInicioRelatorio = formatarDataParaIso(d);
+        atualizarTextoPeriodoVigente(`Últimos 30 dias (${formatarDataBr(dataInicioRelatorio)} até ${formatarDataBr(dataFimRelatorio)})`);
+    }
+
+    const inputData = document.getElementById('filtro-data-relatorio');
+    if (inputData && periodo === 'hoje') inputData.value = dataInicioRelatorio;
+}
+
+function atualizarTextoPeriodoVigente(texto) {
+    const el = document.getElementById('texto-periodo-vigente');
+    if (el) el.innerText = texto;
+}
+
+function formatarDataParaIso(d) {
+    const ano = d.getFullYear();
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
+/**
+ * 4. Consulta os pedidos no Neon dentro da faixa de datas selecionada
  */
 async function carregarRelatorioDataSelecionada() {
     injetarEstruturaRelatorios();
@@ -155,31 +236,33 @@ async function carregarRelatorioDataSelecionada() {
     const elDebito = document.getElementById('rel-pag-debito');
 
     if (tabelaCorpo) {
-        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 25px;">Consultando vendas do dia ${formatarDataBr(dataSelecionadaRelatorio)}...</td></tr>`;
+        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 25px;">Consultando vendas no Neon...</td></tr>`;
     }
 
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
         if (!sql) throw new Error("Conexão SQL não inicializada");
 
+        // Busca pedidos dentro da faixa [dataInicioRelatorio, dataFimRelatorio]
         const pedidos = await sql`
             SELECT * FROM pedidos 
-            WHERE criado_em::date = ${dataSelecionadaRelatorio}::date
+            WHERE criado_em::date >= ${dataInicioRelatorio}::date 
+              AND criado_em::date <= ${dataFimRelatorio}::date
             ORDER BY id DESC;
         `;
 
-        pedidosDoDiaAtual = pedidos || [];
+        pedidosFiltradosPeriodo = pedidos || [];
 
         let totalFaturamento = 0;
         let totalPecas = 0;
         let totalPix = 0;
         let totalCredito = 0;
         let totalDebito = 0;
-        let pedidosValidos = 0;
+        let pedidosConcluidosCount = 0;
 
-        pedidosDoDiaAtual.forEach(p => {
-            const status = (p.status || '').toLowerCase();
-            const totalPedido = Number(p.total || 0);
+        pedidosFiltradosPeriodo.forEach(p => {
+            const statusNorm = String(p.status || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+            const valor = Number(p.total || p.valor_total || 0);
 
             let arrayItens = [];
             let formaPag = 'PIX';
@@ -195,26 +278,27 @@ async function carregarRelatorioDataSelecionada() {
                 arrayItens = [];
             }
 
-            if (status !== 'cancelado') {
-                totalFaturamento += totalPedido;
-                pedidosValidos++;
+            // Somente pedidos concluídos/pagos somam no faturamento real
+            if (statusNorm.includes('concluid') || statusNorm.includes('pago')) {
+                totalFaturamento += valor;
+                pedidosConcluidosCount++;
 
                 arrayItens.forEach(i => {
                     totalPecas += parseInt(i.quantidade || 1, 10);
                 });
 
-                const pagLimpo = formaPag.toUpperCase();
-                if (pagLimpo.includes('PIX')) totalPix += totalPedido;
-                else if (pagLimpo.includes('CREDITO') || pagLimpo.includes('CRÉDITO')) totalCredito += totalPedido;
-                else if (pagLimpo.includes('DEBITO') || pagLimpo.includes('DÉBITO')) totalDebito += totalPedido;
-                else totalPix += totalPedido;
+                const pagLimpo = String(formaPag).toUpperCase();
+                if (pagLimpo.includes('PIX')) totalPix += valor;
+                else if (pagLimpo.includes('CREDITO') || pagLimpo.includes('CRÉDITO')) totalCredito += valor;
+                else if (pagLimpo.includes('DEBITO') || pagLimpo.includes('DÉBITO')) totalDebito += valor;
+                else totalPix += valor;
             }
         });
 
-        const ticketMedio = pedidosValidos > 0 ? (totalFaturamento / pedidosValidos) : 0;
+        const ticketMedio = pedidosConcluidosCount > 0 ? (totalFaturamento / pedidosConcluidosCount) : 0;
 
         if (elTotal) elTotal.innerText = totalFaturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        if (elQtdPedidos) elQtdPedidos.innerText = pedidosValidos;
+        if (elQtdPedidos) elQtdPedidos.innerText = pedidosConcluidosCount;
         if (elPecas) elPecas.innerText = `${totalPecas} un`;
         if (elTicket) elTicket.innerText = ticketMedio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -224,13 +308,13 @@ async function carregarRelatorioDataSelecionada() {
 
         if (!tabelaCorpo) return;
 
-        if (pedidosDoDiaAtual.length === 0) {
-            tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 30px;">Nenhuma venda registrada nesta data (${formatarDataBr(dataSelecionadaRelatorio)}).</td></tr>`;
+        if (pedidosFiltradosPeriodo.length === 0) {
+            tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 30px;">Nenhum pedido registrado no período selecionado.</td></tr>`;
             return;
         }
 
-        tabelaCorpo.innerHTML = pedidosDoDiaAtual.map(p => {
-            const hora = p.criado_em ? new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+        tabelaCorpo.innerHTML = pedidosFiltradosPeriodo.map(p => {
+            const dataHora = p.criado_em ? new Date(p.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '--:--';
             const totalFmt = Number(p.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
             let arrayItens = [];
@@ -248,24 +332,30 @@ async function carregarRelatorioDataSelecionada() {
             }
 
             const resumoPecas = arrayItens.map(i => `${i.quantidade || 1}x ${i.nome}`).join(', ') || 'Peças diversas';
+            const isCancelado = String(p.status || '').toLowerCase().includes('cancel');
+            const isConcluido = String(p.status || '').toLowerCase().normalize('NFD').includes('concluid');
 
             return `
                 <tr>
                     <td>
                         <strong style="color: var(--dourado, #d4af37);">#${p.id}</strong>
-                        <small style="color: #777; display: block;">${hora}</small>
+                        <small style="color: #777; display: block;">${dataHora}</small>
                     </td>
                     <td>${p.cliente_nome || 'Cliente'}</td>
                     <td style="color: #bbb; font-size: 12px;">${resumoPecas}</td>
                     <td><span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06);">${formaPag}</span></td>
                     <td style="color: var(--dourado, #d4af37); font-weight: 700;">${totalFmt}</td>
-                    <td><span style="font-size: 11px; color: ${p.status === 'Cancelado' ? '#ff4444' : '#4cd137'};">${p.status || 'Pendente'}</span></td>
+                    <td>
+                        <span style="font-size: 11px; font-weight: 700; color: ${isCancelado ? '#ff4444' : isConcluido ? '#4cd137' : '#e67e22'};">
+                            ${p.status || 'Pendente'}
+                        </span>
+                    </td>
                 </tr>
             `;
         }).join('');
 
     } catch (e) {
-        console.error('Erro ao carregar relatório do dia:', e);
+        console.error('Erro ao carregar relatório do período:', e);
         if (tabelaCorpo) {
             tabelaCorpo.innerHTML = `<tr><td colspan="6" style="color: #ff5252; text-align: center; padding: 20px;">Falha ao carregar relatório: ${e.message}</td></tr>`;
         }
@@ -274,11 +364,11 @@ async function carregarRelatorioDataSelecionada() {
 window.carregarRelatorioDataSelecionada = carregarRelatorioDataSelecionada;
 
 /**
- * 4. Emissão do Fechamento de Caixa para Impressão
+ * 5. Impressão do Fechamento de Caixa do Período
  */
 function imprimirFechamentoDoDia() {
-    if (!pedidosDoDiaAtual || pedidosDoDiaAtual.length === 0) {
-        alert('Não há vendas registradas nesta data para emitir fechamento.');
+    if (!pedidosFiltradosPeriodo || pedidosFiltradosPeriodo.length === 0) {
+        alert('Não há vendas registradas no período selecionado para emitir fechamento.');
         return;
     }
 
@@ -287,8 +377,9 @@ function imprimirFechamentoDoDia() {
     let credito = 0;
     let debito = 0;
     let totalPecas = 0;
+    let concluidos = 0;
 
-    const linhas = pedidosDoDiaAtual.map(p => {
+    const linhas = pedidosFiltradosPeriodo.map(p => {
         const total = Number(p.total || 0);
         let formaPag = 'PIX';
         let arrayItens = [];
@@ -301,8 +392,10 @@ function imprimirFechamentoDoDia() {
             }
         } catch(e) {}
 
-        if ((p.status || '').toLowerCase() !== 'cancelado') {
+        const statusNorm = String(p.status || '').toLowerCase().normalize('NFD');
+        if (statusNorm.includes('concluid') || statusNorm.includes('pago')) {
             faturamento += total;
+            concluidos++;
             arrayItens.forEach(i => totalPecas += parseInt(i.quantidade || 1, 10));
 
             const pag = formaPag.toUpperCase();
@@ -312,17 +405,22 @@ function imprimirFechamentoDoDia() {
             else pix += total;
         }
 
-        const hora = p.criado_em ? new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+        const hora = p.criado_em ? new Date(p.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
 
         return `
             <tr>
                 <td style="padding: 6px; border-bottom: 1px solid #ddd;">#${p.id} (${hora})</td>
                 <td style="padding: 6px; border-bottom: 1px solid #ddd;">${p.cliente_nome || 'Cliente'}</td>
                 <td style="padding: 6px; border-bottom: 1px solid #ddd;">${formaPag}</td>
+                <td style="padding: 6px; border-bottom: 1px solid #ddd;">${p.status || 'Pendente'}</td>
                 <td style="padding: 6px; border-bottom: 1px solid #ddd; text-align: right;">${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             </tr>
         `;
     }).join('');
+
+    const periodoStr = dataInicioRelatorio === dataFimRelatorio 
+        ? formatarDataBr(dataInicioRelatorio) 
+        : `${formatarDataBr(dataInicioRelatorio)} até ${formatarDataBr(dataFimRelatorio)}`;
 
     const win = window.open('', '_blank', 'width=780,height=900');
     win.document.write(`
@@ -330,10 +428,10 @@ function imprimirFechamentoDoDia() {
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
-            <title>Fechamento de Caixa - VR Modas - ${formatarDataBr(dataSelecionadaRelatorio)}</title>
+            <title>Fechamento de Vendas - VR Modas - ${periodoStr}</title>
             <style>
                 body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 25px; color: #111; font-size: 13px; }
-                .recibo { max-width: 520px; margin: 0 auto; border: 1px solid #ccc; padding: 20px; border-radius: 6px; }
+                .recibo { max-width: 540px; margin: 0 auto; border: 1px solid #ccc; padding: 20px; border-radius: 6px; }
                 h1 { margin: 0; font-size: 20px; text-align: center; }
                 .sub { text-align: center; color: #666; font-size: 12px; margin-top: 4px; margin-bottom: 16px; }
                 .totais { background: #f8f8f8; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 16px; line-height: 1.6; }
@@ -345,24 +443,25 @@ function imprimirFechamentoDoDia() {
         <body>
             <div class="recibo">
                 <h1>VR MODAS - FECHAMENTO DE CAIXA</h1>
-                <div class="sub">Data: ${formatarDataBr(dataSelecionadaRelatorio)} | Emissão: ${new Date().toLocaleTimeString('pt-BR')}</div>
+                <div class="sub">Período: ${periodoStr} | Emissão: ${new Date().toLocaleTimeString('pt-BR')}</div>
 
                 <div class="totais">
-                    <div><strong>Total Faturado no Dia:</strong> ${faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
-                    <div><strong>Total de Pedidos:</strong> ${pedidosDoDiaAtual.length} | <strong>Total de Peças:</strong> ${totalPecas} un</div>
+                    <div><strong>Faturamento Total Concluído:</strong> ${faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+                    <div><strong>Vendas Concluídas:</strong> ${concluidos} | <strong>Total de Peças:</strong> ${totalPecas} un</div>
                     <hr style="border: 0; border-top: 1px dashed #ccc; margin: 8px 0;">
                     <div>• <strong>PIX:</strong> ${pix.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                     <div>• <strong>Cartão de Crédito:</strong> ${credito.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                     <div>• <strong>Cartão de Débito:</strong> ${debito.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
                 </div>
 
-                <h3>Extrato de Vendas do Dia</h3>
+                <h3>Extrato de Pedidos do Período</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>Pedido</th>
                             <th>Cliente</th>
                             <th>Pagamento</th>
+                            <th>Status</th>
                             <th style="text-align: right;">Valor</th>
                         </tr>
                     </thead>
@@ -383,6 +482,9 @@ function formatarDataBr(dataIso) {
     return dataIso;
 }
 
+// Inicialização automática: injeta e carrega o dia de hoje sem necessidade de clique
 document.addEventListener('DOMContentLoaded', () => {
     injetarEstruturaRelatorios();
+    definirIntervaloDatas('hoje');
+    carregarRelatorioDataSelecionada();
 });
