@@ -42,17 +42,13 @@
             </div>
 
             <nav class="admin-nav" id="sidebar-nav">
-                <button type="button" class="nav-btn ativo" id="btn-nav-dashboard" data-alvo="secao-dashboard">📊
-                    Dashboard</button>
-                <button type="button" class="nav-btn" id="btn-nav-cadastro" data-alvo="secao-cadastro">➕ Nova
-                    Peça</button>
-                <button type="button" class="nav-btn" id="btn-nav-catalogo" data-alvo="secao-catalogo">📦
-                    Catálogo</button>
-                <button type="button" class="nav-btn" id="btn-nav-pedidos" data-alvo="secao-pedidos">🛍️
-                    Pedidos</button>
+                <button type="button" class="nav-btn ativo" id="btn-nav-dashboard" data-alvo="secao-dashboard">📊 Dashboard</button>
+                <button type="button" class="nav-btn" id="btn-nav-relatorios" data-alvo="secao-relatorios">📅 Relatórios & Caixa</button>
+                <button type="button" class="nav-btn" id="btn-nav-cadastro" data-alvo="secao-cadastro">➕ Nova Peça</button>
+                <button type="button" class="nav-btn" id="btn-nav-catalogo" data-alvo="secao-catalogo">📦 Catálogo</button>
+                <button type="button" class="nav-btn" id="btn-nav-pedidos" data-alvo="secao-pedidos">🛍️ Pedidos</button>
                 <button type="button" class="nav-btn" id="btn-nav-banners" data-alvo="secao-banners">🎨 Banners</button>
-                <button type="button" class="nav-btn" id="btn-nav-config" data-alvo="secao-config">⚙️
-                    Configurações</button>
+                <button type="button" class="nav-btn" id="btn-nav-config" data-alvo="secao-config">⚙️ Configurações</button>
                 <button type="button" class="nav-btn" id="btn-nav-equipe" data-alvo="secao-equipe">👥 Equipe</button>
             </nav>
             <button type="button" id="btn-logout-admin" class="btn-logout-sidebar">🚪 Desconectar</button>
@@ -105,15 +101,16 @@
                 </div>
             </section>
 
-            <!-- 2. SEÇÃO: CADASTRO E EDIÇÃO DE PRODUTOS -->
+            <!-- 2. SEÇÃO: RELATÓRIOS DIÁRIOS & CAIXA (ESTRUTURA INJETADA VIA JS) -->
+            <section id="secao-relatorios" class="secao-admin"></section>
+
+            <!-- 3. SEÇÃO: CADASTRO E EDIÇÃO DE PRODUTOS -->
             <section id="secao-cadastro" class="secao-admin">
                 <div class="admin-card">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #2a2a2a; padding-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #2a2a2a; padding-bottom: 12px;">
                         <div>
                             <h2 id="titulo-form-produto" style="margin: 0; font-size: 20px;">➕ Cadastrar Nova Peça</h2>
-                            <p class="subtexto-card" style="margin: 4px 0 0 0;">Preencha os dados e variações para
-                                cadastrar no catálogo.</p>
+                            <p class="subtexto-card" style="margin: 4px 0 0 0;">Preencha os dados e variações para cadastrar no catálogo.</p>
                         </div>
                     </div>
 
@@ -125,8 +122,7 @@
                             <div class="linha-inputs">
                                 <div class="grupo-input">
                                     <label>Nome do Produto *</label>
-                                    <input type="text" id="nome-produto" placeholder="Ex: Vestido Midi Seda Dourada"
-                                        required>
+                                    <input type="text" id="nome-produto" placeholder="Ex: Vestido Midi Seda Dourada" required>
                                 </div>
                                 <div class="grupo-input">
                                     <label>Categoria / Departamento *</label>
@@ -153,8 +149,7 @@
 
                             <div class="grupo-input" style="margin-top: 12px;">
                                 <label>Descrição Detalhada da Peça</label>
-                                <textarea id="descricao-produto" rows="3"
-                                    placeholder="Tecido, modelagem, caimento e detalhes exclusivos..."></textarea>
+                                <textarea id="descricao-produto" rows="3" placeholder="Tecido, modelagem, caimento e detalhes exclusivos..."></textarea>
                             </div>
                         </div>
 
@@ -163,15 +158,12 @@
                             <div class="linha-inputs">
                                 <div class="grupo-input">
                                     <label>Preço Normal (R$) *</label>
-                                    <input type="number" id="preco-produto" step="0.01" min="0" placeholder="Ex: 199.90"
-                                        required>
+                                    <input type="number" id="preco-produto" step="0.01" min="0" placeholder="Ex: 199.90" required>
                                 </div>
                                 <div class="grupo-input">
                                     <label style="color: var(--dourado);">Preço Promocional (R$) (Opcional)</label>
-                                    <input type="number" id="preco-promocional-produto" step="0.01" min="0"
-                                        placeholder="Ex: 149.90">
-                                    <small id="aviso-desconto"
-                                        style="color: #4caf50; font-size: 11px; margin-top: 3px; font-weight: bold; display: none;"></small>
+                                    <input type="number" id="preco-promocional-produto" step="0.01" min="0" placeholder="Ex: 149.90">
+                                    <small id="aviso-desconto" style="color: #4caf50; font-size: 11px; margin-top: 3px; font-weight: bold; display: none;"></small>
                                 </div>
                             </div>
 
@@ -186,34 +178,22 @@
                             <div class="linha-inputs">
                                 <div class="grupo-input">
                                     <label for="estoque-produto">Qtd. Total Geral em Estoque *</label>
-                                    <input type="number" id="estoque-produto" placeholder="0" min="0" required readonly
-                                        style="background: #181818; color: var(--dourado); font-weight: bold;">
-                                    <small style="color: #777; font-size: 11px;">Calculado automaticamente pela soma das
-                                        cores abaixo.</small>
+                                    <input type="number" id="estoque-produto" placeholder="0" min="0" required readonly style="background: #181818; color: var(--dourado); font-weight: bold;">
+                                    <small style="color: #777; font-size: 11px;">Calculado automaticamente pela soma das cores abaixo.</small>
                                 </div>
                             </div>
 
-                            <div
-                                style="margin-top: 14px; background: #0a0a0a; border: 1px solid #282828; padding: 14px; border-radius: 6px; box-sizing: border-box; width: 100%;">
-                                <label
-                                    style="font-size: 12px; font-weight: 700; color: var(--dourado); display: block; margin-bottom: 8px; text-transform: uppercase;">Adicionar
-                                    Cores & Estoque por Cor</label>
+                            <div style="margin-top: 14px; background: #0a0a0a; border: 1px solid #282828; padding: 14px; border-radius: 6px; box-sizing: border-box; width: 100%;">
+                                <label style="font-size: 12px; font-weight: 700; color: var(--dourado); display: block; margin-bottom: 8px; text-transform: uppercase;">Adicionar Cores & Estoque por Cor</label>
 
-                                <div
-                                    style="display: flex; gap: 8px; align-items: center; width: 100%; box-sizing: border-box;">
-                                    <input type="text" id="input-nome-cor" placeholder="Ex: Azul"
-                                        style="flex: 1.5; min-width: 0; background: #141414; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
-                                    <input type="number" id="input-qtd-cor" placeholder="Qtd" min="1"
-                                        style="flex: 1; min-width: 0; max-width: 90px; background: #141414; border: 1px solid #333; color: #fff; padding: 10px 8px; border-radius: 6px; font-size: 13px; text-align: center; box-sizing: border-box;">
-                                    <button type="button" id="btn-adicionar-cor"
-                                        style="flex-shrink: 0; width: 42px; height: 42px; background: var(--dourado); color: #000; border: none; border-radius: 6px; font-weight: 900; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3);"
-                                        title="Adicionar Cor">+</button>
+                                <div style="display: flex; gap: 8px; align-items: center; width: 100%; box-sizing: border-box;">
+                                    <input type="text" id="input-nome-cor" placeholder="Ex: Azul" style="flex: 1.5; min-width: 0; background: #141414; border: 1px solid #333; color: #fff; padding: 10px; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+                                    <input type="number" id="input-qtd-cor" placeholder="Qtd" min="1" style="flex: 1; min-width: 0; max-width: 90px; background: #141414; border: 1px solid #333; color: #fff; padding: 10px 8px; border-radius: 6px; font-size: 13px; text-align: center; box-sizing: border-box;">
+                                    <button type="button" id="btn-adicionar-cor" style="flex-shrink: 0; width: 42px; height: 42px; background: var(--dourado); color: #000; border: none; border-radius: 6px; font-weight: 900; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(212, 175, 55, 0.3);" title="Adicionar Cor">+</button>
                                 </div>
 
-                                <div id="lista-cores-adicionadas"
-                                    style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 25px;">
-                                    <span style="color: #666; font-size: 11.5px; font-style: italic;">Nenhuma cor
-                                        adicionada ainda. Digite o nome, quantidade e aperte (+).</span>
+                                <div id="lista-cores-adicionadas" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 25px;">
+                                    <span style="color: #666; font-size: 11.5px; font-style: italic;">Nenhuma cor adicionada ainda. Digite o nome, quantidade e aperte (+).</span>
                                 </div>
                             </div>
 
@@ -223,8 +203,7 @@
                             <div class="grupo-input" style="margin-top: 15px;">
                                 <label>Tamanhos Disponíveis:</label>
                                 <div id="container-tamanhos-dinamicos" style="padding-top: 5px;">
-                                    <span style="color: #777; font-size: 12px;">Selecione primeiro uma categoria acima
-                                        para carregar a grade.</span>
+                                    <span style="color: #777; font-size: 12px;">Selecione primeiro uma categoria acima para carregar a grade.</span>
                                 </div>
                             </div>
                         </div>
@@ -258,8 +237,7 @@
 
                                 <div class="grupo-input">
                                     <label>Taxa de Juros a.m. (%)</label>
-                                    <input type="number" id="taxa-juros" step="0.1" min="0" value="2.99"
-                                        placeholder="2.99">
+                                    <input type="number" id="taxa-juros" step="0.1" min="0" value="2.99" placeholder="2.99">
                                 </div>
                             </div>
                         </div>
@@ -269,45 +247,33 @@
                             <div class="grupo-input">
                                 <label>Carregar Fotos</label>
                                 <input type="file" id="foto-produto" accept="image/*" class="input-file" multiple>
-                                <div id="preview-fotos" class="container-previews"
-                                    style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;"></div>
+                                <div id="preview-fotos" class="container-previews" style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;"></div>
                             </div>
                         </div>
 
                         <div class="botoes-form" style="margin-top: 15px;">
-                            <button type="submit" id="btn-submit-produto" class="btn-salvar" style="flex: 2;">💾 Salvar
-                                Peça no Catálogo</button>
-                            <button type="button" id="btn-cancelar-edicao" class="btn-cancelar"
-                                style="display: none; flex: 1;">✕ Cancelar Edição</button>
+                            <button type="submit" id="btn-submit-produto" class="btn-salvar" style="flex: 2;">💾 Salvar Peça no Catálogo</button>
+                            <button type="button" id="btn-cancelar-edicao" class="btn-cancelar" style="display: none; flex: 1;">✕ Cancelar Edição</button>
                         </div>
                     </form>
                 </div>
             </section>
 
-            <!-- 3. SEÇÃO: CATÁLOGO & ESTOQUE -->
+            <!-- 4. SEÇÃO: CATÁLOGO & ESTOQUE -->
             <section id="secao-catalogo" class="secao-admin">
                 <div class="admin-card">
                     <h2>📦 Gerir Catálogo & Estoque</h2>
                     <p class="subtexto-card">Edite informações, preços ou remova peças organizadas por categoria.</p>
 
                     <div class="abas-categorias" id="abas-categorias-admin">
-                        <button type="button" class="btn-aba-cat ativo" data-cat="todos">Todos (<span
-                                id="cont-cat-todos">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="vestidos">Vestidos (<span
-                                id="cont-cat-vestidos">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="conjuntos">Conjuntos (<span
-                                id="cont-cat-conjuntos">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="calcas">Calças & Saias (<span
-                                id="cont-cat-calcas">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="camisas">Camisas (<span
-                                id="cont-cat-camisas">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="bermudas">Bermudas (<span
-                                id="cont-cat-bermudas">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="acessorios">Acessórios (<span
-                                id="cont-cat-acessorios">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-cat="ofertas"
-                            style="color: var(--dourado, #d4af37);">🔥 Ofertas (<span
-                                id="cont-cat-ofertas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat ativo" data-cat="todos">Todos (<span id="cont-cat-todos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="vestidos">Vestidos (<span id="cont-cat-vestidos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="conjuntos">Conjuntos (<span id="cont-cat-conjuntos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="calcas">Calças & Saias (<span id="cont-cat-calcas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="camisas">Camisas (<span id="cont-cat-camisas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="bermudas">Bermudas (<span id="cont-cat-bermudas">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="acessorios">Acessórios (<span id="cont-cat-acessorios">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-cat="ofertas" style="color: var(--dourado, #d4af37);">🔥 Ofertas (<span id="cont-cat-ofertas">0</span>)</button>
                     </div>
 
                     <div class="tabela-container">
@@ -328,27 +294,19 @@
                 </div>
             </section>
 
-            <!-- 4. SEÇÃO: PEDIDOS -->
+            <!-- 5. SEÇÃO: PEDIDOS -->
             <section id="secao-pedidos" class="secao-admin">
                 <div class="admin-card">
                     <h2>🛍️ Pedidos dos Clientes</h2>
-                    <p class="subtexto-card">Acompanhe compras, filtre por status, consulte detalhes completos e imprima
-                        comprovantes.</p>
+                    <p class="subtexto-card">Acompanhe compras, filtre por status, consulte detalhes completos e imprima comprovantes.</p>
 
-                    <!-- Abas de Filtros por Status com Contadores -->
                     <div class="abas-categorias" id="abas-status-pedidos">
-                        <button type="button" class="btn-aba-cat ativo" data-status="todos">Todos (<span
-                                id="cont-ped-todos">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-status="pendente">⏳ Pendentes (<span
-                                id="cont-ped-pendente">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-status="separacao">📦 Em Separação (<span
-                                id="cont-ped-separacao">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-status="enviado">🚚 Enviados (<span
-                                id="cont-ped-enviado">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-status="concluido">✅ Concluídos (<span
-                                id="cont-ped-concluido">0</span>)</button>
-                        <button type="button" class="btn-aba-cat" data-status="cancelado">❌ Cancelados (<span
-                                id="cont-ped-cancelado">0</span>)</button>
+                        <button type="button" class="btn-aba-cat ativo" data-status="todos">Todos (<span id="cont-ped-todos">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-status="pendente">⏳ Pendentes (<span id="cont-ped-pendente">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-status="separacao">📦 Em Separação (<span id="cont-ped-separacao">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-status="enviado">🚚 Enviados (<span id="cont-ped-enviado">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-status="concluido">✅ Concluídos (<span id="cont-ped-concluido">0</span>)</button>
+                        <button type="button" class="btn-aba-cat" data-status="cancelado">❌ Cancelados (<span id="cont-ped-cancelado">0</span>)</button>
                     </div>
 
                     <div class="tabela-container">
@@ -368,64 +326,41 @@
                     </div>
                 </div>
 
-                <!-- Modal de Detalhes do Pedido -->
-                <div id="modal-detalhes-pedido"
-                    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(4px);">
-                    <div
-                        style="background: #141414; border: 1px solid #333; border-top: 3px solid var(--dourado, #d4af37); border-radius: 8px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 22px; color: #fff; box-sizing: border-box; box-shadow: 0 15px 40px rgba(0,0,0,0.9);">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #222; padding-bottom: 10px;">
+                <div id="modal-detalhes-pedido" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(4px);">
+                    <div style="background: #141414; border: 1px solid #333; border-top: 3px solid var(--dourado, #d4af37); border-radius: 8px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 22px; color: #fff; box-sizing: border-box; box-shadow: 0 15px 40px rgba(0,0,0,0.9);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #222; padding-bottom: 10px;">
                             <div>
-                                <h3 id="modal-pedido-titulo"
-                                    style="margin: 0; font-size: 16px; color: var(--dourado, #d4af37);">Detalhes do
-                                    Pedido</h3>
+                                <h3 id="modal-pedido-titulo" style="margin: 0; font-size: 16px; color: var(--dourado, #d4af37);">Detalhes do Pedido</h3>
                                 <small id="modal-pedido-data" style="color: #888; font-size: 11px;"></small>
                             </div>
-                            <button type="button" onclick="fecharModalDetalhesPedido()"
-                                style="background: none; border: none; color: #ff5252; font-size: 20px; cursor: pointer; font-weight: bold;">✕</button>
+                            <button type="button" onclick="fecharModalDetalhesPedido()" style="background: none; border: none; color: #ff5252; font-size: 20px; cursor: pointer; font-weight: bold;">✕</button>
                         </div>
 
-                        <!-- Dados do Cliente & Entrega -->
-                        <div
-                            style="background: #0d0d0d; border: 1px solid #252525; border-radius: 6px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
-                            <div style="margin-bottom: 6px;"><strong>Cliente:</strong> <span id="modal-pedido-cliente"
-                                    style="color: #fff;"></span></div>
-                            <div style="margin-bottom: 6px;"><strong>WhatsApp:</strong> <span
-                                    id="modal-pedido-whats"></span></div>
-                            <div style="margin-bottom: 6px;"><strong>Modalidade:</strong> <span
-                                    id="modal-pedido-tipo-envio"></span></div>
-                            <div style="margin-bottom: 6px;"><strong>Endereço:</strong> <span id="modal-pedido-endereco"
-                                    style="color: #bbb;"></span></div>
-                            <div><strong>Forma de Pagamento:</strong> <span id="modal-pedido-pagamento"
-                                    style="color: var(--dourado, #d4af37); font-weight: bold;"></span></div>
+                        <div style="background: #0d0d0d; border: 1px solid #252525; border-radius: 6px; padding: 12px; margin-bottom: 14px; font-size: 12px;">
+                            <div style="margin-bottom: 6px;"><strong>Cliente:</strong> <span id="modal-pedido-cliente" style="color: #fff;"></span></div>
+                            <div style="margin-bottom: 6px;"><strong>WhatsApp:</strong> <span id="modal-pedido-whats"></span></div>
+                            <div style="margin-bottom: 6px;"><strong>Modalidade:</strong> <span id="modal-pedido-tipo-envio"></span></div>
+                            <div style="margin-bottom: 6px;"><strong>Endereço:</strong> <span id="modal-pedido-endereco" style="color: #bbb;"></span></div>
+                            <div><strong>Forma de Pagamento:</strong> <span id="modal-pedido-pagamento" style="color: var(--dourado, #d4af37); font-weight: bold;"></span></div>
                         </div>
 
-                        <!-- Lista de Peças -->
-                        <h4 style="font-size: 13px; margin: 0 0 8px 0; color: #ddd; text-transform: uppercase;">Peças
-                            Selecionadas</h4>
-                        <div id="modal-pedido-itens"
-                            style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;"></div>
+                        <h4 style="font-size: 13px; margin: 0 0 8px 0; color: #ddd; text-transform: uppercase;">Peças Selecionadas</h4>
+                        <div id="modal-pedido-itens" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;"></div>
 
-                        <!-- Totalizador -->
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; border: 1px solid #282828; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; border: 1px solid #282828; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
                             <span style="font-size: 13px; font-weight: 700;">Total Pago:</span>
-                            <strong id="modal-pedido-total"
-                                style="font-size: 18px; color: var(--dourado, #d4af37);"></strong>
+                            <strong id="modal-pedido-total" style="font-size: 18px; color: var(--dourado, #d4af37);"></strong>
                         </div>
 
-                        <!-- Ações do Modal -->
                         <div style="display: flex; gap: 8px;">
-                            <button type="button" id="btn-modal-imprimir"
-                                style="flex: 1; background: #1f1f1f; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;">🖨️
-                                Imprimir Recibo</button>
-                            <button type="button" onclick="fecharModalDetalhesPedido()"
-                                style="flex: 1; background: var(--dourado, #d4af37); color: #000; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;">Fechar</button>
+                            <button type="button" id="btn-modal-imprimir" style="flex: 1; background: #1f1f1f; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;">🖨️ Imprimir Recibo</button>
+                            <button type="button" onclick="fecharModalDetalhesPedido()" style="flex: 1; background: var(--dourado, #d4af37); color: #000; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;">Fechar</button>
                         </div>
                     </div>
                 </div>
             </section>
-            <!-- 5. SEÇÃO: BANNERS -->
+
+            <!-- 6. SEÇÃO: BANNERS -->
             <section id="secao-banners" class="secao-admin">
                 <div class="admin-card">
                     <h2>🎨 Banners da Página Inicial</h2>
@@ -435,26 +370,22 @@
                         <div class="linha-inputs">
                             <div class="grupo-input">
                                 <label>Título Principal do Banner</label>
-                                <input type="text" id="titulo-banner" placeholder="Ex: Nova Coleção de Inverno"
-                                    required>
+                                <input type="text" id="titulo-banner" placeholder="Ex: Nova Coleção de Inverno" required>
                             </div>
                             <div class="grupo-input">
                                 <label>Subtítulo / Descrição Rápida</label>
-                                <input type="text" id="subtitulo-banner"
-                                    placeholder="Ex: Elegância que aquece todos os momentos" required>
+                                <input type="text" id="subtitulo-banner" placeholder="Ex: Elegância que aquece todos os momentos" required>
                             </div>
                         </div>
 
                         <div class="linha-inputs">
                             <div class="grupo-input">
                                 <label>Texto do Botão</label>
-                                <input type="text" id="btn-texto-banner" placeholder="Ex: Ver Coleção"
-                                    value="Ver Coleção" required>
+                                <input type="text" id="btn-texto-banner" placeholder="Ex: Ver Coleção" value="Ver Coleção" required>
                             </div>
                             <div class="grupo-input">
                                 <label>Link de Destino do Botão</label>
-                                <input type="text" id="btn-link-banner" placeholder="Ex: produtos.html ou #vitrine"
-                                    value="#vitrine" required>
+                                <input type="text" id="btn-link-banner" placeholder="Ex: produtos.html ou #vitrine" value="#vitrine" required>
                             </div>
                         </div>
 
@@ -474,7 +405,7 @@
                 </div>
             </section>
 
-            <!-- 6. SEÇÃO: CONFIGURAÇÕES, CUPONS & BACKUP -->
+            <!-- 7. SEÇÃO: CONFIGURAÇÕES, CUPONS & BACKUP -->
             <section id="secao-config" class="secao-admin">
                 <div class="admin-card">
                     <h2>⚙️ Configurações de Atendimento & Suporte</h2>
@@ -485,8 +416,7 @@
                             <div class="grupo-input">
                                 <label for="config-whatsapp">WhatsApp Oficial de Suporte (com DDD e 55) *</label>
                                 <input type="text" id="config-whatsapp" placeholder="Ex: 5589999999999" required>
-                                <small style="color: var(--cinza-texto); font-size: 11px;">Digite apenas números com
-                                    código do país (55) e DDD.</small>
+                                <small style="color: var(--cinza-texto); font-size: 11px;">Digite apenas números com código do país (55) e DDD.</small>
                             </div>
 
                             <div class="grupo-input">
@@ -506,8 +436,7 @@
                             <div class="linha-inputs">
                                 <div class="grupo-input">
                                     <label>Código do Cupom *</label>
-                                    <input type="text" id="cupom-codigo" placeholder="Ex: BEMVINDA10"
-                                        style="text-transform: uppercase;" required>
+                                    <input type="text" id="cupom-codigo" placeholder="Ex: BEMVINDA10" style="text-transform: uppercase;" required>
                                 </div>
                                 <div class="grupo-input">
                                     <label>Tipo de Desconto *</label>
@@ -518,12 +447,10 @@
                                 </div>
                                 <div class="grupo-input">
                                     <label>Valor do Desconto *</label>
-                                    <input type="number" id="cupom-valor" step="0.01" min="1" placeholder="Ex: 10"
-                                        required>
+                                    <input type="number" id="cupom-valor" step="0.01" min="1" placeholder="Ex: 10" required>
                                 </div>
                             </div>
-                            <button type="submit" class="btn-salvar" style="max-width: 220px; padding: 11px;">Cadastrar
-                                Cupom</button>
+                            <button type="submit" class="btn-salvar" style="max-width: 220px; padding: 11px;">Cadastrar Cupom</button>
                         </form>
 
                         <div class="tabela-container">
@@ -544,10 +471,8 @@
                     <div style="margin-top: 35px; border-top: 1px solid #2a2a2a; padding-top: 20px;">
                         <h2 style="font-size: 17px; margin-top: 10px;">💾 Backup & Restauração de Dados</h2>
                         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
-                            <button type="button" id="btn-exportar-backup" class="btn-salvar"
-                                style="background: #1976d2; max-width: 240px;">⬇️ Baixar Backup (.JSON)</button>
-                            <label class="btn-salvar"
-                                style="background: #388e3c; max-width: 240px; text-align: center; cursor: pointer;">
+                            <button type="button" id="btn-exportar-backup" class="btn-salvar" style="background: #1976d2; max-width: 240px;">⬇️ Baixar Backup (.JSON)</button>
+                            <label class="btn-salvar" style="background: #388e3c; max-width: 240px; text-align: center; cursor: pointer;">
                                 ⬆️ Restaurar Backup
                                 <input type="file" id="input-restaurar-backup" accept=".json" style="display: none;">
                             </label>
@@ -556,71 +481,46 @@
                 </div>
             </section>
 
-            <!-- 7. SEÇÃO: GESTÃO DE EQUIPE -->
+            <!-- 8. SEÇÃO: GESTÃO DE EQUIPE -->
             <section id="secao-equipe" class="secao-admin">
                 <div class="admin-card">
                     <h2>👥 Gestão de Equipe & Permissões</h2>
                     <p class="subtexto-card">Defina os colaboradores da loja e as permissões de acesso.</p>
 
-                    <div
-                        style="background: #0d0d0d; border: 1px solid #262626; border-radius: 8px; padding: 20px; margin-bottom: 25px; max-width: 620px;">
-                        <h3
-                            style="color: var(--dourado, #d4af37); font-size: 15px; margin-bottom: 12px; font-weight: 700;">
-                            Convidar ou Configurar Administrador</h3>
+                    <div style="background: #0d0d0d; border: 1px solid #262626; border-radius: 8px; padding: 20px; margin-bottom: 25px; max-width: 620px;">
+                        <h3 style="color: var(--dourado, #d4af37); font-size: 15px; margin-bottom: 12px; font-weight: 700;">Convidar ou Configurar Administrador</h3>
 
                         <form id="form-gestao-equipe">
                             <div class="grupo-input" style="margin-bottom: 15px;">
-                                <label style="font-size: 12px; color: #bbb; display: block; margin-bottom: 6px;">E-mail
-                                    do Colaborador *</label>
-                                <input type="email" id="equipe-email" placeholder="exemplo@gmail.com" required
-                                    style="width: 100%; padding: 10px; background: #141414; border: 1px solid #333; color: #fff; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+                                <label style="font-size: 12px; color: #bbb; display: block; margin-bottom: 6px;">E-mail do Colaborador *</label>
+                                <input type="email" id="equipe-email" placeholder="exemplo@gmail.com" required style="width: 100%; padding: 10px; background: #141414; border: 1px solid #333; color: #fff; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
                             </div>
 
-                            <label
-                                style="font-size: 12px; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px; text-transform: uppercase;">Módulos
-                                com Acesso Permitido:</label>
+                            <label style="font-size: 12px; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px; text-transform: uppercase;">Módulos com Acesso Permitido:</label>
 
-                            <div
-                                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; background: #141414; border: 1px solid #282828; padding: 14px; border-radius: 6px; margin-bottom: 18px;">
-                                <label
-                                    style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="checkbox" id="perm-dashboard"
-                                        style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 📊
-                                    Dashboard & Vendas
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; background: #141414; border: 1px solid #282828; padding: 14px; border-radius: 6px; margin-bottom: 18px;">
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-dashboard" style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 📊 Dashboard & Vendas
                                 </label>
-                                <label
-                                    style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="checkbox" id="perm-produtos" checked
-                                        style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 👗
-                                    Produtos & Catálogo
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-produtos" checked style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 👗 Produtos & Catálogo
                                 </label>
-                                <label
-                                    style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="checkbox" id="perm-pedidos"
-                                        style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 🛍️
-                                    Pedidos & Envios
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-pedidos" style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 🛍️ Pedidos & Envios
                                 </label>
-                                <label
-                                    style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="checkbox" id="perm-banners"
-                                        style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 🎨
-                                    Banners da Home
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-banners" style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> 🎨 Banners da Home
                                 </label>
-                                <label
-                                    style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                    <input type="checkbox" id="perm-config"
-                                        style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> ⚙️
-                                    Configurações Gerais
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                    <input type="checkbox" id="perm-config" style="accent-color: var(--dourado, #d4af37); width: 16px; height: 16px;"> ⚙️ Configurações Gerais
                                 </label>
                             </div>
 
-                            <button type="submit" id="btn-salvar-equipe" class="btn-salvar" style="width: 100%;">Salvar
-                                Permissões do Colaborador</button>
+                            <button type="submit" id="btn-salvar-equipe" class="btn-salvar" style="width: 100%;">Salvar Permissões do Colaborador</button>
                         </form>
                     </div>
 
-                    <h3 style="color: var(--dourado, #d4af37); font-size: 16px; margin-bottom: 12px;">Membros Ativos da
-                        Equipe</h3>
+                    <h3 style="color: var(--dourado, #d4af37); font-size: 16px; margin-bottom: 12px;">Membros Ativos da Equipe</h3>
                     <div id="lista-equipe-admin" style="display: flex; flex-direction: column; gap: 10px;">
                         <p style="color: var(--cinza-texto);">A carregar colaboradores...</p>
                     </div>
@@ -633,6 +533,7 @@
     <!-- Módulos de Execução -->
     <script src="js/db.js"></script>
     <script src="js/admin/core.js"></script>
+    <script src="js/admin/relatorios.js"></script>
     <script src="js/admin/pedidos.js"></script>
     <script src="js/admin/produtos.js"></script>
     <script src="js/admin/banners.js"></script>

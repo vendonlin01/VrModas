@@ -7,6 +7,40 @@ let listaPedidosGeral = [];
 let filtroStatusPedidoAtivo = 'todos';
 
 /**
+ * Funções utilitárias para formatar endereço limpo
+ */
+function tratarEnderecoVisual(enderecoRaw) {
+    if (!enderecoRaw) return 'Retirada na Loja / A combinar';
+    if (typeof enderecoRaw === 'string') {
+        try {
+            if (enderecoRaw.trim().startsWith('{')) {
+                const parsed = JSON.parse(enderecoRaw);
+                return formatarObjetoEndereco(parsed);
+            }
+            return enderecoRaw;
+        } catch (e) {
+            return enderecoRaw;
+        }
+    }
+    if (typeof enderecoRaw === 'object') {
+        return formatarObjetoEndereco(enderecoRaw);
+    }
+    return String(enderecoRaw);
+}
+
+function formatarObjetoEndereco(end) {
+    if (!end) return 'Retirada na Loja / A combinar';
+    if (end.enderecoFormatado) return end.enderecoFormatado;
+    const rua = end.rua || end.logradouro || '';
+    const num = end.numero || 'S/N';
+    const bairro = end.bairro || '';
+    const cidade = end.cidade || '';
+    const cep = end.cep ? `(CEP: ${end.cep})` : '';
+    const partes = [rua ? `${rua}, Nº ${num}` : '', bairro, cidade, cep].filter(p => p.trim() !== '');
+    return partes.length > 0 ? partes.join(' - ') : 'Retirada na Loja / A combinar';
+}
+
+/**
  * 1. Carrega todos os pedidos do Neon DB
  */
 async function carregarEAtualizarTabelaPedidos() {
@@ -87,7 +121,6 @@ function filtrarERenderizarTabelaPedidos() {
         const clienteNome = p.cliente_nome || 'Cliente';
         const whats = p.cliente_telefone || p.cliente_whatsapp || '';
 
-        // Extrai resumo das peças
         let arrayItens = [];
         try {
             const rawItens = typeof p.itens === 'string' ? JSON.parse(p.itens) : (p.itens || {});
@@ -174,12 +207,13 @@ function abrirModalDetalhesPedido(idPedido) {
         elWhats.innerText = 'Não informado';
     }
 
+    const enderecoLimpo = tratarEnderecoVisual(dadosExtra.endereco_entrega || pedido.endereco);
+
     document.getElementById('modal-pedido-tipo-envio').innerText = dadosExtra.tipo_envio === 'retirada' ? '🏬 Retirada na Loja Física' : '🏠 Entrega no Endereço';
-    document.getElementById('modal-pedido-endereco').innerText = dadosExtra.endereco_entrega || pedido.endereco || 'Retirada na Loja / A combinar';
+    document.getElementById('modal-pedido-endereco').innerText = enderecoLimpo;
     document.getElementById('modal-pedido-pagamento').innerText = dadosExtra.forma_pagamento || pedido.forma_pagamento || 'PIX';
     document.getElementById('modal-pedido-total').innerText = Number(pedido.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    // Renderiza itens
     const containerItens = document.getElementById('modal-pedido-itens');
     containerItens.innerHTML = itens.map(i => {
         const precoItem = Number(i.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -199,7 +233,6 @@ function abrirModalDetalhesPedido(idPedido) {
         `;
     }).join('') || '<p style="color: #777;">Nenhuma peça descrita.</p>';
 
-    // Botão de imprimir dentro do modal
     const btnImp = document.getElementById('btn-modal-imprimir');
     if (btnImp) {
         btnImp.onclick = () => imprimirComprovantePedido(pedido.id);
@@ -278,7 +311,7 @@ function imprimirComprovantePedido(idPedido) {
 
     const dataFmt = pedido.criado_em ? new Date(pedido.criado_em).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
     const totalFmt = Number(pedido.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const endereco = dadosExtra.endereco_entrega || pedido.endereco || 'Retirada na Loja Física';
+    const endereco = tratarEnderecoVisual(dadosExtra.endereco_entrega || pedido.endereco);
     const pagamento = dadosExtra.forma_pagamento || pedido.forma_pagamento || 'PIX';
     const whats = pedido.cliente_telefone || pedido.cliente_whatsapp || 'Não informado';
 
