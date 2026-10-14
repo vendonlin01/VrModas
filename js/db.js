@@ -1,10 +1,26 @@
 // js/db.js - Conexão e sincronização Neon (PostgreSQL)
 const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
 
+let instanciaNeonSql = null;
+
+/**
+ * Retorna a instância global da conexão SQL do Neon para qualquer módulo do sistema
+ */
+async function getSql() {
+    if (!instanciaNeonSql) {
+        const { neon } = await import('https://esm.sh/@neondatabase/serverless');
+        instanciaNeonSql = neon(NEON_CONNECTION_STRING);
+        window.sql = instanciaNeonSql;
+    }
+    return instanciaNeonSql;
+}
+
+// Garante disponibilidade global no objeto window
+window.getSql = getSql;
+
 async function sincronizarProdutosNeon() {
     try {
-        const { neon } = await import('https://esm.sh/@neondatabase/serverless');
-        const sql = neon(NEON_CONNECTION_STRING);
+        const sql = await getSql();
 
         // Consulta direta na tabela de produtos
         const dadosNeon = await sql`SELECT * FROM produtos ORDER BY id DESC;`;
