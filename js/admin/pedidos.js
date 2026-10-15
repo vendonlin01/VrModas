@@ -1,5 +1,5 @@
 // ==========================================================================
-// VR MODAS - GESTÃO DE PEDIDOS & COMPROVANTES (NEON DB)
+// VR MODAS - GESTÃO DE PEDIDOS & COMPROVANTES (NEON DB - COMPACTO MOBILE)
 // js/admin/pedidos.js
 // ==========================================================================
 
@@ -47,7 +47,7 @@ async function carregarEAtualizarTabelaPedidos() {
     const tabelaCorpo = document.getElementById('lista-pedidos-admin');
     if (!tabelaCorpo) return;
 
-    tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 25px;">A carregar pedidos do Neon...</td></tr>`;
+    tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 25px; font-size: 12px;">A carregar pedidos do Neon...</td></tr>`;
 
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
@@ -64,7 +64,7 @@ async function carregarEAtualizarTabelaPedidos() {
 
     } catch (e) {
         console.error('Erro ao carregar lista de pedidos:', e);
-        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="color: #ff6b6b; text-align: center; padding: 20px;">Falha ao obter pedidos: ${e.message}</td></tr>`;
+        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="color: #ff6b6b; text-align: center; padding: 20px; font-size: 12px;">Falha ao obter pedidos: ${e.message}</td></tr>`;
     }
 }
 window.carregarEAtualizarTabelaPedidos = carregarEAtualizarTabelaPedidos;
@@ -89,7 +89,7 @@ function atualizarContadoresStatusPedidos(pedidos) {
 }
 
 function normalizarStatus(statusRaw) {
-    const s = (statusRaw || 'pendente').toLowerCase().trim();
+    const s = String(statusRaw || 'pendente').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
     if (s.includes('separ')) return 'separacao';
     if (s.includes('envi')) return 'enviado';
     if (s.includes('pago') || s.includes('conclu')) return 'concluido';
@@ -98,7 +98,7 @@ function normalizarStatus(statusRaw) {
 }
 
 /**
- * 3. Renderiza a tabela aplicando o filtro da aba selecionada
+ * 3. Renderiza a tabela aplicando o filtro no formato compacto elegante
  */
 function filtrarERenderizarTabelaPedidos() {
     const tabelaCorpo = document.getElementById('lista-pedidos-admin');
@@ -110,58 +110,68 @@ function filtrarERenderizarTabelaPedidos() {
     }
 
     if (filtrados.length === 0) {
-        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 30px;">Nenhum pedido encontrado neste status.</td></tr>`;
+        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 25px; font-size: 12px;">Nenhum pedido encontrado neste status.</td></tr>`;
         return;
     }
 
     tabelaCorpo.innerHTML = filtrados.map(p => {
         const idPed = p.id;
         const totalFmt = Number(p.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const dataFmt = p.criado_em ? new Date(p.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'Recente';
+        const dataFmt = p.criado_em ? new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
         const clienteNome = p.cliente_nome || 'Cliente';
-        const whats = p.cliente_telefone || p.cliente_whatsapp || '';
 
         let arrayItens = [];
+        let formaPag = 'PIX';
         try {
             const rawItens = typeof p.itens === 'string' ? JSON.parse(p.itens) : (p.itens || {});
-            arrayItens = Array.isArray(rawItens) ? rawItens : (rawItens.itens || []);
+            if (Array.isArray(rawItens)) {
+                arrayItens = rawItens;
+            } else {
+                arrayItens = rawItens.itens || [];
+                formaPag = rawItens.forma_pagamento || p.forma_pagamento || 'PIX';
+            }
         } catch (e) {
             arrayItens = [];
         }
 
-        const resumoItens = arrayItens.length > 0 
-            ? arrayItens.map(i => `${i.quantidade || 1}x ${i.nome}`).join(', ') 
-            : 'Ver peças';
-
+        const resumoItens = arrayItens.map(i => `${i.quantidade || 1}x ${i.nome}`).join(', ') || 'Ver peças';
         const statusAtual = normalizarStatus(p.status);
 
         return `
             <tr>
-                <td>
-                    <button type="button" onclick="abrirModalDetalhesPedido(${idPed})" style="background: none; border: none; padding: 0; text-align: left; cursor: pointer; color: inherit;">
-                        <strong style="color: var(--dourado, #d4af37); font-size: 13.5px; text-decoration: underline;">#${idPed} - ${clienteNome}</strong>
-                    </button>
-                    <br><small style="color: #777;">Tel/Whats: ${whats || 'Não informado'}</small>
+                <!-- Bloco Esquerdo: ID, Hora, Pagamento, Cliente e Itens -->
+                <td style="flex: 1; min-width: 0; text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                        <button type="button" onclick="abrirModalDetalhesPedido(${idPed})" style="background: none; border: none; padding: 0; cursor: pointer; color: var(--dourado, #d4af37); font-weight: 700; font-size: 12.5px; text-decoration: underline;">
+                            #${idPed}
+                        </button>
+                        <span style="color: #777; font-size: 11px;">• ${dataFmt}</span>
+                        <span style="font-size: 10px; padding: 1px 5px; border-radius: 3px; background: #222; color: #aaa; text-transform: uppercase;">${formaPag}</span>
+                    </div>
+                    <div onclick="abrirModalDetalhesPedido(${idPed})" style="cursor: pointer; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${clienteNome}
+                    </div>
+                    <div onclick="abrirModalDetalhesPedido(${idPed})" style="cursor: pointer; font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${resumoItens}
+                    </div>
                 </td>
-                <td style="color: #bbb; font-size: 12px;">${dataFmt}</td>
-                <td>
-                    <button type="button" onclick="abrirModalDetalhesPedido(${idPed})" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: #ddd; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11.5px; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
-                        🔍 ${resumoItens}
-                    </button>
-                </td>
-                <td style="color: var(--dourado, #d4af37); font-weight: 700;">${totalFmt}</td>
-                <td>
-                    <select onchange="atualizarStatusPedidoAdmin(${idPed}, this.value)" class="select-status-pedido" style="background: #111; color: #fff; border: 1px solid #333; padding: 6px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer;">
-                        <option value="Pendente" ${statusAtual === 'pendente' ? 'selected' : ''}>⏳ Pendente</option>
-                        <option value="Em Separação" ${statusAtual === 'separacao' ? 'selected' : ''}>📦 Em Separação</option>
-                        <option value="Enviado" ${statusAtual === 'enviado' ? 'selected' : ''}>🚚 Enviado</option>
-                        <option value="Concluído" ${statusAtual === 'concluido' ? 'selected' : ''}>✅ Concluído</option>
-                        <option value="Cancelado" ${statusAtual === 'cancelado' ? 'selected' : ''}>❌ Cancelado</option>
-                    </select>
-                </td>
-                <td>
-                    <button type="button" onclick="imprimirComprovantePedido(${idPed})" title="Imprimir Recibo" style="background: transparent; border: 1px solid #666; color: #fff; padding: 6px 10px; border-radius: 4px; cursor: pointer; margin-right: 4px; font-size: 12px;">🖨️</button>
-                    <button type="button" onclick="excluirPedidoAdmin(${idPed})" title="Excluir Pedido" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">🗑️</button>
+
+                <!-- Bloco Direito: Valor, Seletor de Status e Ações -->
+                <td style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                    <div style="color: var(--dourado, #d4af37); font-weight: 700; font-size: 13.5px;">
+                        ${totalFmt}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <select onchange="atualizarStatusPedidoAdmin(${idPed}, this.value)" style="background: #111; color: #fff; border: 1px solid #333; padding: 3px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 700; cursor: pointer; height: 26px;">
+                            <option value="Pendente" ${statusAtual === 'pendente' ? 'selected' : ''}>⏳ Pendente</option>
+                            <option value="Em Separação" ${statusAtual === 'separacao' ? 'selected' : ''}>📦 Separação</option>
+                            <option value="Enviado" ${statusAtual === 'enviado' ? 'selected' : ''}>🚚 Enviado</option>
+                            <option value="Concluído" ${statusAtual === 'concluido' ? 'selected' : ''}>✅ Concluído</option>
+                            <option value="Cancelado" ${statusAtual === 'cancelado' ? 'selected' : ''}>❌ Cancelado</option>
+                        </select>
+                        <button type="button" onclick="imprimirComprovantePedido(${idPed})" title="Imprimir Recibo" style="background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 3px 7px; border-radius: 4px; cursor: pointer; font-size: 11px; height: 26px;">🖨️</button>
+                        <button type="button" onclick="excluirPedidoAdmin(${idPed})" title="Excluir Pedido" style="background: #1a1a1a; border: 1px solid #ff4444; color: #ff4444; padding: 3px 7px; border-radius: 4px; cursor: pointer; font-size: 11px; height: 26px;">🗑️</button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -220,7 +230,7 @@ function abrirModalDetalhesPedido(idPedido) {
         const img = i.imagem || 'img/placeholder.png';
         return `
             <div style="display: flex; gap: 10px; align-items: center; background: #0c0c0c; border: 1px solid #222; padding: 8px; border-radius: 6px;">
-                <img src="${img}" style="width: 44px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #333;">
+                <img src="${img}" style="width: 44px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #333;" onerror="this.src='img/placeholder.png'">
                 <div style="flex: 1;">
                     <div style="font-weight: 700; color: #fff; font-size: 13px;">${i.nome}</div>
                     <small style="color: #888;">Tam: ${i.tamanho || 'Padrão'} | Cor: ${i.cor || 'Padrão'}</small>

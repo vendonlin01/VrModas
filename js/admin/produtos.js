@@ -1,5 +1,5 @@
 // ==========================================================================
-// VR MODAS - GESTÃO DE PRODUTOS, CATÁLOGO, ESTOQUE & EDIÇÃO (NEON DB)
+// VR MODAS - GESTÃO DE PRODUTOS, CATÁLOGO, ESTOQUE & EDIÇÃO (NEON DB - COMPACTO)
 // js/admin/produtos.js
 // ==========================================================================
 
@@ -146,7 +146,6 @@ function renderizarCoresAdicionadas() {
         `;
     }).join('');
 
-    // Atualiza automaticamente a soma do estoque geral (campo readonly)
     if (inputEstoqueGeral) inputEstoqueGeral.value = somaEstoque;
     if (inputCoresOculto) inputCoresOculto.value = JSON.stringify(coresAdicionadas.map(c => c.nome));
     if (inputEstoqueCorOculto) inputEstoqueCorOculto.value = JSON.stringify(coresAdicionadas);
@@ -210,13 +209,13 @@ function configurarCalculoDesconto() {
 }
 
 /**
- * 5. Carregar e Renderizar Lista de Produtos no Catálogo & Estoque
+ * 5. Carregar e Renderizar Lista de Produtos no Formato Compacto Elegante
  */
 async function carregarEAtualizarTabelaProdutos() {
     const tabelaCorpo = document.getElementById('lista-produtos-admin') || document.getElementById('tabela-produtos-corpo');
     if (!tabelaCorpo) return;
 
-    tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 25px;">A carregar produtos do Neon...</td></tr>`;
+    tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 25px; font-size: 12px;">A carregar produtos do Neon...</td></tr>`;
 
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
@@ -230,7 +229,7 @@ async function carregarEAtualizarTabelaProdutos() {
 
     } catch (e) {
         console.error('Erro ao carregar lista de produtos:', e);
-        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="color: #ff6b6b; text-align: center; padding: 20px;">Falha ao obter produtos: ${e.message}</td></tr>`;
+        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="color: #ff6b6b; text-align: center; padding: 20px; font-size: 12px;">Falha ao obter produtos: ${e.message}</td></tr>`;
     }
 }
 window.carregarEAtualizarTabelaProdutos = carregarEAtualizarTabelaProdutos;
@@ -247,12 +246,13 @@ function filtrarERenderizarTabelaProdutos() {
     }
 
     if (filtrados.length === 0) {
-        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 30px;">Nenhuma peça encontrada nesta categoria.</td></tr>`;
+        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cinza-texto, #888); padding: 25px; font-size: 12px;">Nenhuma peça encontrada nesta categoria.</td></tr>`;
         return;
     }
 
     tabelaCorpo.innerHTML = filtrados.map(p => {
         const precoFmt = Number(p.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const estoqueTotal = parseInt(p.estoque || 0, 10);
         
         let primeiraImagem = 'img/placeholder.png';
         try {
@@ -261,37 +261,50 @@ function filtrarERenderizarTabelaProdutos() {
             else if (p.imagem) primeiraImagem = p.imagem;
         } catch (e) {}
 
-        // Trata cores
+        const cat = (p.categoria || 'Geral').toUpperCase();
+        const corEstoque = estoqueTotal < 5 ? '#ff5252' : '#4cd137';
+        const bgEstoque = estoqueTotal < 5 ? 'rgba(255,82,82,0.1)' : 'rgba(76,209,55,0.1)';
+
+        // Resumo curto de cores
         let resumoCores = '';
         try {
             const coresArr = typeof p.cores === 'string' ? JSON.parse(p.cores) : p.cores;
             if (Array.isArray(coresArr) && coresArr.length > 0) {
-                resumoCores = `<br><small style="color: #888;">Cores: ${coresArr.map(c => typeof c === 'object' ? `${c.nome} (${c.qtd})` : c).join(', ')}</small>`;
+                resumoCores = coresArr.map(c => typeof c === 'object' ? `${c.nome} (${c.qtd})` : c).join(', ');
             }
         } catch(e) {}
 
         return `
             <tr>
-                <td>
-                    <img src="${primeiraImagem}" style="width: 44px; height: 52px; object-fit: cover; border-radius: 4px; border: 1px solid #333;">
+                <!-- Bloco Esquerdo: Foto, Categoria, ID, Nome e Estoque -->
+                <td style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; text-align: left;">
+                    <img src="${primeiraImagem}" style="width: 38px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/placeholder.png'">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 2px;">
+                            <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: #222; color: var(--dourado, #d4af37); font-weight: 700;">${cat}</span>
+                            <small style="color: #666; font-size: 10px;">#${p.id}</small>
+                        </div>
+                        <div style="font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${p.nome}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                            <span style="font-size: 9.5px; color: ${corEstoque}; background: ${bgEstoque}; border: 1px solid ${corEstoque}; padding: 1px 5px; border-radius: 3px; font-weight: 700;">
+                                ${estoqueTotal} un
+                            </span>
+                            ${resumoCores ? `<span style="font-size: 10.5px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resumoCores}</span>` : ''}
+                        </div>
+                    </div>
                 </td>
-                <td>
-                    <div style="font-weight: 700; color: #fff;">${p.nome}</div>
-                    <small style="color: #666;">ID: #${p.id}</small>
-                </td>
-                <td>
-                    <span style="text-transform: uppercase; font-size: 11px; background: rgba(255,255,255,0.06); padding: 3px 6px; border-radius: 4px; color: #aaa;">
-                        ${p.categoria || 'Geral'}
-                    </span>
-                </td>
-                <td style="color: var(--dourado, #d4af37); font-weight: 700;">${precoFmt}</td>
-                <td>
-                    <input type="number" min="0" value="${p.estoque || 0}" onchange="atualizarEstoqueRapido(${p.id}, this.value)" style="width: 65px; background: #111; border: 1px solid #333; color: #fff; padding: 4px 6px; border-radius: 4px; text-align: center; font-weight: 700;">
-                    ${resumoCores}
-                </td>
-                <td>
-                    <button type="button" onclick="prepararEdicaoProduto(${p.id})" title="Editar Peça" style="background: transparent; border: 1px solid var(--dourado, #d4af37); color: var(--dourado, #d4af37); padding: 5px 8px; border-radius: 4px; cursor: pointer; margin-right: 4px;">✏️</button>
-                    <button type="button" onclick="excluirProdutoAdmin(${p.id})" title="Excluir Peça" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 5px 8px; border-radius: 4px; cursor: pointer;">🗑️</button>
+
+                <!-- Bloco Direito: Preço e Botões Rápidos -->
+                <td style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                    <div style="color: var(--dourado, #d4af37); font-weight: 700; font-size: 13.5px;">
+                        ${precoFmt}
+                    </div>
+                    <div style="display: flex; gap: 4px;">
+                        <button type="button" onclick="prepararEdicaoProduto(${p.id})" title="Editar Peça" style="background: #1a1a1a; border: 1px solid var(--dourado, #d4af37); color: var(--dourado, #d4af37); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">✏️</button>
+                        <button type="button" onclick="excluirProdutoAdmin(${p.id})" title="Excluir Peça" style="background: #1a1a1a; border: 1px solid #ff4444; color: #ff4444; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️</button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -316,7 +329,7 @@ function atualizarContadoresCategorias(produtos) {
 }
 
 /**
- * 6. Preparar Edição de Produto (Carrega cores, tamanhos e fotos de volta ao formulário)
+ * 6. Preparar Edição de Produto
  */
 function prepararEdicaoProduto(idProduto) {
     const produto = listaProdutosGeral.find(p => p.id == idProduto);
@@ -338,7 +351,7 @@ function prepararEdicaoProduto(idProduto) {
     if (inputNome) inputNome.value = produto.nome || '';
     if (selectCategoria) {
         selectCategoria.value = (produto.categoria || '').toLowerCase();
-        selectCategoria.dispatchEvent(new Event('change')); // Gera a grade de tamanhos
+        selectCategoria.dispatchEvent(new Event('change'));
     }
     if (textareaDescricao) textareaDescricao.value = produto.descricao || '';
     if (inputPreco) inputPreco.value = produto.preco || '';
@@ -346,7 +359,6 @@ function prepararEdicaoProduto(idProduto) {
     if (checkDestaque) checkDestaque.checked = !!produto.destaque;
     if (inputEstoque) inputEstoque.value = produto.estoque || 0;
 
-    // Carrega tamanhos marcados
     setTimeout(() => {
         try {
             const tamanhosArr = typeof produto.tamanhos === 'string' ? JSON.parse(produto.tamanhos) : (produto.tamanhos || []);
@@ -356,7 +368,6 @@ function prepararEdicaoProduto(idProduto) {
         } catch(e) {}
     }, 100);
 
-    // Carrega as cores
     coresAdicionadas = [];
     try {
         const coresRaw = typeof produto.cores === 'string' ? JSON.parse(produto.cores) : (produto.cores || []);
@@ -367,7 +378,6 @@ function prepararEdicaoProduto(idProduto) {
     } catch(e) {}
     renderizarCoresAdicionadas();
 
-    // Carrega fotos
     listaImagensProdutoBase64 = [];
     try {
         const arrImgs = typeof produto.imagens === 'string' ? JSON.parse(produto.imagens) : produto.imagens;
@@ -378,7 +388,6 @@ function prepararEdicaoProduto(idProduto) {
     }
     renderizarPreviewImagens();
 
-    // Altera botões e títulos
     const tituloForm = document.getElementById('titulo-form-produto');
     const btnSubmit = document.getElementById('btn-submit-produto');
     const btnCancelar = document.getElementById('btn-cancelar-edicao');
@@ -437,10 +446,8 @@ async function salvarProduto(e) {
     const descricao = document.getElementById('descricao-produto')?.value.trim() || '';
     const destaque = document.getElementById('destaque-promocao')?.checked || false;
 
-    // Tamanhos selecionados
     const tamanhos = Array.from(document.querySelectorAll('.check-tamanho:checked')).map(chk => chk.value);
 
-    // Validações
     if (!nome) {
         alert('Por favor, informe o nome do produto.');
         return;
@@ -473,7 +480,6 @@ async function salvarProduto(e) {
         if (!sql) throw new Error("Instância do Neon SQL não está carregada.");
 
         if (editandoId) {
-            // ATUALIZAÇÃO (UPDATE)
             await sql`
                 UPDATE produtos 
                 SET 
@@ -492,7 +498,6 @@ async function salvarProduto(e) {
             `;
             alert('✨ Peça atualizada com sucesso!');
         } else {
-            // CRIAÇÃO (INSERT)
             await sql`
                 INSERT INTO produtos (
                     nome, categoria, preco, preco_promocional, estoque, descricao, 
@@ -571,8 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnCancelar.addEventListener('click', cancelarEdicaoProduto);
     }
 
-    // Filtros de categorias (abas)
-    const botoesCat = document.querySelectorAll('.btn-aba-cat');
+    const botoesCat = document.querySelectorAll('#abas-categorias-admin .btn-aba-cat');
     botoesCat.forEach(btn => {
         btn.addEventListener('click', () => {
             botoesCat.forEach(b => b.classList.remove('ativo'));

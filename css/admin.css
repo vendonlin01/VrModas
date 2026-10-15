@@ -419,7 +419,7 @@ body {
 }
 
 /* =====================================================
-   5. TABELAS & ABAS DE CATEGORIAS
+   5. TABELAS & ABAS DE CATEGORIAS (DESKTOP)
    ===================================================== */
 .abas-categorias {
     display: flex;
@@ -597,9 +597,19 @@ body {
         padding: 14px 12px;
     }
 
-    /* Tabelas em formato de cards verticais no celular */
+    /* =====================================================
+       CARDS COMPACTOS & ELEGANTES NO MOBILE (CATÁLOGO & PEDIDOS)
+       ===================================================== */
     .tabela-container {
         overflow-x: visible;
+        background: #0d0d0d;
+        border: 1px solid #222;
+        border-radius: 8px;
+        padding: 6px;
+        max-height: 480px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        box-sizing: border-box;
     }
 
     .tabela-produtos,
@@ -615,52 +625,34 @@ body {
         display: none;
     }
 
+    /* Linhas transformadas em cards compactos idênticos ao Caixa */
     .tabela-produtos tbody tr {
-        background: #141414;
-        border: 1px solid #2a2a2a;
-        border-radius: 8px;
-        padding: 14px;
-        margin-bottom: 14px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        box-sizing: border-box;
+        background: #141414 !important;
+        border: 1px solid #242424 !important;
+        border-radius: 6px !important;
+        padding: 8px 10px !important;
+        margin-bottom: 6px !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        box-sizing: border-box !important;
     }
 
     .tabela-produtos tbody td {
-        padding: 0;
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        font-size: 13px;
-        box-sizing: border-box;
+        padding: 0 !important;
+        border: none !important;
+        box-sizing: border-box !important;
     }
 
-    .tabela-produtos tbody td:first-child {
-        justify-content: flex-start;
-        margin-bottom: 4px;
+    /* Oculta colunas redundantes no card mobile compacto */
+    .secao-admin#secao-pedidos .tabela-produtos tbody td:nth-child(2) {
+        display: none !important;
     }
 
-    .tabela-produtos tbody td:first-child img {
-        width: 60px;
-        height: 60px;
-    }
-
-    .tabela-produtos tbody td:last-child {
-        border-top: 1px solid #222;
-        padding-top: 10px;
-        margin-top: 4px;
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-    }
-
-    .select-status-pedido {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 8px !important;
+    .secao-admin#secao-catalogo .tabela-produtos tbody td:nth-child(3) {
+        display: none !important;
     }
 }
 
