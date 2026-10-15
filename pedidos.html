@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Meus Pedidos - VR Modas</title>
+    <title>Minhas Compras & Rastreio - VR Modas</title>
     <link rel="stylesheet" href="./css/global.css">
     <link rel="stylesheet" href="./css/produtos.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
         .container-meus-pedidos {
-            max-width: 800px;
-            margin: 30px auto 60px auto;
-            padding: 0 16px;
+            max-width: 680px;
+            margin: 20px auto 60px auto;
+            padding: 0 14px;
         }
         .topo-pedidos-nav {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         .btn-voltar-link {
             color: var(--dourado, #d4af37);
@@ -33,45 +33,95 @@
             opacity: 0.8;
         }
         .card-pedido-cliente {
-            background: #121212;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
+            background: #141414;
+            border: 1px solid #282828;
+            border-radius: 12px;
             padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            transition: border-color 0.2s;
-        }
-        .card-pedido-cliente:hover {
-            border-color: #383838;
+            margin-bottom: 18px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         }
         .topo-card-pedido {
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #222;
-            padding-bottom: 10px;
-            margin-bottom: 12px;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
         }
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
+
+        /* Linha do Tempo Visual (Steptracker) */
+        .tracker-container {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 22px 6px 16px 6px;
+        }
+        .tracker-container::before {
+            content: '';
+            position: absolute;
+            top: 13px;
+            left: 15px;
+            right: 15px;
+            height: 3px;
+            background: #252525;
+            z-index: 1;
+        }
+        .tracker-linha-ativa {
+            position: absolute;
+            top: 13px;
+            left: 15px;
+            height: 3px;
+            background: var(--dourado, #d4af37);
+            z-index: 2;
+            transition: width 0.4s ease;
+        }
+        .tracker-passo {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .tracker-circulo {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #181818;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-weight: 800;
+            color: #777;
+            transition: all 0.3s;
         }
-        .status-Pendente { background: rgba(255, 152, 0, 0.15); color: #ff9800; border: 1px solid #ff9800; }
-        .status-Pago { background: rgba(41, 182, 246, 0.15); color: #29b6f6; border: 1px solid #29b6f6; }
-        .status-Em-Separacao { background: rgba(171, 71, 188, 0.15); color: #ab47bc; border: 1px solid #ab47bc; }
-        .status-Enviado { background: rgba(255, 167, 38, 0.15); color: #ffa726; border: 1px solid #ffa726; }
-        .status-Concluido { background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid #4caf50; }
-        .status-Cancelado { background: rgba(239, 83, 80, 0.15); color: #ef5350; border: 1px solid #ef5350; }
+        .tracker-passo.ativo .tracker-circulo {
+            background: var(--dourado, #d4af37);
+            border-color: var(--dourado, #d4af37);
+            color: #000;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+        }
+        .tracker-passo.concluido .tracker-circulo {
+            background: #4cd137;
+            border-color: #4cd137;
+            color: #000;
+        }
+        .tracker-legenda {
+            font-size: 10px;
+            font-weight: 700;
+            color: #666;
+            text-transform: uppercase;
+        }
+        .tracker-passo.ativo .tracker-legenda { color: var(--dourado, #d4af37); }
+        .tracker-passo.concluido .tracker-legenda { color: #fff; }
 
         .loader-pedidos {
             text-align: center;
             color: var(--dourado, #d4af37);
-            font-size: 14px;
-            padding: 30px;
+            font-size: 13px;
+            padding: 40px;
             font-weight: 600;
         }
     </style>
@@ -90,16 +140,95 @@
             <a href="home.html" class="btn-voltar-link">⬅ Voltar à Loja</a>
         </div>
 
-        <h1 style="font-size: 22px; color: #fff; margin-bottom: 6px;">Minhas Compras</h1>
-        <p style="color: var(--cinza-texto, #aaa); font-size: 13px; margin-bottom: 24px;">Acompanhe o status e a entrega dos seus pedidos em tempo real.</p>
+        <h1 style="font-size: 21px; color: #fff; margin: 0 0 4px 0; font-weight: 800;">Minhas Compras & Rastreio</h1>
+        <p style="color: var(--cinza-texto, #aaa); font-size: 12.5px; margin-bottom: 22px;">Acompanhe o trajeto e o status da sua entrega em tempo real.</p>
 
         <div id="lista-pedidos-cliente">
             <div class="loader-pedidos">Carregando seus pedidos...</div>
         </div>
     </main>
 
+    <!-- Conexão Segura ao Banco de Dados Neon (sem expor credenciais) -->
+    <script src="js/db.js"></script>
+
     <script>
-        const NEON_PEDIDOS_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
+        function extrairTextoCor(corRaw) {
+            if (!corRaw) return 'Padrão';
+            if (typeof corRaw === 'string') {
+                try {
+                    if (corRaw.trim().startsWith('{')) {
+                        const parsed = JSON.parse(corRaw);
+                        return parsed.nome || parsed.cor || 'Padrão';
+                    }
+                    return corRaw;
+                } catch (e) {
+                    return corRaw;
+                }
+            }
+            if (typeof corRaw === 'object' && corRaw !== null) {
+                return corRaw.nome || corRaw.cor || 'Padrão';
+            }
+            return String(corRaw);
+        }
+
+        function extrairTextoTamanho(tamRaw) {
+            if (!tamRaw) return 'Padrão';
+            if (typeof tamRaw === 'object' && tamRaw !== null) {
+                return tamRaw.tamanho || tamRaw.tam || 'Padrão';
+            }
+            return String(tamRaw);
+        }
+
+        function formatarEnderecoCompleto(end) {
+            if (!end) return 'Retirada na Loja Física';
+            if (typeof end === 'string') {
+                try {
+                    if (end.trim().startsWith('{')) {
+                        end = JSON.parse(end);
+                    } else {
+                        return end;
+                    }
+                } catch(e) {
+                    return end;
+                }
+            }
+            if (end.enderecoFormatado) return end.enderecoFormatado;
+            const rua = end.rua || end.logradouro || '';
+            const num = end.numero || 'S/N';
+            const bairro = end.bairro || '';
+            const cidade = end.cidade || '';
+            const cep = end.cep ? `(CEP: ${end.cep})` : '';
+            const partes = [rua ? `${rua}, Nº ${num}` : '', bairro, cidade, cep].filter(p => p.trim() !== '');
+            return partes.length > 0 ? partes.join(' - ') : 'Retirada na Loja Física';
+        }
+
+        function calcularEtapaRastreio(statusRaw) {
+            const s = String(statusRaw || 'pendente').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+            if (s.includes('cancel')) {
+                return { passo: 0, porcentagem: '0%', texto: 'Pedido Cancelado', cor: '#ef5350' };
+            }
+            if (s.includes('conclu') || s.includes('pago') || s.includes('entreg')) {
+                return { passo: 4, porcentagem: '100%', texto: 'Pedido Entregue', cor: '#4caf50' };
+            }
+            if (s.includes('envi')) {
+                return { passo: 3, porcentagem: '68%', texto: 'A Caminho / Saiu para Entrega', cor: '#ffa726' };
+            }
+            if (s.includes('separ')) {
+                return { passo: 2, porcentagem: '36%', texto: 'Em Separação no Estoque', cor: '#ab47bc' };
+            }
+            return { passo: 1, porcentagem: '10%', texto: 'Pedido Confirmado', cor: '#d4af37' };
+        }
+
+        // Obtém o WhatsApp oficial cadastrado nas configurações da loja sem chumbar no código
+        function obterNumeroSuporteDinamico() {
+            try {
+                const configSalva = JSON.parse(localStorage.getItem('vr_configuracoes_loja') || '{}');
+                return configSalva.whatsapp ? configSalva.whatsapp.replace(/\D/g, '') : '';
+            } catch (e) {
+                return '';
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             const container = document.getElementById('lista-pedidos-cliente');
@@ -109,13 +238,12 @@
 
             let pedidosExibir = [];
 
-            // 1. Busca direta no Neon PostgreSQL
             try {
-                const { neon } = await import('https://esm.sh/@neondatabase/serverless');
-                const sql = neon(NEON_PEDIDOS_CONN);
+                // Utiliza a conexão segura centralizada do js/db.js
+                const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
+                if (!sql) throw new Error("Instância segura do banco não inicializada");
 
                 let dadosBanco = [];
-
                 if (clienteSessao && (clienteSessao.email || clienteSessao.nome)) {
                     const emailFiltro = (clienteSessao.email || '').toLowerCase().trim();
                     const nomeFiltro = `%${(clienteSessao.nome || '').trim()}%`;
@@ -127,27 +255,42 @@
                         ORDER BY id DESC;
                     `;
                 } else {
-                    // Visitante sem login: busca os pedidos mais recentes
                     dadosBanco = await sql`SELECT * FROM pedidos ORDER BY id DESC LIMIT 10;`;
                 }
 
                 if (Array.isArray(dadosBanco) && dadosBanco.length > 0) {
-                    pedidosExibir = dadosBanco.map(p => ({
-                        id: p.id,
-                        codigo: `#VR-${p.id}`,
-                        data: new Date(p.criado_em).toLocaleDateString('pt-BR') + ' às ' + new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                        itens: Array.isArray(p.itens) ? p.itens : (typeof p.itens === 'string' ? JSON.parse(p.itens) : []),
-                        formaPagamento: p.forma_pagamento || 'PIX',
-                        status: p.status || 'Pendente',
-                        total: parseFloat(p.total),
-                        endereco: p.endereco_entrega
-                    }));
+                    pedidosExibir = dadosBanco.map(p => {
+                        let itensParsed = [];
+                        let dadosExtra = {};
+                        try {
+                            const raw = typeof p.itens === 'string' ? JSON.parse(p.itens) : (p.itens || {});
+                            if (Array.isArray(raw)) itensParsed = raw;
+                            else {
+                                itensParsed = raw.itens || [];
+                                dadosExtra = raw;
+                            }
+                        } catch(e) {
+                            itensParsed = [];
+                        }
+
+                        return {
+                            id: p.id,
+                            codigo: `#VR-${p.id}`,
+                            data: new Date(p.criado_em).toLocaleDateString('pt-BR') + ' às ' + new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                            itens: itensParsed,
+                            formaPagamento: dadosExtra.forma_pagamento || p.forma_pagamento || 'PIX',
+                            status: p.status || 'Pendente',
+                            total: parseFloat(p.total || 0),
+                            endereco: formatarEnderecoCompleto(dadosExtra.endereco_entrega || p.endereco_entrega || p.endereco),
+                            tipoEnvio: dadosExtra.tipo_envio || 'entrega'
+                        };
+                    });
                 }
             } catch (erroBanco) {
-                console.warn('⚠️ Falha ao buscar pedidos no Neon, verificando cache local:', erroBanco);
+                console.warn('⚠️ Consultando pedidos via cache local seguro:', erroBanco);
             }
 
-            // 2. Fallback no LocalStorage
+            // Fallback Local Seguro
             if (pedidosExibir.length === 0) {
                 const todosPedidosLocais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
                 if (clienteSessao && clienteSessao.nome) {
@@ -158,45 +301,133 @@
                 }
             }
 
-            // 3. Renderização na tela
             if (pedidosExibir.length === 0) {
                 container.innerHTML = `
-                    <div style="text-align: center; color: #888; padding: 40px 20px; background: #121212; border-radius: 8px; border: 1px solid #222;">
+                    <div style="text-align: center; color: #888; padding: 40px 20px; background: #141414; border-radius: 10px; border: 1px solid #222;">
                         <div style="font-size: 32px; margin-bottom: 8px;">🛍️</div>
-                        <p style="margin: 0; font-size: 14px;">Você ainda não realizou nenhum pedido.</p>
-                        <a href="produtos.html" class="btn-voltar-link" style="margin-top: 14px; display: inline-block;">Ver Coleção</a>
+                        <p style="margin: 0; font-size: 14px; color: #ccc;">Você ainda não possui pedidos recentes.</p>
+                        <a href="home.html" class="btn-voltar-link" style="margin-top: 14px; display: inline-block;">Ver Coleção</a>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = pedidosExibir.map(ped => {
-                const itensHTML = (ped.itens || []).map(it => {
-                    const tam = it.tamanho || 'Padrão';
-                    const cor = it.cor || 'Padrão';
-                    return `<div>• <strong>${it.quantidade}x</strong> ${it.nome} <span style="color: #777; font-size: 11px;">(${tam} / ${cor})</span></div>`;
-                }).join('');
+            const numSuporte = obterNumeroSuporteDinamico();
 
-                const formaPagto = ped.formaPagamento || 'Pix à vista';
+            container.innerHTML = pedidosExibir.map(ped => {
+                const infoRastreio = calcularEtapaRastreio(ped.status);
                 const totalValor = Number(ped.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                const statusClasse = (ped.status || 'Pendente').replace(/\s+/g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const ehRetirada = ped.tipoEnvio === 'retirada' || ped.endereco.toLowerCase().includes('retirada');
+
+                const itensHTML = (ped.itens || []).map(it => {
+                    const tam = extrairTextoTamanho(it.tamanho);
+                    const cor = extrairTextoCor(it.cor);
+                    const subtotal = (Number(it.preco || 0) * (it.quantidade || 1)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                    const foto = it.imagem || 'img/placeholder.png';
+
+                    return `
+                        <div style="display: flex; gap: 10px; align-items: center; background: #0d0d0d; border: 1px solid #222; padding: 8px 10px; border-radius: 6px; margin-bottom: 6px;">
+                            <img src="${foto}" style="width: 40px; height: 46px; object-fit: cover; border-radius: 4px; border: 1px solid #333;" onerror="this.src='img/placeholder.png'">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 700; color: #fff; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.nome}</div>
+                                <small style="color: #888; font-size: 11px;">Tam: <strong style="color: var(--dourado, #d4af37);">${tam}</strong> | Cor: <strong style="color: var(--dourado, #d4af37);">${cor}</strong></small>
+                            </div>
+                            <div style="text-align: right; flex-shrink: 0;">
+                                <span style="font-size: 11px; color: #777;">${it.quantidade}x</span>
+                                <div style="color: var(--dourado, #d4af37); font-size: 12.5px; font-weight: 700;">${subtotal}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('') || '<p style="color: #777; font-size: 11px;">Peças diversas</p>';
+
+                const localBusca = ehRetirada ? 'VR Modas' : encodeURIComponent(ped.endereco);
+                const urlMapsEmbed = `https://maps.google.com/maps?q=${localBusca}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                const urlMapsApp = `https://www.google.com/maps/search/?api=1&query=${localBusca}`;
+
+                const linkWhatsAppSuporte = numSuporte
+                    ? `https://wa.me/55${numSuporte}?text=${encodeURIComponent(`Olá! Gostaria de acompanhar o meu pedido ${ped.codigo} na VR Modas.`)}`
+                    : `home.html#contato`;
 
                 return `
                     <div class="card-pedido-cliente">
+                        <!-- Topo do Card -->
                         <div class="topo-card-pedido">
                             <div>
-                                <strong style="color: var(--dourado, #d4af37); font-size: 15px;">${ped.codigo}</strong>
+                                <strong style="color: var(--dourado, #d4af37); font-size: 16px;">${ped.codigo}</strong>
                                 <div style="font-size: 11px; color: #777; margin-top: 2px;">${ped.data}</div>
                             </div>
-                            <span class="status-badge status-${statusClasse}">${ped.status}</span>
+                            <span style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.06); border: 1px solid ${infoRastreio.cor}; color: ${infoRastreio.cor}; text-transform: uppercase;">
+                                ${ped.status}
+                            </span>
                         </div>
-                        <div style="font-size: 13px; margin-bottom: 12px; line-height: 1.6; color: #ccc;">
+
+                        <!-- Steptracker -->
+                        <div class="tracker-container">
+                            <div class="tracker-linha-ativa" style="width: ${infoRastreio.porcentagem};"></div>
+
+                            <div class="tracker-passo ${infoRastreio.passo >= 1 ? 'concluido' : ''} ${infoRastreio.passo === 1 ? 'ativo' : ''}">
+                                <div class="tracker-circulo">1</div>
+                                <span class="tracker-legenda">Confirmado</span>
+                            </div>
+                            <div class="tracker-passo ${infoRastreio.passo >= 2 ? 'concluido' : ''} ${infoRastreio.passo === 2 ? 'ativo' : ''}">
+                                <div class="tracker-circulo">2</div>
+                                <span class="tracker-legenda">Separação</span>
+                            </div>
+                            <div class="tracker-passo ${infoRastreio.passo >= 3 ? 'concluido' : ''} ${infoRastreio.passo === 3 ? 'ativo' : ''}">
+                                <div class="tracker-circulo">3</div>
+                                <span class="tracker-legenda">A Caminho</span>
+                            </div>
+                            <div class="tracker-passo ${infoRastreio.passo >= 4 ? 'concluido' : ''} ${infoRastreio.passo === 4 ? 'ativo' : ''}">
+                                <div class="tracker-circulo">4</div>
+                                <span class="tracker-legenda">Entregue</span>
+                            </div>
+                        </div>
+
+                        <!-- Status Atual -->
+                        <div style="background: #0d0d0d; border: 1px solid #222; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 16px;">${infoRastreio.passo === 4 ? '✅' : infoRastreio.passo === 3 ? '🚚' : '📦'}</span>
+                            <span style="color: #ddd;">Status Atual: <strong style="color: ${infoRastreio.cor};">${infoRastreio.texto}</strong></span>
+                        </div>
+
+                        <!-- Mapa Interativo -->
+                        <div style="background: #0a0a0a; border: 1px solid #222; border-radius: 8px; overflow: hidden; margin-bottom: 14px;">
+                            <div style="padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a1a1a;">
+                                <div style="flex: 1; min-width: 0; padding-right: 8px;">
+                                    <small style="font-size: 10px; color: #777; text-transform: uppercase; font-weight: 700;">${ehRetirada ? 'Ponto de Retirada' : 'Destino da Entrega'}</small>
+                                    <div style="font-size: 11.5px; color: #ddd; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${ped.endereco}</div>
+                                </div>
+                                <a href="${urlMapsApp}" target="_blank" style="background: #181818; border: 1px solid #333; color: #4fc3f7; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                                    📍 Abrir GPS
+                                </a>
+                            </div>
+                            <div style="width: 100%; height: 150px; position: relative;">
+                                <iframe 
+                                    width="100%" 
+                                    height="100%" 
+                                    frameborder="0" 
+                                    scrolling="no" 
+                                    marginheight="0" 
+                                    marginwidth="0" 
+                                    src="${urlMapsEmbed}"
+                                    style="filter: invert(90%) hue-rotate(180deg) brightness(95%); border: none;">
+                                </iframe>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Peças -->
+                        <div style="margin-bottom: 12px;">
                             ${itensHTML}
                         </div>
-                        ${ped.endereco ? `<div style="font-size: 11px; color: #888; margin-bottom: 10px; border-top: 1px dashed #222; padding-top: 8px;">📍 <strong>Envio:</strong> ${ped.endereco}</div>` : ''}
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1f1f1f; padding-top: 10px; margin-top: 10px;">
-                            <span style="font-size: 12px; color: #aaa;">Pagamento: <strong>${formaPagto}</strong></span>
-                            <strong style="color: #fff; font-size: 15px;">Total: ${totalValor}</strong>
+
+                        <!-- Rodapé -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1f1f1f; padding-top: 12px;">
+                            <div>
+                                <small style="font-size: 10.5px; color: #777; display: block;">Forma: <strong>${ped.formaPagamento}</strong></small>
+                                <strong style="color: var(--dourado, #d4af37); font-size: 16px;">Total: ${totalValor}</strong>
+                            </div>
+                            <a href="${linkWhatsAppSuporte}" target="_blank" style="background: #17261a; border: 1px solid #284e2e; color: #4cd137; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                💬 Ajuda no Whats
+                            </a>
                         </div>
                     </div>
                 `;
