@@ -49,7 +49,7 @@
             margin-bottom: 14px;
         }
 
-        /* Linha do Tempo Visual (Steptracker) */
+        /* Steptracker - Linha do Tempo */
         .tracker-container {
             display: flex;
             justify-content: space-between;
@@ -141,17 +141,19 @@
         </div>
 
         <h1 style="font-size: 21px; color: #fff; margin: 0 0 4px 0; font-weight: 800;">Minhas Compras & Rastreio</h1>
-        <p style="color: var(--cinza-texto, #aaa); font-size: 12.5px; margin-bottom: 22px;">Acompanhe o trajeto e o status da sua entrega em tempo real.</p>
+        <p style="color: var(--cinza-texto, #aaa); font-size: 12.5px; margin-bottom: 22px;">Acompanhe o trajeto e a etapa de entrega dos seus pedidos em tempo real.</p>
 
         <div id="lista-pedidos-cliente">
-            <div class="loader-pedidos">Carregando seus pedidos...</div>
+            <div class="loader-pedidos">A carregar os seus pedidos...</div>
         </div>
     </main>
 
-    <!-- Conexão Segura ao Banco de Dados Neon (sem expor credenciais) -->
+    <!-- Conexão Segura ao Banco de Dados Neon -->
     <script src="js/db.js"></script>
 
-    <script>
+    <script type="module">
+        import { neon } from 'https://esm.sh/@neondatabase/serverless';
+
         function extrairTextoCor(corRaw) {
             if (!corRaw) return 'Padrão';
             if (typeof corRaw === 'string') {
@@ -220,7 +222,6 @@
             return { passo: 1, porcentagem: '10%', texto: 'Pedido Confirmado', cor: '#d4af37' };
         }
 
-        // Obtém o WhatsApp oficial cadastrado nas configurações da loja sem chumbar no código
         function obterNumeroSuporteDinamico() {
             try {
                 const configSalva = JSON.parse(localStorage.getItem('vr_configuracoes_loja') || '{}');
@@ -230,82 +231,110 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        async function obterInstanciaSqlSegura() {
+            if (typeof window.getSql === 'function') {
+                const s = await window.getSql();
+                if (s) return s;
+            }
+            if (window.sql) return window.sql;
+
+            const connStr = window.NEON_DATABASE_URL || 
+                            window.DATABASE_URL || 
+                            sessionStorage.getItem('vr_neon_url');
+
+            if (connStr) {
+                return neon(connStr);
+            }
+            return null;
+        }
+
+        async function carregarPedidosTela() {
             const container = document.getElementById('lista-pedidos-cliente');
+            if (!container) return;
+
             const clienteSessao = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) || 
                                   JSON.parse(sessionStorage.getItem('vr_cliente_dados')) || 
                                   JSON.parse(localStorage.getItem('vr_cliente_dados')) || null;
 
             let pedidosExibir = [];
 
+            // 1. Busca Segura no Neon PostgreSQL
             try {
-                // Utiliza a conexão segura centralizada do js/db.js
-                const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
-                if (!sql) throw new Error("Instância segura do banco não inicializada");
+                const sql = await obterInstanciaSqlSegura();
+                
+                if (sql) {
+                    let dadosBanco = [];
+                    if (clienteSessao && (clienteSessao.email || clienteSessao.nome)) {
+                        const emailFiltro = (clienteSessao.email || '').toLowerCase().trim();
+                        const nomeFiltro = `%${(clienteSessao.nome || '').trim()}%`;
 
-                let dadosBanco = [];
-                if (clienteSessao && (clienteSessao.email || clienteSessao.nome)) {
-                    const emailFiltro = (clienteSessao.email || '').toLowerCase().trim();
-                    const nomeFiltro = `%${(clienteSessao.nome || '').trim()}%`;
+                        dadosBanco = await sql`
+                            SELECT * FROM pedidos 
+                            WHERE LOWER(cliente_email) = ${emailFiltro} 
+                               OR cliente_nome ILIKE ${nomeFiltro}
+                            ORDER BY id DESC;
+                        `;
+                    } else {
+                        dadosBanco = await sql`SELECT * FROM pedidos ORDER BY id DESC LIMIT 10;`;
+                    }
 
-                    dadosBanco = await sql`
-                        SELECT * FROM pedidos 
-                        WHERE LOWER(cliente_email) = ${emailFiltro} 
-                           OR cliente_nome ILIKE ${nomeFiltro}
-                        ORDER BY id DESC;
-                    `;
-                } else {
-                    dadosBanco = await sql`SELECT * FROM pedidos ORDER BY id DESC LIMIT 10;`;
-                }
-
-                if (Array.isArray(dadosBanco) && dadosBanco.length > 0) {
-                    pedidosExibir = dadosBanco.map(p => {
-                        let itensParsed = [];
-                        let dadosExtra = {};
-                        try {
-                            const raw = typeof p.itens === 'string' ? JSON.parse(p.itens) : (p.itens || {});
-                            if (Array.isArray(raw)) itensParsed = raw;
-                            else {
-                                itensParsed = raw.itens || [];
-                                dadosExtra = raw;
+                    if (Array.isArray(dadosBanco) && dadosBanco.length > 0) {
+                        pedidosExibir = dadosBanco.map(p => {
+                            let itensParsed = [];
+                            let dadosExtra = {};
+                            try {
+                                const raw = typeof p.itens === 'string' ? JSON.parse(p.itens) : (p.itens || {});
+                                if (Array.isArray(raw)) itensParsed = raw;
+                                else {
+                                    itensParsed = raw.itens || [];
+                                    dadosExtra = raw;
+                                }
+                            } catch(e) {
+                                itensParsed = [];
                             }
-                        } catch(e) {
-                            itensParsed = [];
-                        }
 
-                        return {
-                            id: p.id,
-                            codigo: `#VR-${p.id}`,
-                            data: new Date(p.criado_em).toLocaleDateString('pt-BR') + ' às ' + new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                            itens: itensParsed,
-                            formaPagamento: dadosExtra.forma_pagamento || p.forma_pagamento || 'PIX',
-                            status: p.status || 'Pendente',
-                            total: parseFloat(p.total || 0),
-                            endereco: formatarEnderecoCompleto(dadosExtra.endereco_entrega || p.endereco_entrega || p.endereco),
-                            tipoEnvio: dadosExtra.tipo_envio || 'entrega'
-                        };
-                    });
+                            return {
+                                id: p.id,
+                                codigo: `#VR-${p.id}`,
+                                data: new Date(p.criado_em).toLocaleDateString('pt-BR') + ' às ' + new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                                itens: itensParsed,
+                                formaPagamento: dadosExtra.forma_pagamento || p.forma_pagamento || 'PIX',
+                                status: p.status || 'Pendente',
+                                total: parseFloat(p.total || 0),
+                                endereco: formatarEnderecoCompleto(dadosExtra.endereco_entrega || p.endereco_entrega || p.endereco),
+                                tipoEnvio: dadosExtra.tipo_envio || 'entrega'
+                            };
+                        });
+                    }
                 }
-            } catch (erroBanco) {
-                console.warn('⚠️ Consultando pedidos via cache local seguro:', erroBanco);
+            } catch (err) {
+                console.warn('Falha na busca remota, a verificar dados em cache:', err);
             }
 
-            // Fallback Local Seguro
+            // 2. Fallback de Pedidos Salvos Localmente
             if (pedidosExibir.length === 0) {
-                const todosPedidosLocais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
-                if (clienteSessao && clienteSessao.nome) {
-                    pedidosExibir = todosPedidosLocais.filter(p => p.cliente && p.cliente.nome.toLowerCase().includes(clienteSessao.nome.toLowerCase()));
-                }
-                if (pedidosExibir.length === 0 && todosPedidosLocais.length > 0) {
-                    pedidosExibir = todosPedidosLocais;
+                const pedidosLocais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
+                if (pedidosLocais.length > 0) {
+                    pedidosExibir = pedidosLocais.map(p => ({
+                        id: p.id || '1',
+                        codigo: `#VR-${p.id || '1'}`,
+                        data: p.data || 'Hoje',
+                        itens: p.itens || [],
+                        formaPagamento: p.formaPagamento || 'PIX',
+                        status: p.status || 'Pendente',
+                        total: parseFloat(p.total || 0),
+                        endereco: formatarEnderecoCompleto(p.endereco),
+                        tipoEnvio: p.tipoEnvio || 'entrega'
+                    }));
                 }
             }
 
+            // 3. Renderização na Interface
             if (pedidosExibir.length === 0) {
                 container.innerHTML = `
                     <div style="text-align: center; color: #888; padding: 40px 20px; background: #141414; border-radius: 10px; border: 1px solid #222;">
                         <div style="font-size: 32px; margin-bottom: 8px;">🛍️</div>
-                        <p style="margin: 0; font-size: 14px; color: #ccc;">Você ainda não possui pedidos recentes.</p>
+                        <p style="margin: 0; font-size: 14px; color: #ccc;">Ainda não possui nenhum pedido registado.</p>
                         <a href="home.html" class="btn-voltar-link" style="margin-top: 14px; display: inline-block;">Ver Coleção</a>
                     </div>
                 `;
@@ -383,10 +412,10 @@
                             </div>
                         </div>
 
-                        <!-- Status Atual -->
+                        <!-- Estado Atual -->
                         <div style="background: #0d0d0d; border: 1px solid #222; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px; display: flex; align-items: center; gap: 8px;">
                             <span style="font-size: 16px;">${infoRastreio.passo === 4 ? '✅' : infoRastreio.passo === 3 ? '🚚' : '📦'}</span>
-                            <span style="color: #ddd;">Status Atual: <strong style="color: ${infoRastreio.cor};">${infoRastreio.texto}</strong></span>
+                            <span style="color: #ddd;">Estado Atual: <strong style="color: ${infoRastreio.cor};">${infoRastreio.texto}</strong></span>
                         </div>
 
                         <!-- Mapa Interativo -->
@@ -432,7 +461,9 @@
                     </div>
                 `;
             }).join('');
-        });
+        }
+
+        window.addEventListener('DOMContentLoaded', carregarPedidosTela);
     </script>
 </body>
 </html>
