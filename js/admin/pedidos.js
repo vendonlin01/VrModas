@@ -1,5 +1,5 @@
 // ==========================================================================
-// VR MODAS - GESTÃO DE PEDIDOS & COMPROVANTES (NEON DB - ROBUSTO & SOFISTICADO)
+// VR MODAS - GESTÃO DE PEDIDOS & BOTTOM SHEET PREMIUM (NEON DB)
 // js/admin/pedidos.js
 // ==========================================================================
 
@@ -7,8 +7,35 @@ let listaPedidosGeral = [];
 let filtroStatusPedidoAtivo = 'todos';
 
 /**
- * 1. Formatação de Endereço Limpo
+ * Utilitários para formatação e limpeza de dados
  */
+function extrairTextoCor(corRaw) {
+    if (!corRaw) return 'Padrão';
+    if (typeof corRaw === 'string') {
+        try {
+            if (corRaw.trim().startsWith('{')) {
+                const parsed = JSON.parse(corRaw);
+                return parsed.nome || parsed.cor || 'Padrão';
+            }
+            return corRaw;
+        } catch (e) {
+            return corRaw;
+        }
+    }
+    if (typeof corRaw === 'object' && corRaw !== null) {
+        return corRaw.nome || corRaw.cor || 'Padrão';
+    }
+    return String(corRaw);
+}
+
+function extrairTextoTamanho(tamRaw) {
+    if (!tamRaw) return 'Padrão';
+    if (typeof tamRaw === 'object' && tamRaw !== null) {
+        return tamRaw.tamanho || tamRaw.tam || 'Padrão';
+    }
+    return String(tamRaw);
+}
+
 function tratarEnderecoVisual(enderecoRaw) {
     if (!enderecoRaw) return 'Retirada na Loja / A combinar';
     if (typeof enderecoRaw === 'string') {
@@ -22,7 +49,7 @@ function tratarEnderecoVisual(enderecoRaw) {
             return enderecoRaw;
         }
     }
-    if (typeof enderecoRaw === 'object') {
+    if (typeof enderecoRaw === 'object' && enderecoRaw !== null) {
         return formatarObjetoEndereco(enderecoRaw);
     }
     return String(enderecoRaw);
@@ -40,18 +67,17 @@ function formatarObjetoEndereco(end) {
     return partes.length > 0 ? partes.join(' - ') : 'Retirada na Loja / A combinar';
 }
 
-/**
- * Utilitário para limpar nomes de cores e tamanhos mesmo se vierem como objeto
- */
-function extrairTextoCor(corRaw) {
-    if (!corRaw) return 'Padrão';
-    if (typeof corRaw === 'string') return corRaw;
-    if (typeof corRaw === 'object') return corRaw.nome || corRaw.cor || 'Padrão';
-    return String(corRaw);
+function normalizarStatus(statusRaw) {
+    const s = String(statusRaw || 'pendente').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    if (s.includes('separ')) return 'separacao';
+    if (s.includes('envi')) return 'enviado';
+    if (s.includes('pago') || s.includes('conclu')) return 'concluido';
+    if (s.includes('cancel')) return 'cancelado';
+    return 'pendente';
 }
 
 /**
- * 2. Carrega todos os pedidos do Neon DB
+ * 1. Carrega todos os pedidos do Neon DB
  */
 async function carregarEAtualizarTabelaPedidos() {
     const tabelaCorpo = document.getElementById('lista-pedidos-admin');
@@ -80,16 +106,14 @@ async function carregarEAtualizarTabelaPedidos() {
 window.carregarEAtualizarTabelaPedidos = carregarEAtualizarTabelaPedidos;
 
 /**
- * 3. Atualiza contadores dos botões de abas de status
+ * 2. Atualiza contadores dos botões de abas
  */
 function atualizarContadoresStatusPedidos(pedidos) {
     const contadores = { todos: pedidos.length, pendente: 0, separacao: 0, enviado: 0, concluido: 0, cancelado: 0 };
 
     pedidos.forEach(p => {
         const s = normalizarStatus(p.status);
-        if (contadores[s] !== undefined) {
-            contadores[s]++;
-        }
+        if (contadores[s] !== undefined) contadores[s]++;
     });
 
     for (const [chave, valor] of Object.entries(contadores)) {
@@ -98,17 +122,8 @@ function atualizarContadoresStatusPedidos(pedidos) {
     }
 }
 
-function normalizarStatus(statusRaw) {
-    const s = String(statusRaw || 'pendente').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-    if (s.includes('separ')) return 'separacao';
-    if (s.includes('envi')) return 'enviado';
-    if (s.includes('pago') || s.includes('conclu')) return 'concluido';
-    if (s.includes('cancel')) return 'cancelado';
-    return 'pendente';
-}
-
 /**
- * 4. Renderiza a tabela de pedidos mantendo botões de status e ações visíveis
+ * 3. Renderiza a lista de pedidos no painel
  */
 function filtrarERenderizarTabelaPedidos() {
     const tabelaCorpo = document.getElementById('lista-pedidos-admin');
@@ -149,7 +164,6 @@ function filtrarERenderizarTabelaPedidos() {
 
         return `
             <tr>
-                <!-- Bloco Esquerdo: ID, Data, Pagamento, Cliente e Peças -->
                 <td style="flex: 1; min-width: 0; text-align: left;">
                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
                         <button type="button" onclick="abrirModalDetalhesPedido(${idPed})" style="background: none; border: none; padding: 0; cursor: pointer; color: var(--dourado, #d4af37); font-weight: 700; font-size: 12.5px; text-decoration: underline;">
@@ -166,12 +180,10 @@ function filtrarERenderizarTabelaPedidos() {
                     </div>
                 </td>
 
-                <!-- Colunas para Notebook/Desktop (Data e Resumo) -->
                 <td>${dataFmt}</td>
                 <td>${resumoItens}</td>
                 <td style="color: var(--dourado, #d4af37); font-weight: 700;">${totalFmt}</td>
 
-                <!-- Bloco Direito: Valor, Seletor de Status e Ações Rápidas -->
                 <td style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
                     <div style="color: var(--dourado, #d4af37); font-weight: 700; font-size: 13.5px;">
                         ${totalFmt}
@@ -194,7 +206,7 @@ function filtrarERenderizarTabelaPedidos() {
 }
 
 /**
- * 5. Modal de Detalhes do Pedido com Ações de Status Diretas
+ * 4. Bottom Sheet Sofisticada de Pedidos (Estilo App Nativo)
  */
 function abrirModalDetalhesPedido(idPedido) {
     const pedido = listaPedidosGeral.find(p => p.id == idPedido);
@@ -217,86 +229,147 @@ function abrirModalDetalhesPedido(idPedido) {
         itens = [];
     }
 
-    const dataFmt = pedido.criado_em ? new Date(pedido.criado_em).toLocaleString('pt-BR') : 'Data não registrada';
+    const dataFmt = pedido.criado_em ? new Date(pedido.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'Data recente';
     const whats = pedido.cliente_telefone || pedido.cliente_whatsapp || '';
     const linkWhats = whats ? `https://wa.me/55${whats.replace(/\D/g, '')}` : '';
     const statusAtual = normalizarStatus(pedido.status);
     const enderecoLimpo = tratarEnderecoVisual(dadosExtra.endereco_entrega || pedido.endereco);
+    const formaPag = dadosExtra.forma_pagamento || pedido.forma_pagamento || 'PIX';
+    const ehRetirada = dadosExtra.tipo_envio === 'retirada' || String(enderecoLimpo).toLowerCase().includes('retirada');
 
     const itensHtml = itens.map(i => {
         const precoItem = Number(i.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const subtotal = (Number(i.preco || 0) * (i.quantidade || 1)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const img = i.imagem || 'img/placeholder.png';
         const corLimpa = extrairTextoCor(i.cor);
-        const tamLimpo = i.tamanho || 'Padrão';
+        const tamLimpo = extrairTextoTamanho(i.tamanho);
 
         return `
-            <div style="display: flex; gap: 10px; align-items: center; background: #0c0c0c; border: 1px solid #222; padding: 8px 10px; border-radius: 6px;">
-                <img src="${img}" style="width: 44px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #333;" onerror="this.src='img/placeholder.png'">
+            <div style="display: flex; gap: 12px; align-items: center; background: #161616; border: 1px solid #282828; padding: 10px 12px; border-radius: 8px;">
+                <img src="${img}" style="width: 46px; height: 54px; object-fit: cover; border-radius: 6px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/placeholder.png'">
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 700; color: #fff; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${i.nome}</div>
-                    <small style="color: #aaa; font-size: 11px;">Tam: <strong style="color: var(--dourado, #d4af37);">${tamLimpo}</strong> | Cor: <strong style="color: var(--dourado, #d4af37);">${corLimpa}</strong></small>
+                    <div style="font-weight: 700; color: #fff; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;">
+                        ${i.nome}
+                    </div>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <span style="background: #202020; border: 1px solid #333; color: #bbb; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 700;">Tam: ${tamLimpo}</span>
+                        <span style="background: #202020; border: 1px solid #333; color: #bbb; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 700;">Cor: ${corLimpa}</span>
+                    </div>
                 </div>
                 <div style="text-align: right; flex-shrink: 0;">
-                    <div style="font-size: 11px; color: #777;">${i.quantidade}x</div>
-                    <div style="font-weight: 700; color: var(--dourado, #d4af37); font-size: 13px;">${precoItem}</div>
+                    <small style="color: #777; font-size: 11px; display: block;">${i.quantidade}x ${precoItem}</small>
+                    <strong style="color: var(--dourado, #d4af37); font-size: 13.5px;">${subtotal}</strong>
                 </div>
             </div>
         `;
-    }).join('') || '<p style="color: #777; font-size: 12px;">Nenhuma peça descrita.</p>';
+    }).join('') || '<p style="color: #777; font-size: 12px; text-align: center; margin: 10px 0;">Nenhuma peça descrita.</p>';
+
+    // Estilo adaptável: Bottom Sheet no mobile, Modal flutuante elegante no desktop
+    modal.style.cssText = `
+        display: flex;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.82);
+        z-index: 10000;
+        align-items: flex-end;
+        justify-content: center;
+        backdrop-filter: blur(6px);
+        animation: fadeInOverlay 0.2s ease;
+    `;
 
     modal.innerHTML = `
-        <div style="background: #141414; border: 1px solid #333; border-top: 3px solid var(--dourado, #d4af37); border-radius: 8px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 18px; color: #fff; box-sizing: border-box; box-shadow: 0 15px 40px rgba(0,0,0,0.9);">
-            <!-- Topo -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 10px;">
+        <div id="card-bottom-sheet" style="background: #111111; border: 1px solid #2a2a2a; border-radius: 20px 20px 0 0; width: 100%; max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; color: #fff; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+            
+            <!-- Barra de Puxador Tátil Mobile -->
+            <div style="width: 100%; padding: 10px 0 4px 0; display: flex; justify-content: center; cursor: pointer;" onclick="fecharModalDetalhesPedido()">
+                <div style="width: 44px; height: 5px; background: #333; border-radius: 10px;"></div>
+            </div>
+
+            <!-- Cabeçalho -->
+            <div style="padding: 10px 18px 14px 18px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h3 style="margin: 0; font-size: 16px; color: var(--dourado, #d4af37);">Pedido #${pedido.id} - ${pedido.cliente_nome || 'Cliente'}</h3>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: #fff;">Pedido #${pedido.id}</h3>
+                        <span style="font-size: 10.5px; padding: 2px 7px; border-radius: 12px; background: rgba(212, 175, 55, 0.15); color: var(--dourado, #d4af37); border: 1px solid var(--dourado, #d4af37); font-weight: 700; text-transform: uppercase;">${formaPag}</span>
+                    </div>
                     <small style="color: #777; font-size: 11px;">Realizado em: ${dataFmt}</small>
                 </div>
-                <button type="button" onclick="fecharModalDetalhesPedido()" style="background: none; border: none; color: #ff5252; font-size: 22px; cursor: pointer; font-weight: bold; line-height: 1;">✕</button>
+                <button type="button" onclick="fecharModalDetalhesPedido()" style="background: #1e1e1e; border: 1px solid #333; color: #aaa; width: 32px; height: 32px; border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
             </div>
 
-            <!-- Dados do Cliente & Entrega -->
-            <div style="background: #0d0d0d; border: 1px solid #252525; border-radius: 6px; padding: 12px; margin-bottom: 14px; font-size: 12px; line-height: 1.5;">
-                <div><strong>Cliente:</strong> <span style="color: #fff;">${pedido.cliente_nome || 'Não informado'}</span></div>
-                <div><strong>WhatsApp:</strong> ${whats ? `<a href="${linkWhats}" target="_blank" style="color: #4cd137; text-decoration: underline; font-weight: bold;">${whats} (Conversar no WhatsApp ↗)</a>` : '<span style="color:#777;">Não informado</span>'}</div>
-                <div><strong>Modalidade:</strong> <span style="color: #ddd;">${dadosExtra.tipo_envio === 'retirada' ? '🏬 Retirada na Loja Física' : '🏠 Entrega no Endereço'}</span></div>
-                <div><strong>Endereço:</strong> <span style="color: #bbb;">${enderecoLimpo}</span></div>
-                <div><strong>Forma de Pagamento:</strong> <span style="color: var(--dourado, #d4af37); font-weight: bold;">${dadosExtra.forma_pagamento || pedido.forma_pagamento || 'PIX'}</span></div>
-            </div>
+            <!-- Corpo Rolável -->
+            <div style="padding: 16px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 14px;">
+                
+                <!-- Card do Cliente & Entrega -->
+                <div style="background: #171717; border: 1px solid #282828; border-radius: 10px; padding: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <div>
+                            <span style="font-size: 10px; text-transform: uppercase; color: #777; font-weight: 700; letter-spacing: 0.5px;">Destinatário</span>
+                            <div style="font-size: 14px; font-weight: 700; color: #fff; margin-top: 2px;">${pedido.cliente_nome || 'Cliente'}</div>
+                        </div>
+                        ${whats ? `
+                            <a href="${linkWhats}" target="_blank" style="background: #1e3820; border: 1px solid #2d6632; color: #4cd137; padding: 6px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                                💬 WhatsApp
+                            </a>
+                        ` : ''}
+                    </div>
 
-            <!-- Lista de Peças -->
-            <h4 style="font-size: 12px; margin: 0 0 8px 0; color: #aaa; text-transform: uppercase;">Peças do Pedido</h4>
-            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
-                ${itensHtml}
-            </div>
+                    <div style="border-top: 1px solid #242424; padding-top: 10px; display: flex; gap: 8px; align-items: flex-start;">
+                        <span style="font-size: 15px; line-height: 1.2;">${ehRetirada ? '🏬' : '📍'}</span>
+                        <div style="flex: 1;">
+                            <strong style="color: #ddd; font-size: 11.5px; display: block;">${ehRetirada ? 'Retirada no Ponto Físico' : 'Entrega em Domicílio'}</strong>
+                            <p style="margin: 2px 0 0 0; color: #888; font-size: 11px; line-height: 1.4;">${enderecoLimpo}</p>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Total -->
-            <div style="display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; border: 1px solid #282828; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px;">
-                <span style="font-size: 12.5px; font-weight: 700;">Total Pago:</span>
-                <strong style="font-size: 16px; color: var(--dourado, #d4af37);">${Number(pedido.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
-            </div>
+                <!-- Peças Selecionadas -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: 700; letter-spacing: 0.5px;">Peças Selecionadas</span>
+                        <span style="font-size: 11px; color: #666;">${itens.length} produto(s)</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        ${itensHtml}
+                    </div>
+                </div>
 
-            <!-- Ações Rápidas de Status por dentro do Modal -->
-            <div style="background: #0a0a0a; border: 1px solid #282828; padding: 10px; border-radius: 6px; margin-bottom: 14px;">
-                <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Alterar Status do Pedido:</label>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px;">
-                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Pendente')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'pendente' ? 'var(--dourado, #d4af37)' : '#181818'}; color: ${statusAtual === 'pendente' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">⏳ Pendente</button>
-                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Em Separação')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'separacao' ? 'var(--dourado, #d4af37)' : '#181818'}; color: ${statusAtual === 'separacao' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">📦 Separação</button>
-                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Enviado')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'enviado' ? 'var(--dourado, #d4af37)' : '#181818'}; color: ${statusAtual === 'enviado' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">🚚 Enviado</button>
-                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Concluído')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'concluido' ? '#4cd137' : '#181818'}; color: ${statusAtual === 'concluido' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">✅ Concluído</button>
-                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Cancelado')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'cancelado' ? '#ff4d4d' : '#181818'}; color: ${statusAtual === 'cancelado' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">❌ Cancelado</button>
+                <!-- Pipeline de Mudança Rápida de Status (Pílula Horizontal) -->
+                <div>
+                    <span style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">Atualizar Etapa do Pedido</span>
+                    <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;">
+                        <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Pendente')" style="flex: 1; white-space: nowrap; padding: 8px 10px; border-radius: 6px; border: 1px solid ${statusAtual === 'pendente' ? 'var(--dourado, #d4af37)' : '#262626'}; background: ${statusAtual === 'pendente' ? 'var(--dourado, #d4af37)' : '#181818'}; color: ${statusAtual === 'pendente' ? '#000' : '#aaa'}; font-size: 11px; font-weight: 700; cursor: pointer;">⏳ Pendente</button>
+                        <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Em Separação')" style="flex: 1; white-space: nowrap; padding: 8px 10px; border-radius: 6px; border: 1px solid ${statusAtual === 'separacao' ? 'var(--dourado, #d4af37)' : '#262626'}; background: ${statusAtual === 'separacao' ? 'var(--dourado, #d4af37)' : '#181818'}; color: ${statusAtual === 'separacao' ? '#000' : '#aaa'}; font-size: 11px; font-weight: 700; cursor: pointer;">📦 Separação</button>
+                        <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Enviado')" style="flex: 1; white-space: nowrap; padding: 8px 10px; border-radius: 6px; border: 1px solid ${statusAtual === 'enviado' ? 'var(--dourado, #d4af37)' : '#262626'}; background: ${statusAtual === 'enviado' ? 'var(--dourado, #d4af37)' : '#181818'}; color: ${statusAtual === 'enviado' ? '#000' : '#aaa'}; font-size: 11px; font-weight: 700; cursor: pointer;">🚚 Enviado</button>
+                        <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Concluído')" style="flex: 1; white-space: nowrap; padding: 8px 10px; border-radius: 6px; border: 1px solid ${statusAtual === 'concluido' ? '#4cd137' : '#262626'}; background: ${statusAtual === 'concluido' ? '#4cd137' : '#181818'}; color: ${statusAtual === 'concluido' ? '#000' : '#aaa'}; font-size: 11px; font-weight: 700; cursor: pointer;">✅ Concluído</button>
+                        <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Cancelado')" style="flex: 1; white-space: nowrap; padding: 8px 10px; border-radius: 6px; border: 1px solid ${statusAtual === 'cancelado' ? '#ff4d4d' : '#262626'}; background: ${statusAtual === 'cancelado' ? '#ff4d4d' : '#181818'}; color: ${statusAtual === 'cancelado' ? '#000' : '#aaa'}; font-size: 11px; font-weight: 700; cursor: pointer;">❌ Cancelado</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Botões Inferiores -->
-            <div style="display: flex; gap: 8px;">
-                <button type="button" onclick="imprimirComprovantePedido(${pedido.id})" style="flex: 1; background: #1f1f1f; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;">🖨️ Imprimir Recibo</button>
-                <button type="button" onclick="fecharModalDetalhesPedido()" style="flex: 1; background: var(--dourado, #d4af37); color: #000; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;">Fechar</button>
+            <!-- Rodapé Fixo com Total e Impressão -->
+            <div style="padding: 12px 18px 16px 18px; border-top: 1px solid #222; background: #0d0d0d; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div>
+                    <small style="color: #777; font-size: 10.5px; display: block; text-transform: uppercase;">Valor do Pedido</small>
+                    <strong style="color: var(--dourado, #d4af37); font-size: 18px; font-weight: 900;">${Number(pedido.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" onclick="imprimirComprovantePedido(${pedido.id})" style="background: #1c1c1c; border: 1px solid #3a3a3a; color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        🖨️ Recibo
+                    </button>
+                    <button type="button" onclick="fecharModalDetalhesPedido()" style="background: var(--dourado, #d4af37); border: none; color: #000; padding: 10px 18px; border-radius: 8px; font-size: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase;">
+                        Concluir
+                    </button>
+                </div>
             </div>
         </div>
     `;
 
-    modal.style.display = 'flex';
+    // Fecha ao clicar fora do cartão
+    modal.onclick = (e) => {
+        if (e.target === modal) fecharModalDetalhesPedido();
+    };
 }
 window.abrirModalDetalhesPedido = abrirModalDetalhesPedido;
 
@@ -313,7 +386,7 @@ function fecharModalDetalhesPedido() {
 window.fecharModalDetalhesPedido = fecharModalDetalhesPedido;
 
 /**
- * 6. Atualizar Status do Pedido no Neon DB
+ * 5. Atualizar Status no Neon DB
  */
 async function atualizarStatusPedidoAdmin(idPedido, novoStatus) {
     try {
@@ -341,7 +414,7 @@ async function atualizarStatusPedidoAdmin(idPedido, novoStatus) {
 window.atualizarStatusPedidoAdmin = atualizarStatusPedidoAdmin;
 
 /**
- * 7. Excluir Pedido
+ * 6. Excluir Pedido
  */
 async function excluirPedidoAdmin(idPedido) {
     if (!confirm(`Deseja realmente excluir o pedido #${idPedido}?`)) return;
@@ -358,7 +431,7 @@ async function excluirPedidoAdmin(idPedido) {
 window.excluirPedidoAdmin = excluirPedidoAdmin;
 
 /**
- * 8. Impressão de Comprovante de Pedido Completa e Elegante
+ * 7. Impressão de Comprovante de Pedido Completa e Elegante
  */
 function imprimirComprovantePedido(idPedido) {
     const pedido = listaPedidosGeral.find(p => p.id == idPedido);
@@ -393,7 +466,7 @@ function imprimirComprovantePedido(idPedido) {
     const itensHtml = itens.map(i => {
         const sub = (Number(i.preco || 0) * (i.quantidade || 1)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const corLimpa = extrairTextoCor(i.cor);
-        const tamLimpo = i.tamanho || 'Padrão';
+        const tamLimpo = extrairTextoTamanho(i.tamanho);
 
         return `
             <tr>
