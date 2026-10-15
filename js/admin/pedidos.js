@@ -1,5 +1,5 @@
 // ==========================================================================
-// VR MODAS - GESTÃO DE PEDIDOS & BOTTOM SHEET PREMIUM (NEON DB)
+// VR MODAS - GESTÃO DE PEDIDOS & CENTRAL DE DESPACHO INTELIGENTE (NEON DB)
 // js/admin/pedidos.js
 // ==========================================================================
 
@@ -7,7 +7,7 @@ let listaPedidosGeral = [];
 let filtroStatusPedidoAtivo = 'todos';
 
 /**
- * Utilitários para formatação e limpeza de dados
+ * 1. Funções Utilitárias de Formatação e Limpeza de Dados
  */
 function extrairTextoCor(corRaw) {
     if (!corRaw) return 'Padrão';
@@ -76,8 +76,25 @@ function normalizarStatus(statusRaw) {
     return 'pendente';
 }
 
+function copiarTextoParaTransferencia(texto) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(() => {
+            alert("📋 Endereço copiado para a área de transferência!");
+        });
+    } else {
+        const inputTemp = document.createElement("input");
+        inputTemp.value = texto;
+        document.body.appendChild(inputTemp);
+        inputTemp.select();
+        document.execCommand("copy");
+        document.body.removeChild(inputTemp);
+        alert("📋 Endereço copiado!");
+    }
+}
+window.copiarTextoParaTransferencia = copiarTextoParaTransferencia;
+
 /**
- * 1. Carrega todos os pedidos do Neon DB
+ * 2. Carrega todos os pedidos do Neon DB
  */
 async function carregarEAtualizarTabelaPedidos() {
     const tabelaCorpo = document.getElementById('lista-pedidos-admin');
@@ -106,7 +123,7 @@ async function carregarEAtualizarTabelaPedidos() {
 window.carregarEAtualizarTabelaPedidos = carregarEAtualizarTabelaPedidos;
 
 /**
- * 2. Atualiza contadores dos botões de abas
+ * 3. Atualiza contadores das abas
  */
 function atualizarContadoresStatusPedidos(pedidos) {
     const contadores = { todos: pedidos.length, pendente: 0, separacao: 0, enviado: 0, concluido: 0, cancelado: 0 };
@@ -123,7 +140,7 @@ function atualizarContadoresStatusPedidos(pedidos) {
 }
 
 /**
- * 3. Renderiza a lista de pedidos no painel
+ * 4. Renderiza a lista de pedidos no painel
  */
 function filtrarERenderizarTabelaPedidos() {
     const tabelaCorpo = document.getElementById('lista-pedidos-admin');
@@ -164,6 +181,7 @@ function filtrarERenderizarTabelaPedidos() {
 
         return `
             <tr>
+                <!-- Bloco Esquerdo -->
                 <td style="flex: 1; min-width: 0; text-align: left;">
                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
                         <button type="button" onclick="abrirModalDetalhesPedido(${idPed})" style="background: none; border: none; padding: 0; cursor: pointer; color: var(--dourado, #d4af37); font-weight: 700; font-size: 12.5px; text-decoration: underline;">
@@ -180,10 +198,12 @@ function filtrarERenderizarTabelaPedidos() {
                     </div>
                 </td>
 
+                <!-- Colunas para Notebook -->
                 <td>${dataFmt}</td>
                 <td>${resumoItens}</td>
                 <td style="color: var(--dourado, #d4af37); font-weight: 700;">${totalFmt}</td>
 
+                <!-- Bloco Direito -->
                 <td style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
                     <div style="color: var(--dourado, #d4af37); font-weight: 700; font-size: 13.5px;">
                         ${totalFmt}
@@ -206,7 +226,7 @@ function filtrarERenderizarTabelaPedidos() {
 }
 
 /**
- * 4. Bottom Sheet Sofisticada de Pedidos (Estilo App Nativo)
+ * 5. Bottom Sheet / Modal com Central de Despacho & Localização
  */
 function abrirModalDetalhesPedido(idPedido) {
     const pedido = listaPedidosGeral.find(p => p.id == idPedido);
@@ -237,6 +257,10 @@ function abrirModalDetalhesPedido(idPedido) {
     const formaPag = dadosExtra.forma_pagamento || pedido.forma_pagamento || 'PIX';
     const ehRetirada = dadosExtra.tipo_envio === 'retirada' || String(enderecoLimpo).toLowerCase().includes('retirada');
 
+    // Mensagem de aviso pré-formatada para o cliente no WhatsApp
+    const msgNotificacao = encodeURIComponent(`Olá, ${pedido.cliente_nome || 'Cliente'}! Passando para informar que seu pedido #${pedido.id} na VR Modas está com status: ${pedido.status || 'Em Separação'}. Em breve você receberá suas peças! ✨`);
+    const linkNotificacaoWhats = whats ? `https://wa.me/55${whats.replace(/\D/g, '')}?text=${msgNotificacao}` : '';
+
     const itensHtml = itens.map(i => {
         const precoItem = Number(i.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const subtotal = (Number(i.preco || 0) * (i.quantidade || 1)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -264,7 +288,6 @@ function abrirModalDetalhesPedido(idPedido) {
         `;
     }).join('') || '<p style="color: #777; font-size: 12px; text-align: center; margin: 10px 0;">Nenhuma peça descrita.</p>';
 
-    // Estilo adaptável: Bottom Sheet no mobile, Modal flutuante elegante no desktop
     modal.style.cssText = `
         display: flex;
         position: fixed;
@@ -274,13 +297,12 @@ function abrirModalDetalhesPedido(idPedido) {
         align-items: flex-end;
         justify-content: center;
         backdrop-filter: blur(6px);
-        animation: fadeInOverlay 0.2s ease;
     `;
 
     modal.innerHTML = `
-        <div id="card-bottom-sheet" style="background: #111111; border: 1px solid #2a2a2a; border-radius: 20px 20px 0 0; width: 100%; max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; color: #fff; box-shadow: 0 -10px 40px rgba(0,0,0,0.9); animation: slideUpSheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div id="card-bottom-sheet" style="background: #111111; border: 1px solid #2a2a2a; border-radius: 20px 20px 0 0; width: 100%; max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; color: #fff; box-shadow: 0 -10px 40px rgba(0,0,0,0.9);">
             
-            <!-- Barra de Puxador Tátil Mobile -->
+            <!-- Puxador Tátil -->
             <div style="width: 100%; padding: 10px 0 4px 0; display: flex; justify-content: center; cursor: pointer;" onclick="fecharModalDetalhesPedido()">
                 <div style="width: 44px; height: 5px; background: #333; border-radius: 10px;"></div>
             </div>
@@ -300,7 +322,7 @@ function abrirModalDetalhesPedido(idPedido) {
             <!-- Corpo Rolável -->
             <div style="padding: 16px 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 14px;">
                 
-                <!-- Card do Cliente & Entrega -->
+                <!-- Central de Despacho & Destinatário Inteligente -->
                 <div style="background: #171717; border: 1px solid #282828; border-radius: 10px; padding: 14px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                         <div>
@@ -308,17 +330,38 @@ function abrirModalDetalhesPedido(idPedido) {
                             <div style="font-size: 14px; font-weight: 700; color: #fff; margin-top: 2px;">${pedido.cliente_nome || 'Cliente'}</div>
                         </div>
                         ${whats ? `
-                            <a href="${linkWhats}" target="_blank" style="background: #1e3820; border: 1px solid #2d6632; color: #4cd137; padding: 6px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
-                                💬 WhatsApp
-                            </a>
+                            <div style="display: flex; gap: 6px;">
+                                <a href="${linkNotificacaoWhats}" target="_blank" title="Enviar Notificação" style="background: #18281b; border: 1px solid #284e2e; color: #4cd137; padding: 6px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                    📢 Notificar
+                                </a>
+                                <a href="${linkWhats}" target="_blank" title="Abrir Conversa" style="background: #1e3820; border: 1px solid #2d6632; color: #4cd137; padding: 6px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                    💬 Conversar
+                                </a>
+                            </div>
                         ` : ''}
                     </div>
 
-                    <div style="border-top: 1px solid #242424; padding-top: 10px; display: flex; gap: 8px; align-items: flex-start;">
-                        <span style="font-size: 15px; line-height: 1.2;">${ehRetirada ? '🏬' : '📍'}</span>
-                        <div style="flex: 1;">
-                            <strong style="color: #ddd; font-size: 11.5px; display: block;">${ehRetirada ? 'Retirada no Ponto Físico' : 'Entrega em Domicílio'}</strong>
-                            <p style="margin: 2px 0 0 0; color: #888; font-size: 11px; line-height: 1.4;">${enderecoLimpo}</p>
+                    <div style="border-top: 1px solid #242424; padding-top: 10px;">
+                        <div style="display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px;">
+                            <span style="font-size: 16px; line-height: 1.2;">${ehRetirada ? '🏬' : '📍'}</span>
+                            <div style="flex: 1; min-width: 0;">
+                                <strong style="color: #ddd; font-size: 11.5px; display: block;">${ehRetirada ? 'Retirada no Ponto Físico' : 'Entrega em Domicílio'}</strong>
+                                <p style="margin: 2px 0 0 0; color: #aaa; font-size: 11.5px; line-height: 1.4;">${enderecoLimpo}</p>
+                            </div>
+                        </div>
+
+                        <!-- Botões de Ação de Despacho (GPS & Copiar) -->
+                        <div style="display: flex; gap: 8px;">
+                            ${!ehRetirada ? `
+                                <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoLimpo)}" target="_blank" style="flex: 1; background: #202020; border: 1px solid #383838; color: #4fc3f7; padding: 7px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+                                    🗺️ Ver no Mapa / GPS
+                                </a>
+                            ` : `
+                                <span style="font-size: 11px; color: #777; flex: 1; display: flex; align-items: center;">Cliente fará a retirada no balcão.</span>
+                            `}
+                            <button type="button" onclick="copiarTextoParaTransferencia('${enderecoLimpo.replace(/'/g, "\\'")}')" style="background: #202020; border: 1px solid #383838; color: #fff; padding: 7px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                                📋 Copiar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -366,7 +409,6 @@ function abrirModalDetalhesPedido(idPedido) {
         </div>
     `;
 
-    // Fecha ao clicar fora do cartão
     modal.onclick = (e) => {
         if (e.target === modal) fecharModalDetalhesPedido();
     };
@@ -386,7 +428,7 @@ function fecharModalDetalhesPedido() {
 window.fecharModalDetalhesPedido = fecharModalDetalhesPedido;
 
 /**
- * 5. Atualizar Status no Neon DB
+ * 6. Atualizar Status no Neon DB
  */
 async function atualizarStatusPedidoAdmin(idPedido, novoStatus) {
     try {
@@ -414,7 +456,7 @@ async function atualizarStatusPedidoAdmin(idPedido, novoStatus) {
 window.atualizarStatusPedidoAdmin = atualizarStatusPedidoAdmin;
 
 /**
- * 6. Excluir Pedido
+ * 7. Excluir Pedido
  */
 async function excluirPedidoAdmin(idPedido) {
     if (!confirm(`Deseja realmente excluir o pedido #${idPedido}?`)) return;
@@ -431,7 +473,7 @@ async function excluirPedidoAdmin(idPedido) {
 window.excluirPedidoAdmin = excluirPedidoAdmin;
 
 /**
- * 7. Impressão de Comprovante de Pedido Completa e Elegante
+ * 8. Impressão de Comprovante de Pedido Completa e Elegante
  */
 function imprimirComprovantePedido(idPedido) {
     const pedido = listaPedidosGeral.find(p => p.id == idPedido);
@@ -553,7 +595,7 @@ function imprimirComprovantePedido(idPedido) {
 }
 window.imprimirComprovantePedido = imprimirComprovantePedido;
 
-// Inicializa escuta das abas de filtro por status
+// Inicialização das abas de filtro por status
 document.addEventListener('DOMContentLoaded', () => {
     carregarEAtualizarTabelaPedidos();
 
