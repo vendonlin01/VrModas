@@ -83,7 +83,6 @@ body {
     color: var(--branco);
 }
 
-/* Botão de retorno à vitrine */
 .btn-voltar-loja-topo {
     display: inline-flex;
     align-items: center;
@@ -104,7 +103,6 @@ body {
     color: #000;
 }
 
-/* Navegação Vertical Padrão no Desktop */
 .admin-nav {
     display: flex;
     flex-direction: column;
@@ -255,7 +253,6 @@ body {
 .borda-vermelha { border-top: 3px solid #e53935; }
 .borda-verde { border-top: 3px solid #43a047; }
 
-/* Grid de Gráficos no Desktop */
 .grid-graficos {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -279,7 +276,7 @@ body {
 }
 
 /* =====================================================
-   4. FORMULÁRIOS ADMINISTRATIVOS & BLOCOS
+   4. FORMULÁRIOS ADMINISTRATIVOS
    ===================================================== */
 .form-admin {
     display: flex;
@@ -419,7 +416,7 @@ body {
 }
 
 /* =====================================================
-   5. TABELAS & ABAS DE CATEGORIAS (DESKTOP)
+   5. TABELAS (DESKTOP & NOTEBOOK)
    ===================================================== */
 .abas-categorias {
     display: flex;
@@ -500,7 +497,6 @@ body {
         font-size: 16px;
     }
 
-    /* Barra deslizante de abas no topo móvel */
     .admin-nav {
         display: flex !important;
         flex-direction: row !important;
@@ -562,7 +558,7 @@ body {
     }
 
     .admin-card {
-        padding: 16px 14px;
+        padding: 14px 12px;
         border-radius: 8px;
     }
 
@@ -593,13 +589,7 @@ body {
         gap: 16px;
     }
 
-    .card-grafico {
-        padding: 14px 12px;
-    }
-
-    /* =====================================================
-       CARDS COMPACTOS & ELEGANTES NO MOBILE (CATÁLOGO & PEDIDOS)
-       ===================================================== */
+    /* CONTAINER ELEGANTE DE TABELAS/LISTAS NO CELULAR */
     .tabela-container {
         overflow-x: visible;
         background: #0d0d0d;
@@ -625,12 +615,12 @@ body {
         display: none;
     }
 
-    /* Linhas transformadas em cards compactos idênticos ao Caixa */
+    /* Cards compactos idênticos ao layout do Caixa */
     .tabela-produtos tbody tr {
         background: #141414 !important;
         border: 1px solid #242424 !important;
         border-radius: 6px !important;
-        padding: 8px 10px !important;
+        padding: 9px 11px !important;
         margin-bottom: 6px !important;
         display: flex !important;
         flex-direction: row !important;
@@ -646,18 +636,21 @@ body {
         box-sizing: border-box !important;
     }
 
-    /* Oculta colunas redundantes no card mobile compacto */
-    .secao-admin#secao-pedidos .tabela-produtos tbody td:nth-child(2) {
+    .secao-admin#secao-pedidos .tabela-produtos tbody td:nth-child(2),
+    .secao-admin#secao-pedidos .tabela-produtos tbody td:nth-child(3),
+    .secao-admin#secao-pedidos .tabela-produtos tbody td:nth-child(4) {
         display: none !important;
     }
 
-    .secao-admin#secao-catalogo .tabela-produtos tbody td:nth-child(3) {
+    .secao-admin#secao-catalogo .tabela-produtos tbody td:nth-child(3),
+    .secao-admin#secao-catalogo .tabela-produtos tbody td:nth-child(4),
+    .secao-admin#secao-catalogo .tabela-produtos tbody td:nth-child(5) {
         display: none !important;
     }
 }
 
 /* =====================================================
-   7. COMPLEMENTOS: TAGS DE CORES
+   7. COMPLEMENTOS & TAGS DE CORES
    ===================================================== */
 #lista-cores-adicionadas {
     display: flex;

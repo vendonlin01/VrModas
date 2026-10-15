@@ -1,5 +1,5 @@
 // ==========================================================================
-// VR MODAS - GESTÃO DE PEDIDOS & COMPROVANTES (NEON DB - COMPACTO MOBILE)
+// VR MODAS - GESTÃO DE PEDIDOS & COMPROVANTES (NEON DB - ROBUSTO & SOFISTICADO)
 // js/admin/pedidos.js
 // ==========================================================================
 
@@ -7,7 +7,7 @@ let listaPedidosGeral = [];
 let filtroStatusPedidoAtivo = 'todos';
 
 /**
- * Funções utilitárias para formatar endereço limpo
+ * 1. Formatação de Endereço Limpo
  */
 function tratarEnderecoVisual(enderecoRaw) {
     if (!enderecoRaw) return 'Retirada na Loja / A combinar';
@@ -41,7 +41,17 @@ function formatarObjetoEndereco(end) {
 }
 
 /**
- * 1. Carrega todos os pedidos do Neon DB
+ * Utilitário para limpar nomes de cores e tamanhos mesmo se vierem como objeto
+ */
+function extrairTextoCor(corRaw) {
+    if (!corRaw) return 'Padrão';
+    if (typeof corRaw === 'string') return corRaw;
+    if (typeof corRaw === 'object') return corRaw.nome || corRaw.cor || 'Padrão';
+    return String(corRaw);
+}
+
+/**
+ * 2. Carrega todos os pedidos do Neon DB
  */
 async function carregarEAtualizarTabelaPedidos() {
     const tabelaCorpo = document.getElementById('lista-pedidos-admin');
@@ -70,7 +80,7 @@ async function carregarEAtualizarTabelaPedidos() {
 window.carregarEAtualizarTabelaPedidos = carregarEAtualizarTabelaPedidos;
 
 /**
- * 2. Atualiza contadores dos botões de abas de status
+ * 3. Atualiza contadores dos botões de abas de status
  */
 function atualizarContadoresStatusPedidos(pedidos) {
     const contadores = { todos: pedidos.length, pendente: 0, separacao: 0, enviado: 0, concluido: 0, cancelado: 0 };
@@ -98,7 +108,7 @@ function normalizarStatus(statusRaw) {
 }
 
 /**
- * 3. Renderiza a tabela aplicando o filtro no formato compacto elegante
+ * 4. Renderiza a tabela de pedidos mantendo botões de status e ações visíveis
  */
 function filtrarERenderizarTabelaPedidos() {
     const tabelaCorpo = document.getElementById('lista-pedidos-admin');
@@ -139,7 +149,7 @@ function filtrarERenderizarTabelaPedidos() {
 
         return `
             <tr>
-                <!-- Bloco Esquerdo: ID, Hora, Pagamento, Cliente e Itens -->
+                <!-- Bloco Esquerdo: ID, Data, Pagamento, Cliente e Peças -->
                 <td style="flex: 1; min-width: 0; text-align: left;">
                     <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
                         <button type="button" onclick="abrirModalDetalhesPedido(${idPed})" style="background: none; border: none; padding: 0; cursor: pointer; color: var(--dourado, #d4af37); font-weight: 700; font-size: 12.5px; text-decoration: underline;">
@@ -156,21 +166,26 @@ function filtrarERenderizarTabelaPedidos() {
                     </div>
                 </td>
 
-                <!-- Bloco Direito: Valor, Seletor de Status e Ações -->
+                <!-- Colunas para Notebook/Desktop (Data e Resumo) -->
+                <td>${dataFmt}</td>
+                <td>${resumoItens}</td>
+                <td style="color: var(--dourado, #d4af37); font-weight: 700;">${totalFmt}</td>
+
+                <!-- Bloco Direito: Valor, Seletor de Status e Ações Rápidas -->
                 <td style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
                     <div style="color: var(--dourado, #d4af37); font-weight: 700; font-size: 13.5px;">
                         ${totalFmt}
                     </div>
                     <div style="display: flex; align-items: center; gap: 4px;">
-                        <select onchange="atualizarStatusPedidoAdmin(${idPed}, this.value)" style="background: #111; color: #fff; border: 1px solid #333; padding: 3px 6px; border-radius: 4px; font-size: 10.5px; font-weight: 700; cursor: pointer; height: 26px;">
+                        <select onchange="atualizarStatusPedidoAdmin(${idPed}, this.value)" style="background: #111; color: #fff; border: 1px solid #333; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; height: 28px;">
                             <option value="Pendente" ${statusAtual === 'pendente' ? 'selected' : ''}>⏳ Pendente</option>
                             <option value="Em Separação" ${statusAtual === 'separacao' ? 'selected' : ''}>📦 Separação</option>
                             <option value="Enviado" ${statusAtual === 'enviado' ? 'selected' : ''}>🚚 Enviado</option>
                             <option value="Concluído" ${statusAtual === 'concluido' ? 'selected' : ''}>✅ Concluído</option>
                             <option value="Cancelado" ${statusAtual === 'cancelado' ? 'selected' : ''}>❌ Cancelado</option>
                         </select>
-                        <button type="button" onclick="imprimirComprovantePedido(${idPed})" title="Imprimir Recibo" style="background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 3px 7px; border-radius: 4px; cursor: pointer; font-size: 11px; height: 26px;">🖨️</button>
-                        <button type="button" onclick="excluirPedidoAdmin(${idPed})" title="Excluir Pedido" style="background: #1a1a1a; border: 1px solid #ff4444; color: #ff4444; padding: 3px 7px; border-radius: 4px; cursor: pointer; font-size: 11px; height: 26px;">🗑️</button>
+                        <button type="button" onclick="imprimirComprovantePedido(${idPed})" title="Imprimir Recibo" style="background: #1a1a1a; border: 1px solid #444; color: #fff; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; height: 28px;">🖨️</button>
+                        <button type="button" onclick="excluirPedidoAdmin(${idPed})" title="Excluir Pedido" style="background: #1a1a1a; border: 1px solid #ff4444; color: #ff4444; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; height: 28px;">🗑️</button>
                     </div>
                 </td>
             </tr>
@@ -179,13 +194,13 @@ function filtrarERenderizarTabelaPedidos() {
 }
 
 /**
- * 4. Modal de Detalhes do Pedido
+ * 5. Modal de Detalhes do Pedido com Ações de Status Diretas
  */
 function abrirModalDetalhesPedido(idPedido) {
     const pedido = listaPedidosGeral.find(p => p.id == idPedido);
     if (!pedido) return;
 
-    const modal = document.getElementById('modal-detalhes-pedido');
+    let modal = document.getElementById('modal-detalhes-pedido');
     if (!modal) return;
 
     let dadosExtra = {};
@@ -205,52 +220,91 @@ function abrirModalDetalhesPedido(idPedido) {
     const dataFmt = pedido.criado_em ? new Date(pedido.criado_em).toLocaleString('pt-BR') : 'Data não registrada';
     const whats = pedido.cliente_telefone || pedido.cliente_whatsapp || '';
     const linkWhats = whats ? `https://wa.me/55${whats.replace(/\D/g, '')}` : '';
-
-    document.getElementById('modal-pedido-titulo').innerText = `Pedido #${pedido.id} - ${pedido.cliente_nome || 'Cliente'}`;
-    document.getElementById('modal-pedido-data').innerText = `Realizado em: ${dataFmt}`;
-    document.getElementById('modal-pedido-cliente').innerText = pedido.cliente_nome || 'Não informado';
-    
-    const elWhats = document.getElementById('modal-pedido-whats');
-    if (whats) {
-        elWhats.innerHTML = `<a href="${linkWhats}" target="_blank" style="color: #4cd137; text-decoration: underline; font-weight: bold;">${whats} (Conversar no WhatsApp ↗)</a>`;
-    } else {
-        elWhats.innerText = 'Não informado';
-    }
-
+    const statusAtual = normalizarStatus(pedido.status);
     const enderecoLimpo = tratarEnderecoVisual(dadosExtra.endereco_entrega || pedido.endereco);
 
-    document.getElementById('modal-pedido-tipo-envio').innerText = dadosExtra.tipo_envio === 'retirada' ? '🏬 Retirada na Loja Física' : '🏠 Entrega no Endereço';
-    document.getElementById('modal-pedido-endereco').innerText = enderecoLimpo;
-    document.getElementById('modal-pedido-pagamento').innerText = dadosExtra.forma_pagamento || pedido.forma_pagamento || 'PIX';
-    document.getElementById('modal-pedido-total').innerText = Number(pedido.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-    const containerItens = document.getElementById('modal-pedido-itens');
-    containerItens.innerHTML = itens.map(i => {
+    const itensHtml = itens.map(i => {
         const precoItem = Number(i.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const img = i.imagem || 'img/placeholder.png';
+        const corLimpa = extrairTextoCor(i.cor);
+        const tamLimpo = i.tamanho || 'Padrão';
+
         return `
-            <div style="display: flex; gap: 10px; align-items: center; background: #0c0c0c; border: 1px solid #222; padding: 8px; border-radius: 6px;">
+            <div style="display: flex; gap: 10px; align-items: center; background: #0c0c0c; border: 1px solid #222; padding: 8px 10px; border-radius: 6px;">
                 <img src="${img}" style="width: 44px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #333;" onerror="this.src='img/placeholder.png'">
-                <div style="flex: 1;">
-                    <div style="font-weight: 700; color: #fff; font-size: 13px;">${i.nome}</div>
-                    <small style="color: #888;">Tam: ${i.tamanho || 'Padrão'} | Cor: ${i.cor || 'Padrão'}</small>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; color: #fff; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${i.nome}</div>
+                    <small style="color: #aaa; font-size: 11px;">Tam: <strong style="color: var(--dourado, #d4af37);">${tamLimpo}</strong> | Cor: <strong style="color: var(--dourado, #d4af37);">${corLimpa}</strong></small>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 12px; color: #aaa;">${i.quantidade}x</div>
+                <div style="text-align: right; flex-shrink: 0;">
+                    <div style="font-size: 11px; color: #777;">${i.quantidade}x</div>
                     <div style="font-weight: 700; color: var(--dourado, #d4af37); font-size: 13px;">${precoItem}</div>
                 </div>
             </div>
         `;
-    }).join('') || '<p style="color: #777;">Nenhuma peça descrita.</p>';
+    }).join('') || '<p style="color: #777; font-size: 12px;">Nenhuma peça descrita.</p>';
 
-    const btnImp = document.getElementById('btn-modal-imprimir');
-    if (btnImp) {
-        btnImp.onclick = () => imprimirComprovantePedido(pedido.id);
-    }
+    modal.innerHTML = `
+        <div style="background: #141414; border: 1px solid #333; border-top: 3px solid var(--dourado, #d4af37); border-radius: 8px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 18px; color: #fff; box-sizing: border-box; box-shadow: 0 15px 40px rgba(0,0,0,0.9);">
+            <!-- Topo -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 10px;">
+                <div>
+                    <h3 style="margin: 0; font-size: 16px; color: var(--dourado, #d4af37);">Pedido #${pedido.id} - ${pedido.cliente_nome || 'Cliente'}</h3>
+                    <small style="color: #777; font-size: 11px;">Realizado em: ${dataFmt}</small>
+                </div>
+                <button type="button" onclick="fecharModalDetalhesPedido()" style="background: none; border: none; color: #ff5252; font-size: 22px; cursor: pointer; font-weight: bold; line-height: 1;">✕</button>
+            </div>
+
+            <!-- Dados do Cliente & Entrega -->
+            <div style="background: #0d0d0d; border: 1px solid #252525; border-radius: 6px; padding: 12px; margin-bottom: 14px; font-size: 12px; line-height: 1.5;">
+                <div><strong>Cliente:</strong> <span style="color: #fff;">${pedido.cliente_nome || 'Não informado'}</span></div>
+                <div><strong>WhatsApp:</strong> ${whats ? `<a href="${linkWhats}" target="_blank" style="color: #4cd137; text-decoration: underline; font-weight: bold;">${whats} (Conversar no WhatsApp ↗)</a>` : '<span style="color:#777;">Não informado</span>'}</div>
+                <div><strong>Modalidade:</strong> <span style="color: #ddd;">${dadosExtra.tipo_envio === 'retirada' ? '🏬 Retirada na Loja Física' : '🏠 Entrega no Endereço'}</span></div>
+                <div><strong>Endereço:</strong> <span style="color: #bbb;">${enderecoLimpo}</span></div>
+                <div><strong>Forma de Pagamento:</strong> <span style="color: var(--dourado, #d4af37); font-weight: bold;">${dadosExtra.forma_pagamento || pedido.forma_pagamento || 'PIX'}</span></div>
+            </div>
+
+            <!-- Lista de Peças -->
+            <h4 style="font-size: 12px; margin: 0 0 8px 0; color: #aaa; text-transform: uppercase;">Peças do Pedido</h4>
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
+                ${itensHtml}
+            </div>
+
+            <!-- Total -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; border: 1px solid #282828; padding: 10px 12px; border-radius: 6px; margin-bottom: 14px;">
+                <span style="font-size: 12.5px; font-weight: 700;">Total Pago:</span>
+                <strong style="font-size: 16px; color: var(--dourado, #d4af37);">${Number(pedido.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+            </div>
+
+            <!-- Ações Rápidas de Status por dentro do Modal -->
+            <div style="background: #0a0a0a; border: 1px solid #282828; padding: 10px; border-radius: 6px; margin-bottom: 14px;">
+                <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Alterar Status do Pedido:</label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px;">
+                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Pendente')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'pendente' ? 'var(--dourado, #d4af37)' : '#181818'}; color: ${statusAtual === 'pendente' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">⏳ Pendente</button>
+                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Em Separação')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'separacao' ? 'var(--dourado, #d4af37)' : '#181818'}; color: ${statusAtual === 'separacao' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">📦 Separação</button>
+                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Enviado')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'enviado' ? 'var(--dourado, #d4af37)' : '#181818'}; color: ${statusAtual === 'enviado' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">🚚 Enviado</button>
+                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Concluído')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'concluido' ? '#4cd137' : '#181818'}; color: ${statusAtual === 'concluido' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">✅ Concluído</button>
+                    <button type="button" onclick="alterarStatusPeloModal(${pedido.id}, 'Cancelado')" style="padding: 6px; border-radius: 4px; border: 1px solid #333; background: ${statusAtual === 'cancelado' ? '#ff4d4d' : '#181818'}; color: ${statusAtual === 'cancelado' ? '#000' : '#fff'}; font-size: 11px; font-weight: 700; cursor: pointer;">❌ Cancelado</button>
+                </div>
+            </div>
+
+            <!-- Botões Inferiores -->
+            <div style="display: flex; gap: 8px;">
+                <button type="button" onclick="imprimirComprovantePedido(${pedido.id})" style="flex: 1; background: #1f1f1f; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;">🖨️ Imprimir Recibo</button>
+                <button type="button" onclick="fecharModalDetalhesPedido()" style="flex: 1; background: var(--dourado, #d4af37); color: #000; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 12px;">Fechar</button>
+            </div>
+        </div>
+    `;
 
     modal.style.display = 'flex';
 }
 window.abrirModalDetalhesPedido = abrirModalDetalhesPedido;
+
+async function alterarStatusPeloModal(idPedido, novoStatus) {
+    await atualizarStatusPedidoAdmin(idPedido, novoStatus);
+    abrirModalDetalhesPedido(idPedido);
+}
+window.alterarStatusPeloModal = alterarStatusPeloModal;
 
 function fecharModalDetalhesPedido() {
     const modal = document.getElementById('modal-detalhes-pedido');
@@ -259,7 +313,7 @@ function fecharModalDetalhesPedido() {
 window.fecharModalDetalhesPedido = fecharModalDetalhesPedido;
 
 /**
- * 5. Atualizar Status do Pedido no Neon DB
+ * 6. Atualizar Status do Pedido no Neon DB
  */
 async function atualizarStatusPedidoAdmin(idPedido, novoStatus) {
     try {
@@ -273,6 +327,11 @@ async function atualizarStatusPedidoAdmin(idPedido, novoStatus) {
         const ped = listaPedidosGeral.find(p => p.id == idPedido);
         if (ped) ped.status = novoStatus;
         atualizarContadoresStatusPedidos(listaPedidosGeral);
+        filtrarERenderizarTabelaPedidos();
+
+        if (typeof atualizarDashboard === 'function') {
+            atualizarDashboard();
+        }
 
     } catch (e) {
         console.error('Erro ao atualizar status do pedido:', e);
@@ -282,7 +341,7 @@ async function atualizarStatusPedidoAdmin(idPedido, novoStatus) {
 window.atualizarStatusPedidoAdmin = atualizarStatusPedidoAdmin;
 
 /**
- * 6. Excluir Pedido
+ * 7. Excluir Pedido
  */
 async function excluirPedidoAdmin(idPedido) {
     if (!confirm(`Deseja realmente excluir o pedido #${idPedido}?`)) return;
@@ -299,7 +358,7 @@ async function excluirPedidoAdmin(idPedido) {
 window.excluirPedidoAdmin = excluirPedidoAdmin;
 
 /**
- * 7. Impressão de Comprovante de Pedido Completa e Elegante
+ * 8. Impressão de Comprovante de Pedido Completa e Elegante
  */
 function imprimirComprovantePedido(idPedido) {
     const pedido = listaPedidosGeral.find(p => p.id == idPedido);
@@ -333,11 +392,14 @@ function imprimirComprovantePedido(idPedido) {
 
     const itensHtml = itens.map(i => {
         const sub = (Number(i.preco || 0) * (i.quantidade || 1)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const corLimpa = extrairTextoCor(i.cor);
+        const tamLimpo = i.tamanho || 'Padrão';
+
         return `
             <tr>
                 <td style="padding: 8px 4px; border-bottom: 1px solid #ddd;">
                     <strong>${i.nome}</strong><br>
-                    <small style="color: #555;">Tam: ${i.tamanho || 'Padrão'} | Cor: ${i.cor || 'Padrão'}</small>
+                    <small style="color: #555;">Tam: ${tamLimpo} | Cor: ${corLimpa}</small>
                 </td>
                 <td style="padding: 8px 4px; border-bottom: 1px solid #ddd; text-align: center;">${i.quantidade || 1}</td>
                 <td style="padding: 8px 4px; border-bottom: 1px solid #ddd; text-align: right;">${sub}</td>
