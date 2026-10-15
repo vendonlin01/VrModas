@@ -3,77 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Minhas Compras & Rastreio - VR Modas</title>
+    <title>Minhas Compras - VR Modas</title>
     <link rel="stylesheet" href="./css/global.css">
     <link rel="stylesheet" href="./css/produtos.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
+        body {
+            background-color: #0c0c0c;
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
         .container-meus-pedidos {
-            max-width: 680px;
-            margin: 20px auto 60px auto;
-            padding: 0 14px;
+            max-width: 580px;
+            margin: 16px auto 60px auto;
+            padding: 0 12px;
         }
         .topo-pedidos-nav {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 14px;
         }
         .btn-voltar-link {
             color: var(--dourado, #d4af37);
             text-decoration: none;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            transition: opacity 0.2s;
         }
-        .btn-voltar-link:hover {
-            opacity: 0.8;
-        }
+        
+        /* Card Compacto & Elegante */
         .card-pedido-cliente {
-            background: #141414;
-            border: 1px solid #282828;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 18px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            background: #131313;
+            border: 1px solid #222222;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
         .topo-card-pedido {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #222;
-            padding-bottom: 12px;
-            margin-bottom: 14px;
+            border-bottom: 1px solid #1c1c1c;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
         }
 
-        /* Steptracker - Linha do Tempo */
+        /* Linha do Tempo Compacta */
         .tracker-container {
             display: flex;
             justify-content: space-between;
             position: relative;
-            margin: 22px 6px 16px 6px;
+            margin: 14px 4px 12px 4px;
         }
         .tracker-container::before {
             content: '';
             position: absolute;
-            top: 13px;
-            left: 15px;
-            right: 15px;
-            height: 3px;
+            top: 10px;
+            left: 12px;
+            right: 12px;
+            height: 2px;
             background: #252525;
             z-index: 1;
         }
         .tracker-linha-ativa {
             position: absolute;
-            top: 13px;
-            left: 15px;
-            height: 3px;
+            top: 10px;
+            left: 12px;
+            height: 2px;
             background: var(--dourado, #d4af37);
             z-index: 2;
-            transition: width 0.4s ease;
+            transition: width 0.3s ease;
         }
         .tracker-passo {
             position: relative;
@@ -81,27 +87,25 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
         .tracker-circulo {
-            width: 28px;
-            height: 28px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
-            background: #181818;
+            background: #161616;
             border: 2px solid #333;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 800;
-            color: #777;
-            transition: all 0.3s;
+            color: #666;
         }
         .tracker-passo.ativo .tracker-circulo {
             background: var(--dourado, #d4af37);
             border-color: var(--dourado, #d4af37);
             color: #000;
-            box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
         }
         .tracker-passo.concluido .tracker-circulo {
             background: #4cd137;
@@ -109,28 +113,29 @@
             color: #000;
         }
         .tracker-legenda {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
-            color: #666;
+            color: #555;
             text-transform: uppercase;
         }
         .tracker-passo.ativo .tracker-legenda { color: var(--dourado, #d4af37); }
-        .tracker-passo.concluido .tracker-legenda { color: #fff; }
+        .tracker-passo.concluido .tracker-legenda { color: #aaa; }
 
         .loader-pedidos {
             text-align: center;
             color: var(--dourado, #d4af37);
             font-size: 13px;
-            padding: 40px;
+            padding: 30px;
             font-weight: 600;
         }
     </style>
 </head>
 <body>
-    <header class="header">
+    <header class="header" style="border-bottom: 1px solid #1a1a1a; padding: 12px 16px;">
         <div class="logo">
-            <a href="home.html">
-                <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
+            <a href="home.html" style="text-decoration: none;">
+                <span class="logo-vr" style="color: var(--dourado, #d4af37); font-weight: 900; font-size: 18px;">VR</span> 
+                <span class="logo-modas" style="color: #fff; font-weight: 900; font-size: 18px;">MODAS</span>
             </a>
         </div>
     </header>
@@ -140,20 +145,20 @@
             <a href="home.html" class="btn-voltar-link">⬅ Voltar à Loja</a>
         </div>
 
-        <h1 style="font-size: 21px; color: #fff; margin: 0 0 4px 0; font-weight: 800;">Minhas Compras & Rastreio</h1>
-        <p style="color: var(--cinza-texto, #aaa); font-size: 12.5px; margin-bottom: 22px;">Acompanhe o trajeto e a etapa de entrega dos seus pedidos em tempo real.</p>
+        <h1 style="font-size: 19px; color: #fff; margin: 0 0 4px 0; font-weight: 800;">Minhas Compras</h1>
+        <p style="color: #888; font-size: 12px; margin-bottom: 16px;">Acompanhe o andamento dos seus pedidos em tempo real.</p>
 
         <div id="lista-pedidos-cliente">
-            <div class="loader-pedidos">A carregar os seus pedidos...</div>
+            <div class="loader-pedidos">Carregando pedidos...</div>
         </div>
     </main>
 
-    <!-- Conexão Segura ao Banco de Dados Neon -->
     <script src="js/db.js"></script>
 
     <script type="module">
         import { neon } from 'https://esm.sh/@neondatabase/serverless';
 
+        // Tratamento seguro de cor para eliminar de vez [object Object]
         function extrairTextoCor(corRaw) {
             if (!corRaw) return 'Padrão';
             if (typeof corRaw === 'string') {
@@ -211,15 +216,15 @@
                 return { passo: 0, porcentagem: '0%', texto: 'Pedido Cancelado', cor: '#ef5350' };
             }
             if (s.includes('conclu') || s.includes('pago') || s.includes('entreg')) {
-                return { passo: 4, porcentagem: '100%', texto: 'Pedido Entregue', cor: '#4caf50' };
+                return { passo: 4, porcentagem: '100%', texto: 'Entregue / Concluído', cor: '#4caf50' };
             }
             if (s.includes('envi')) {
-                return { passo: 3, porcentagem: '68%', texto: 'A Caminho / Saiu para Entrega', cor: '#ffa726' };
+                return { passo: 3, porcentagem: '68%', texto: 'A Caminho', cor: '#ffa726' };
             }
             if (s.includes('separ')) {
-                return { passo: 2, porcentagem: '36%', texto: 'Em Separação no Estoque', cor: '#ab47bc' };
+                return { passo: 2, porcentagem: '36%', texto: 'Em Separação', cor: '#ab47bc' };
             }
-            return { passo: 1, porcentagem: '10%', texto: 'Pedido Confirmado', cor: '#d4af37' };
+            return { passo: 1, porcentagem: '10%', texto: 'Confirmado', cor: 'var(--dourado, #d4af37)' };
         }
 
         function obterNumeroSuporteDinamico() {
@@ -242,9 +247,7 @@
                             window.DATABASE_URL || 
                             sessionStorage.getItem('vr_neon_url');
 
-            if (connStr) {
-                return neon(connStr);
-            }
+            if (connStr) return neon(connStr);
             return null;
         }
 
@@ -258,7 +261,6 @@
 
             let pedidosExibir = [];
 
-            // 1. Busca Segura no Neon PostgreSQL
             try {
                 const sql = await obterInstanciaSqlSegura();
                 
@@ -308,10 +310,9 @@
                     }
                 }
             } catch (err) {
-                console.warn('Falha na busca remota, a verificar dados em cache:', err);
+                console.warn('Busca local de pedidos ativada:', err);
             }
 
-            // 2. Fallback de Pedidos Salvos Localmente
             if (pedidosExibir.length === 0) {
                 const pedidosLocais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
                 if (pedidosLocais.length > 0) {
@@ -329,13 +330,12 @@
                 }
             }
 
-            // 3. Renderização na Interface
             if (pedidosExibir.length === 0) {
                 container.innerHTML = `
-                    <div style="text-align: center; color: #888; padding: 40px 20px; background: #141414; border-radius: 10px; border: 1px solid #222;">
-                        <div style="font-size: 32px; margin-bottom: 8px;">🛍️</div>
-                        <p style="margin: 0; font-size: 14px; color: #ccc;">Ainda não possui nenhum pedido registado.</p>
-                        <a href="home.html" class="btn-voltar-link" style="margin-top: 14px; display: inline-block;">Ver Coleção</a>
+                    <div style="text-align: center; color: #888; padding: 40px 20px; background: #131313; border-radius: 10px; border: 1px solid #222;">
+                        <div style="font-size: 30px; margin-bottom: 8px;">🛍️</div>
+                        <p style="margin: 0; font-size: 13.5px; color: #ccc;">Nenhum pedido encontrado.</p>
+                        <a href="home.html" class="btn-voltar-link" style="margin-top: 12px; display: inline-block;">Ver Coleção</a>
                     </div>
                 `;
                 return;
@@ -347,6 +347,8 @@
                 const infoRastreio = calcularEtapaRastreio(ped.status);
                 const totalValor = Number(ped.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                 const ehRetirada = ped.tipoEnvio === 'retirada' || ped.endereco.toLowerCase().includes('retirada');
+                const localBusca = ehRetirada ? 'VR Modas' : encodeURIComponent(ped.endereco);
+                const urlMapsApp = `https://www.google.com/maps/search/?api=1&query=${localBusca}`;
 
                 const itensHTML = (ped.itens || []).map(it => {
                     const tam = extrairTextoTamanho(it.tamanho);
@@ -355,42 +357,38 @@
                     const foto = it.imagem || 'img/placeholder.png';
 
                     return `
-                        <div style="display: flex; gap: 10px; align-items: center; background: #0d0d0d; border: 1px solid #222; padding: 8px 10px; border-radius: 6px; margin-bottom: 6px;">
-                            <img src="${foto}" style="width: 40px; height: 46px; object-fit: cover; border-radius: 4px; border: 1px solid #333;" onerror="this.src='img/placeholder.png'">
+                        <div style="display: flex; gap: 10px; align-items: center; background: #0c0c0c; border: 1px solid #1f1f1f; padding: 7px 10px; border-radius: 6px; margin-bottom: 6px;">
+                            <img src="${foto}" style="width: 38px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid #2a2a2a;" onerror="this.src='img/placeholder.png'">
                             <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 700; color: #fff; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.nome}</div>
-                                <small style="color: #888; font-size: 11px;">Tam: <strong style="color: var(--dourado, #d4af37);">${tam}</strong> | Cor: <strong style="color: var(--dourado, #d4af37);">${cor}</strong></small>
+                                <div style="font-weight: 700; color: #fff; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.nome}</div>
+                                <small style="color: #777; font-size: 10.5px;">Tam: <strong style="color: #bbb;">${tam}</strong> | Cor: <strong style="color: #bbb;">${cor}</strong></small>
                             </div>
                             <div style="text-align: right; flex-shrink: 0;">
-                                <span style="font-size: 11px; color: #777;">${it.quantidade}x</span>
-                                <div style="color: var(--dourado, #d4af37); font-size: 12.5px; font-weight: 700;">${subtotal}</div>
+                                <span style="font-size: 10px; color: #666;">${it.quantidade}x</span>
+                                <div style="color: var(--dourado, #d4af37); font-size: 12px; font-weight: 700;">${subtotal}</div>
                             </div>
                         </div>
                     `;
                 }).join('') || '<p style="color: #777; font-size: 11px;">Peças diversas</p>';
 
-                const localBusca = ehRetirada ? 'VR Modas' : encodeURIComponent(ped.endereco);
-                const urlMapsEmbed = `https://maps.google.com/maps?q=${localBusca}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-                const urlMapsApp = `https://www.google.com/maps/search/?api=1&query=${localBusca}`;
-
                 const linkWhatsAppSuporte = numSuporte
-                    ? `https://wa.me/55${numSuporte}?text=${encodeURIComponent(`Olá! Gostaria de acompanhar o meu pedido ${ped.codigo} na VR Modas.`)}`
+                    ? `https://wa.me/55${numSuporte}?text=${encodeURIComponent(`Olá! Gostaria de acompanhar meu pedido ${ped.codigo} na VR Modas.`)}`
                     : `home.html#contato`;
 
                 return `
                     <div class="card-pedido-cliente">
-                        <!-- Topo do Card -->
+                        <!-- Topo com Código e Status em Badge -->
                         <div class="topo-card-pedido">
                             <div>
-                                <strong style="color: var(--dourado, #d4af37); font-size: 16px;">${ped.codigo}</strong>
-                                <div style="font-size: 11px; color: #777; margin-top: 2px;">${ped.data}</div>
+                                <strong style="color: var(--dourado, #d4af37); font-size: 14.5px;">${ped.codigo}</strong>
+                                <div style="font-size: 10.5px; color: #777; margin-top: 1px;">${ped.data}</div>
                             </div>
-                            <span style="font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.06); border: 1px solid ${infoRastreio.cor}; color: ${infoRastreio.cor}; text-transform: uppercase;">
+                            <span style="font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid ${infoRastreio.cor}; color: ${infoRastreio.cor}; text-transform: uppercase;">
                                 ${ped.status}
                             </span>
                         </div>
 
-                        <!-- Steptracker -->
+                        <!-- Steptracker Compacto -->
                         <div class="tracker-container">
                             <div class="tracker-linha-ativa" style="width: ${infoRastreio.porcentagem};"></div>
 
@@ -412,50 +410,30 @@
                             </div>
                         </div>
 
-                        <!-- Estado Atual -->
-                        <div style="background: #0d0d0d; border: 1px solid #222; border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; font-size: 12px; display: flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 16px;">${infoRastreio.passo === 4 ? '✅' : infoRastreio.passo === 3 ? '🚚' : '📦'}</span>
-                            <span style="color: #ddd;">Estado Atual: <strong style="color: ${infoRastreio.cor};">${infoRastreio.texto}</strong></span>
+                        <!-- Linha de Endereço Limpa com Botão GPS -->
+                        <div style="background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                            <div style="flex: 1; min-width: 0;">
+                                <small style="font-size: 9.5px; color: #666; text-transform: uppercase; font-weight: 700; display: block;">${ehRetirada ? 'Retirada no Balcão' : 'Entrega em'}</small>
+                                <span style="font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${ped.endereco}</span>
+                            </div>
+                            <a href="${urlMapsApp}" target="_blank" style="background: #181818; border: 1px solid #2e2e2e; color: #4fc3f7; padding: 4px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 700; text-decoration: none; flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px;">
+                                📍 GPS
+                            </a>
                         </div>
 
-                        <!-- Mapa Interativo -->
-                        <div style="background: #0a0a0a; border: 1px solid #222; border-radius: 8px; overflow: hidden; margin-bottom: 14px;">
-                            <div style="padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a1a1a;">
-                                <div style="flex: 1; min-width: 0; padding-right: 8px;">
-                                    <small style="font-size: 10px; color: #777; text-transform: uppercase; font-weight: 700;">${ehRetirada ? 'Ponto de Retirada' : 'Destino da Entrega'}</small>
-                                    <div style="font-size: 11.5px; color: #ddd; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${ped.endereco}</div>
-                                </div>
-                                <a href="${urlMapsApp}" target="_blank" style="background: #181818; border: 1px solid #333; color: #4fc3f7; padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;">
-                                    📍 Abrir GPS
-                                </a>
-                            </div>
-                            <div style="width: 100%; height: 150px; position: relative;">
-                                <iframe 
-                                    width="100%" 
-                                    height="100%" 
-                                    frameborder="0" 
-                                    scrolling="no" 
-                                    marginheight="0" 
-                                    marginwidth="0" 
-                                    src="${urlMapsEmbed}"
-                                    style="filter: invert(90%) hue-rotate(180deg) brightness(95%); border: none;">
-                                </iframe>
-                            </div>
-                        </div>
-
-                        <!-- Lista de Peças -->
-                        <div style="margin-bottom: 12px;">
+                        <!-- Lista de Itens -->
+                        <div style="margin-bottom: 10px;">
                             ${itensHTML}
                         </div>
 
-                        <!-- Rodapé -->
-                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1f1f1f; padding-top: 12px;">
+                        <!-- Rodapé do Card -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1a1a1a; padding-top: 10px;">
                             <div>
-                                <small style="font-size: 10.5px; color: #777; display: block;">Forma: <strong>${ped.formaPagamento}</strong></small>
-                                <strong style="color: var(--dourado, #d4af37); font-size: 16px;">Total: ${totalValor}</strong>
+                                <small style="font-size: 10px; color: #666; display: block;">${ped.formaPagamento}</small>
+                                <strong style="color: var(--dourado, #d4af37); font-size: 15px;">${totalValor}</strong>
                             </div>
-                            <a href="${linkWhatsAppSuporte}" target="_blank" style="background: #17261a; border: 1px solid #284e2e; color: #4cd137; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                                💬 Ajuda no Whats
+                            <a href="${linkWhatsAppSuporte}" target="_blank" style="background: #162419; border: 1px solid #264b2c; color: #4cd137; padding: 6px 12px; border-radius: 5px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                💬 Ajuda
                             </a>
                         </div>
                     </div>
