@@ -3,6 +3,15 @@
    Conectado de forma segura ao Banco de Dados Neon
    ===================================================== */
 
+function escaparHtmlDetalhes(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 async function obterSqlDetalhesSeguro() {
     if (typeof window.getSql === 'function') {
         const s = await window.getSql();
@@ -155,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         gradeTamanhos.forEach((tam, idx) => {
-            const tamTexto = typeof tam === 'object' ? (tam.tamanho || 'Único') : String(tam);
+            const tamTexto = escaparHtmlDetalhes(typeof tam === 'object' ? (tam.tamanho || 'Único') : String(tam));
             containerTamanhos.insertAdjacentHTML('beforeend', `
                 <label style="cursor: pointer; margin-right: 6px;">
                     <input type="radio" name="tamanho" value="${tamTexto}" ${idx === 0 ? 'checked' : ''}>
@@ -183,12 +192,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const listaCoresLimpas = normalizarListaCores(produto.cores);
         listaCoresLimpas.forEach((nomeCor, idx) => {
+            const corSegura = escaparHtmlDetalhes(nomeCor);
             const corHex = mapaCoresHex[nomeCor.toLowerCase()] || '#d4af37';
             containerCores.insertAdjacentHTML('beforeend', `
-                <label title="${nomeCor}" style="cursor: pointer; margin-right: 8px; display: inline-flex; align-items: center; gap: 5px;">
-                    <input type="radio" name="cor" value="${nomeCor}" ${idx === 0 ? 'checked' : ''} style="display:none;">
+                <label title="${corSegura}" style="cursor: pointer; margin-right: 8px; display: inline-flex; align-items: center; gap: 5px;">
+                    <input type="radio" name="cor" value="${corSegura}" ${idx === 0 ? 'checked' : ''} style="display:none;">
                     <span class="box-cor" style="background-color: ${corHex}; border: 1px solid #555;"></span>
-                    <small style="color: #ccc; font-size: 11px;">${nomeCor}</small>
+                    <small style="color: #ccc; font-size: 11px;">${corSegura}</small>
                 </label>
             `);
         });
@@ -328,7 +338,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (sql) {
                 const res = await sql`
                     SELECT * FROM avaliacoes 
-                    WHERE produto_id = ${prodIdFinal} OR LOWER(produto_nome) = ${prodNomeFinal.toLowerCase()}
+                    WHERE TRIM(CAST(produto_id AS TEXT)) = ${prodIdFinal.trim()} 
+                       OR LOWER(TRIM(produto_nome)) = ${prodNomeFinal.toLowerCase().trim()}
                     ORDER BY id DESC;
                 `;
                 if (Array.isArray(res)) {
@@ -349,8 +360,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (daPeca.length === 0) {
             const todasAv = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
             daPeca = todasAv.filter(a => 
-                String(a.produtoId).trim() === prodIdFinal || 
-                (a.produtoNome && a.produtoNome.toLowerCase() === prodNomeFinal.toLowerCase())
+                String(a.produtoId || a.produto_id || '').trim() === prodIdFinal.trim() || 
+                ((a.produtoNome || a.produto_nome || '').toLowerCase().trim() === prodNomeFinal.toLowerCase().trim())
             );
         }
 
@@ -359,20 +370,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (daPeca.length > 0) {
             const soma = daPeca.reduce((acc, cur) => acc + (Number(cur.nota) || 5), 0);
-            const media = Math.round(soma / daPeca.length);
+            const mediaExata = soma / daPeca.length;
+            const estrelasCheias = Math.round(mediaExata);
 
             if (txtQtdTopo) {
-                txtQtdTopo.innerHTML = `<strong>${media}.0</strong> (${daPeca.length} ${daPeca.length === 1 ? 'avaliação' : 'avaliações'})`;
+                txtQtdTopo.innerHTML = `<strong>${mediaExata.toFixed(1)}</strong> (${daPeca.length} ${daPeca.length === 1 ? 'avaliação' : 'avaliações'})`;
                 txtQtdTopo.style.color = '#ffffff';
             }
 
             estrelasSpans.forEach((span, i) => {
-                span.classList.toggle('cheia', i < media);
-                span.style.color = i < media ? 'var(--dourado, #d4af37)' : '#444';
+                span.classList.toggle('cheia', i < estrelasCheias);
+                span.style.color = i < estrelasCheias ? 'var(--dourado, #d4af37)' : '#444';
             });
         } else {
             if (txtQtdTopo) {
-                txtQtdTopo.innerText = 'Sem avaliações';
+                txtQtdTopo.innerHTML = `<strong>0.0</strong> (0 avaliações)`;
                 txtQtdTopo.style.color = '#777777';
             }
             estrelasSpans.forEach(span => {
@@ -395,13 +407,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         daPeca.forEach(av => {
-            const textoComentario = av.texto || av.comentario || '';
-            const estrelasTxt = '★'.repeat(av.nota) + '☆'.repeat(5 - av.nota);
+            const textoComentario = escaparHtmlDetalhes(av.texto || av.comentario || '');
+            const autorSeguro = escaparHtmlDetalhes(av.autor || 'Cliente');
+            const notaVal = Math.min(5, Math.max(1, parseInt(av.nota || 5)));
+            const estrelasTxt = '★'.repeat(notaVal) + '☆'.repeat(5 - notaVal);
             containerListaAv.insertAdjacentHTML('beforeend', `
                 <div class="card-avaliacao-item">
                     <div class="estrelas-card">${estrelasTxt}</div>
                     <p class="comentario-card">"${textoComentario}"</p>
-                    <small class="autor-card">— ${av.autor} <span class="badge-verificado">✓ Compra Verificada</span></small>
+                    <small class="autor-card">— ${autorSeguro} <span class="badge-verificado">✓ Compra Verificada</span></small>
                 </div>
             `);
         });
@@ -451,7 +465,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nova = {
                 id: Date.now(),
                 produtoId: prodIdFinal,
+                produto_id: prodIdFinal,
                 produtoNome: prodNomeFinal,
+                produto_nome: prodNomeFinal,
                 autor: autor,
                 texto: texto,
                 comentario: texto,
@@ -513,7 +529,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const toast = document.createElement('div');
         toast.className = 'toast mostrar';
-        toast.innerHTML = `<span>✨</span> ${msg}`;
+        toast.innerHTML = `<span>✨</span> ${escaparHtmlDetalhes(msg)}`;
         toastBox.appendChild(toast);
 
         setTimeout(() => {

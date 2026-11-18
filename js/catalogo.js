@@ -78,24 +78,19 @@ function gerarHtmlEstrelasCard(produto) {
 
     if (qtd === 0) {
         return `
-            <div class="card-avaliacao-badge" style="display: flex; align-items: center; gap: 4px; margin: 2px 0 6px 0; min-height: 16px;">
-                <span style="color: #444; font-size: 12px; letter-spacing: 1px;">★★★★★</span>
-                <span style="color: #666; font-size: 10.5px;">Novo</span>
+            <div class="card-avaliacao-badge" style="display: flex; align-items: center; gap: 4px; margin: 3px 0 6px 0; min-height: 16px;">
+                <span style="color: #555; font-size: 13px; line-height: 1;">★</span>
+                <span style="color: #777; font-size: 11px; font-weight: 600;">0.0</span>
+                <span style="color: #555; font-size: 10.5px;">(0)</span>
             </div>
         `;
     }
 
-    const estrelasCheias = Math.round(media);
-    let estrelasHtml = '';
-    for (let i = 1; i <= 5; i++) {
-        estrelasHtml += `<span style="color: ${i <= estrelasCheias ? 'var(--dourado, #d4af37)' : '#444'};">★</span>`;
-    }
-
     return `
-        <div class="card-avaliacao-badge" style="display: flex; align-items: center; gap: 5px; margin: 2px 0 6px 0; min-height: 16px;">
-            <span style="font-size: 12px; letter-spacing: 0.5px; line-height: 1;">${estrelasHtml}</span>
-            <span style="color: #ddd; font-size: 11px; font-weight: 700;">${media.toFixed(1)}</span>
-            <span style="color: #777; font-size: 10.5px;">(${qtd})</span>
+        <div class="card-avaliacao-badge" style="display: flex; align-items: center; gap: 4px; margin: 3px 0 6px 0; min-height: 16px;">
+            <span style="color: var(--dourado, #d4af37); font-size: 13px; line-height: 1;">★</span>
+            <span style="color: #fff; font-size: 11.5px; font-weight: 700;">${media.toFixed(1)}</span>
+            <span style="color: #888; font-size: 10.5px;">(${qtd})</span>
         </div>
     `;
 }
