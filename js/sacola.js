@@ -1,17 +1,25 @@
 /* =====================================================
-   SACOLA, ENVIO (CASA/LOJA) & FINALIZAÇÃO - VR MODAS
-   Conectado de forma segura ao Banco de Dados Neon
+   SACOLA, ENVIO (CASA/LOJA) & CHECKOUT ANTIFRAUDE - VR MODAS
    ===================================================== */
+
+function escaparHtmlSacola(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const carrinhoLateral = document.getElementById('carrinho-lateral');
     const btnAbrirCarrinho = document.getElementById('abrir-carrinho');
     const btnFecharCarrinho = document.getElementById('fechar-carrinho');
-    
+
     if (btnAbrirCarrinho) {
-        btnAbrirCarrinho.onclick = () => { 
-            renderizarSacola(); 
-            if (carrinhoLateral) carrinhoLateral.classList.add('aberto'); 
+        btnAbrirCarrinho.onclick = () => {
+            renderizarSacola();
+            if (carrinhoLateral) carrinhoLateral.classList.add('aberto');
         };
     }
     if (btnFecharCarrinho && carrinhoLateral) {
@@ -19,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const listaItens = document.getElementById('lista-itens');
-    let totalCarrinho = 0; 
+    let totalCarrinho = 0;
     let qtdItensCarrinho = 0;
     let itensNoCarrinhoData = [];
 
@@ -37,7 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function obterClienteAtual() {
-        return JSON.parse(localStorage.getItem('vr_modas_usuario_logado')) ||
+        return JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
+               JSON.parse(localStorage.getItem('vr_usuario_ativo')) ||
                JSON.parse(sessionStorage.getItem('vr_cliente_dados')) ||
                JSON.parse(localStorage.getItem('vr_cliente_dados')) ||
                null;
@@ -119,13 +128,17 @@ document.addEventListener('DOMContentLoaded', () => {
             totalCarrinho += subtotal;
             qtdItensCarrinho += item.quantidade;
 
+            const nomeSeguro = escaparHtmlSacola(item.nome);
+            const tamSeguro = escaparHtmlSacola(item.tamanho);
+            const corSegura = escaparHtmlSacola(item.cor);
+
             listaItens.insertAdjacentHTML('beforeend', `
                 <div class="item-na-sacola" data-idref="${item.idRef}" style="display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #222;">
-                    <img src="${item.imagem}" alt="${item.nome}" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/produto1.jpg'">
+                    <img src="${item.imagem}" alt="${nomeSeguro}" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/produto1.jpg'">
 
                     <div class="item-info" style="flex: 1; min-width: 0;">
-                        <h4 style="font-size: 13px; margin: 0 0 3px 0; color: var(--branco, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.nome}</h4>
-                        <small style="color: var(--cinza-texto, #aaa); display: block; margin-bottom: 4px; font-size: 11px;">Tam: ${item.tamanho} | Cor: ${item.cor}</small>
+                        <h4 style="font-size: 13px; margin: 0 0 3px 0; color: var(--branco, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeSeguro}</h4>
+                        <small style="color: var(--cinza-texto, #aaa); display: block; margin-bottom: 4px; font-size: 11px;">Tam: ${tamSeguro} | Cor: ${corSegura}</small>
                         <p style="color: var(--dourado, #d4af37); font-weight: bold; margin: 0; font-size: 13px;">${subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                     </div>
 
@@ -162,8 +175,9 @@ document.addEventListener('DOMContentLoaded', () => {
             enderecoEntregaCustom = formatarEnderecoParaTexto(clienteAtual.endereco);
         }
 
-        const enderecoExibicao = enderecoEntregaCustom || 'Nenhum endereço cadastrado';
-        const nomeClienteExibicao = clienteAtual ? clienteAtual.nome : 'Visitante';
+        const enderecoExibicao = escaparHtmlSacola(enderecoEntregaCustom || 'Nenhum endereço cadastrado');
+        const nomeClienteExibicao = escaparHtmlSacola(clienteAtual ? clienteAtual.nome : 'Visitante');
+        const cupomCodigoSeguro = cupomAtivo ? escaparHtmlSacola(cupomAtivo.codigo) : '';
 
         const htmlPagamento = `
             <div id="bloco-pagamento-sacola" style="background: #111; padding: 12px; border-radius: 8px; border: 1px solid #2a2a2a; margin-bottom: 12px;">
@@ -183,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <small style="font-size: 10px; color: #777;">Destinatário: ${nomeClienteExibicao}</small>
 
                     <div id="form-alterar-endereco" style="display: none; margin-top: 8px; border-top: 1px dashed #333; padding-top: 8px;">
-                        <input type="text" id="input-novo-endereco" placeholder="Rua, Nº, Bairro, Cidade (CEP)" value="${enderecoEntregaCustom}" style="width: 100%; box-sizing: border-box; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px; border-radius: 4px; font-size: 11px; margin-bottom: 6px;">
+                        <input type="text" id="input-novo-endereco" placeholder="Rua, Nº, Bairro, Cidade (CEP)" value="${escaparHtmlSacola(enderecoEntregaCustom)}" style="width: 100%; box-sizing: border-box; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px; border-radius: 4px; font-size: 11px; margin-bottom: 6px;">
                         <div style="display: flex; gap: 6px;">
                             <button type="button" id="btn-salvar-novo-endereco" style="flex: 1; background: var(--dourado, #d4af37); color: #000; border: none; padding: 6px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">Salvar</button>
                             <button type="button" id="btn-cancelar-novo-endereco" style="background: #333; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">Cancelar</button>
@@ -197,10 +211,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                    <input type="text" id="input-cupom-sacola" placeholder="Cupom de desconto" value="${cupomAtivo ? cupomAtivo.codigo : ''}" style="flex: 1; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px 10px; border-radius: 4px; font-size: 11px; text-transform: uppercase;">
+                    <input type="text" id="input-cupom-sacola" placeholder="Cupom de desconto" value="${cupomCodigoSeguro}" style="flex: 1; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 7px 10px; border-radius: 4px; font-size: 11px; text-transform: uppercase;">
                     <button type="button" id="btn-aplicar-cupom-sacola" style="background: var(--dourado, #d4af37); color: #000; border: none; padding: 7px 12px; border-radius: 4px; font-weight: 700; font-size: 11px; cursor: pointer;">Aplicar</button>
                 </div>
-                ${cupomAtivo ? `<div style="color: #4caf50; font-size: 11px; margin-bottom: 8px; font-weight: 700;">✓ Cupom ${cupomAtivo.codigo} aplicado (-R$ ${valorDesconto.toFixed(2)})</div>` : ''}
+                ${cupomAtivo ? `<div style="color: #4caf50; font-size: 11px; margin-bottom: 8px; font-weight: 700;">✓ Cupom ${cupomCodigoSeguro} aplicado (-R$ ${valorDesconto.toFixed(2)})</div>` : ''}
 
                 <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Forma de Pagamento</label>
                 <div style="display: flex; gap: 6px; margin-bottom: 10px;">
@@ -245,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const btnCupom = document.getElementById('btn-aplicar-cupom-sacola');
         if (btnCupom) {
-            btnCupom.onclick = async function() {
+            btnCupom.onclick = async function () {
                 const codDigitado = document.getElementById('input-cupom-sacola').value.trim().toUpperCase();
                 if (!codDigitado) {
                     alert("Digite o código do cupom.");
@@ -275,7 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
-                    // Fallback local caso esteja offline
                     if (!cupomAchado) {
                         const cuponsLocais = JSON.parse(localStorage.getItem('vr_modas_cupons')) || [];
                         cupomAchado = cuponsLocais.find(c => String(c.codigo).toUpperCase() === codDigitado);
@@ -301,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.querySelectorAll('.btn-metodo-pag').forEach(btn => {
-            btn.onclick = function() {
+            btn.onclick = function () {
                 metodoPagamentoSelecionado = this.getAttribute('data-metodo');
                 renderizarOpcoesPagamento();
             };
@@ -314,16 +327,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (valorEl) valorEl.innerText = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    // ==========================================
-    // ADICIONAR À SACOLA (DADOS 100% LIMPOS)
-    // ==========================================
     const btnAdicionarSacola = document.getElementById('btn-adicionar-sacola');
     if (btnAdicionarSacola) {
         btnAdicionarSacola.onclick = () => {
             const urlParams = new URLSearchParams(window.location.search);
             const produtoIdNaUrl = urlParams.get('id');
             const produtosAtuais = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
-            
+
             let prodRef = null;
             if (produtoIdNaUrl) {
                 prodRef = produtosAtuais.find(p => String(p.id).trim() === String(produtoIdNaUrl).trim());
@@ -384,7 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Ações de Quantidade e Exclusão na Sacola
     if (listaItens) {
         listaItens.onclick = (e) => {
             const btn = e.target.closest('button');
@@ -414,9 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // ==========================================
-    // CONFIRMAÇÃO VISUAL NO SITE
-    // ==========================================
     function exibirConfirmacaoNoSite(pedido) {
         let modal = document.getElementById('modal-pedido-sucesso');
         if (!modal) {
@@ -432,8 +438,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const itensHtml = pedido.itens.map(i => `
             <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; color:#ccc;">
-                <span>${i.quantidade}x ${i.nome} (${i.tamanho} / ${limparTextoCor(i.cor)})</span>
-                <span style="color:var(--dourado, #d4af37); font-weight:bold;">${(i.preco * i.quantidade).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</span>
+                <span>${i.quantidade}x ${escaparHtmlSacola(i.nome)} (${escaparHtmlSacola(i.tamanho)} / ${escaparHtmlSacola(limparTextoCor(i.cor))})</span>
+                <span style="color:var(--dourado, #d4af37); font-weight:bold;">${(i.preco * i.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
             </div>
         `).join('');
 
@@ -446,19 +452,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="background:#0a0a0a; border:1px solid #222; border-radius:6px; padding:12px; text-align:left; margin-bottom:15px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #1f1f1f; padding-bottom:6px;">
                         <span style="font-size:12px; color:#777;">Código do Pedido:</span>
-                        <strong style="font-size:13px; color:var(--dourado, #d4af37);">${pedido.codigo}</strong>
+                        <strong style="font-size:13px; color:var(--dourado, #d4af37);">${escaparHtmlSacola(pedido.codigo)}</strong>
                     </div>
                     <div style="margin-bottom:8px;">${itensHtml}</div>
                     <div style="display:flex; justify-content:space-between; border-top:1px solid #1f1f1f; padding-top:6px;">
                         <strong style="font-size:13px;">Total:</strong>
-                        <strong style="font-size:15px; color:var(--dourado, #d4af37);">${pedido.total.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</strong>
+                        <strong style="font-size:15px; color:var(--dourado, #d4af37);">${pedido.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
                     </div>
                 </div>
 
                 <div style="background:#1a1a1a; padding:10px; border-radius:6px; font-size:11px; color:#aaa; margin-bottom:15px; text-align:left;">
                     <span style="color:var(--dourado, #d4af37); font-weight:bold;">📦 Forma de Recebimento:</span><br>
-                    ${pedido.cliente.endereco}<br><br>
-                    <span style="color:var(--dourado, #d4af37); font-weight:bold;">💳 Forma de Pagamento:</span> ${pedido.formaPagamento}
+                    ${escaparHtmlSacola(pedido.cliente.endereco)}<br><br>
+                    <span style="color:var(--dourado, #d4af37); font-weight:bold;">💳 Forma de Pagamento:</span> ${escaparHtmlSacola(pedido.formaPagamento)}
                 </div>
 
                 <button id="btn-fechar-modal-pedido" style="width:100%; background:var(--dourado, #d4af37); color:#000; border:none; padding:11px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">Continuar Comprando</button>
@@ -472,7 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // FINALIZAR PEDIDO (GRAVAÇÃO SEGURA NO NEON)
+    // FINALIZAR PEDIDO (CHECKOUT ANTIFRAUDE NO SERVIDOR)
     // ==========================================
     const btnFinalizarCompra = document.getElementById('btn-finalizar-compra') || document.querySelector('.btn-finalizar');
     if (btnFinalizarCompra) {
@@ -483,135 +489,89 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             btnFinalizarCompra.disabled = true;
-            btnFinalizarCompra.innerText = "Processando Pedido...";
+            btnFinalizarCompra.innerText = "Validando Pedido...";
 
             const clienteSessao = obterClienteAtual();
             const clienteNome = clienteSessao ? clienteSessao.nome : "Cliente Visitante";
             const clienteEmail = clienteSessao ? (clienteSessao.email || "") : "";
             const clienteWhats = (clienteSessao && (clienteSessao.whatsapp || clienteSessao.telefone)) ? (clienteSessao.whatsapp || clienteSessao.telefone) : "Não informado";
-            
-            let clienteEndereco = (tipoEnvioSelecionado === 'retirada')
+
+            const clienteEndereco = (tipoEnvioSelecionado === 'retirada')
                 ? "Retirada na Loja Física"
                 : (enderecoEntregaCustom || "A combinar na entrega");
 
-            let descFinal = 0;
-            if (cupomAtivo) {
-                descFinal = cupomAtivo.tipo === 'porcentagem' ? (totalCarrinho * cupomAtivo.valor) / 100 : cupomAtivo.valor;
-            }
-            const totalComDesconto = Math.max(0, totalCarrinho - descFinal);
-
-            let idPedidoCriado = Date.now();
-            const agora = new Date();
-            const dataHora = `${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-
-            // Garante que os itens gravados tenham texto limpo
-            const itensLimpos = itensNoCarrinhoData.map(it => ({
-                ...it,
+            const itensEnvio = itensNoCarrinhoData.map(it => ({
+                idProduto: it.idProduto,
+                quantidade: it.quantidade,
+                tamanho: it.tamanho,
                 cor: limparTextoCor(it.cor)
             }));
 
-            const dadosItensCompletos = {
-                itens: itensLimpos,
-                endereco_entrega: clienteEndereco,
-                forma_pagamento: metodoPagamentoSelecionado.toUpperCase(),
-                tipo_envio: tipoEnvioSelecionado
-            };
-
-            // 1. Grava no Neon utilizando a conexão segura centralizada (js/db.js)
             try {
-                const sql = await obterSqlSacolaSeguro();
-                if (sql) {
-                    const resPedido = await sql`
-                        INSERT INTO pedidos (
-                            cliente_nome, 
-                            cliente_email,
-                            cliente_telefone, 
-                            total, 
-                            itens, 
-                            status
-                        ) VALUES (
-                            ${clienteNome},
-                            ${clienteEmail},
-                            ${clienteWhats},
-                            ${totalComDesconto},
-                            ${JSON.stringify(dadosItensCompletos)}::jsonb,
-                            'Pendente'
-                        )
-                        RETURNING id;
-                    `;
+                const resposta = await fetch('/api/finalizar-pedido', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        itens: itensEnvio,
+                        cupomCodigo: cupomAtivo ? cupomAtivo.codigo : null,
+                        clienteNome,
+                        clienteEmail,
+                        clienteWhats,
+                        clienteEndereco,
+                        formaPagamento: metodoPagamentoSelecionado,
+                        tipoEnvio: tipoEnvioSelecionado
+                    })
+                });
 
-                    if (resPedido && resPedido.length > 0) {
-                        idPedidoCriado = resPedido[0].id;
-                    }
+                const dadosServidor = await resposta.json();
 
-                    for (const itemComprado of itensLimpos) {
-                        if (itemComprado.idProduto) {
-                            await sql`
-                                UPDATE produtos 
-                                SET estoque = GREATEST(0, COALESCE(estoque, 0) - ${itemComprado.quantidade})
-                                WHERE id = ${parseInt(itemComprado.idProduto)};
-                            `;
-                        }
-                    }
+                if (!resposta.ok || !dadosServidor.sucesso) {
+                    alert(dadosServidor.erro || "Não foi possível finalizar o pedido.");
+                    btnFinalizarCompra.disabled = false;
+                    btnFinalizarCompra.innerText = "Finalizar Compra";
+                    return;
                 }
-            } catch (errNeon) {
-                console.warn("⚠️ Falha ao salvar pedido no Neon. Mantendo registro local:", errNeon);
+
+                const agora = new Date();
+                const dataHora = `${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+                const numeroPedido = `#VR-${dadosServidor.idPedido}`;
+
+                const novoPedido = {
+                    id: dadosServidor.idPedido,
+                    codigo: numeroPedido,
+                    data: dataHora,
+                    cliente: { nome: clienteNome, whatsapp: clienteWhats, endereco: clienteEndereco },
+                    itens: dadosServidor.itensValidados,
+                    formaPagamento: metodoPagamentoSelecionado.toUpperCase(),
+                    cupom: dadosServidor.cupomConfirmado,
+                    total: dadosServidor.totalReal,
+                    status: "Pendente"
+                };
+
+                const pedidosAtuais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
+                pedidosAtuais.unshift(novoPedido);
+                localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
+
+                if (typeof sincronizarProdutosNeon === 'function') {
+                    await sincronizarProdutosNeon();
+                }
+
+                itensNoCarrinhoData = [];
+                cupomAtivo = null;
+                renderizarSacola();
+                if (carrinhoLateral) carrinhoLateral.classList.remove('aberto');
+
+                exibirConfirmacaoNoSite(novoPedido);
+            } catch (erroRede) {
+                console.error("Erro ao comunicar com checkout seguro:", erroRede);
+                alert("Falha de conexão ao finalizar o pedido. Verifique sua internet e tente novamente.");
+            } finally {
+                btnFinalizarCompra.disabled = false;
+                btnFinalizarCompra.innerText = "Finalizar Compra";
             }
-
-            const numeroPedido = `#VR-${idPedidoCriado}`;
-
-            const novoPedido = {
-                id: idPedidoCriado,
-                codigo: numeroPedido,
-                data: dataHora,
-                cliente: { nome: clienteNome, whatsapp: clienteWhats, endereco: clienteEndereco },
-                itens: itensLimpos,
-                formaPagamento: metodoPagamentoSelecionado.toUpperCase(),
-                cupom: cupomAtivo ? cupomAtivo.codigo : null,
-                total: totalComDesconto,
-                status: "Pendente"
-            };
-
-            // 2. Salva localmente
-            let pedidosAtuais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
-            pedidosAtuais.unshift(novoPedido);
-            localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
-
-            // 3. Baixa local de estoque
-            let bancoProdutos = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
-            novoPedido.itens.forEach(itemComprado => {
-                const prodRef = bancoProdutos.find(p => String(p.id) === String(itemComprado.idProduto));
-                if (prodRef) {
-                    prodRef.estoque = Math.max(0, (parseInt(prodRef.estoque) || 0) - itemComprado.quantidade);
-                }
-            });
-            localStorage.setItem('vr_modas_db', JSON.stringify(bancoProdutos));
-
-            // 4. Notificação
-            const notificacoes = JSON.parse(localStorage.getItem('vr_modas_notificacoes_cliente')) || [];
-            notificacoes.unshift({
-                id: Date.now(),
-                pedido: numeroPedido,
-                mensagem: `Seu pedido ${numeroPedido} foi registrado com sucesso e aguarda separação!`,
-                dataHora: agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                lida: false
-            });
-            localStorage.setItem('vr_modas_notificacoes_cliente', JSON.stringify(notificacoes));
-
-            // 5. Limpa a sacola e exibe confirmação
-            itensNoCarrinhoData = [];
-            cupomAtivo = null;
-            renderizarSacola();
-            if (carrinhoLateral) carrinhoLateral.classList.remove('aberto');
-
-            btnFinalizarCompra.disabled = false;
-            btnFinalizarCompra.innerText = "Finalizar Compra";
-
-            exibirConfirmacaoNoSite(novoPedido);
         };
     }
 
-    // Menu Mobile
     const btnMenu = document.getElementById('btn-menu');
     const navbar = document.getElementById('navbar');
     const btnFecharMenu = document.getElementById('fechar-menu');

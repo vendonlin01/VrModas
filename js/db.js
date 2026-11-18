@@ -1,5 +1,12 @@
-// js/db.js - Cliente Seguro Sem Exposição de Credenciais
+// js/db.js - Cliente Seguro Sem Exposição de Credenciais e com Token JWT
 let instanciaSeguraSql = null;
+
+function obterTokenSessao() {
+    return sessionStorage.getItem('vr_auth_token') ||
+           localStorage.getItem('vr_auth_token') ||
+           sessionStorage.getItem('vr_token') ||
+           localStorage.getItem('vr_token') || '';
+}
 
 async function getSql() {
     if (!instanciaSeguraSql) {
@@ -9,9 +16,15 @@ async function getSql() {
                 query += `$${i + 1}${strings[i + 1]}`;
             }
 
+            const headers = { 'Content-Type': 'application/json' };
+            const token = obterTokenSessao();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             const resposta = await fetch('/api/db', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ query, params: values })
             });
 
