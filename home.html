@@ -26,8 +26,6 @@
             .btn-admin-topo {
                 display: none !important;
             }
-
-            /* ... o resto das suas regras continuam iguais ... */
         }
 
         .btn-usuario {
@@ -183,7 +181,7 @@
             border: 1px solid #333;
             border-top: 2px solid var(--dourado);
             border-radius: 6px;
-            min-width: 195px;
+            min-width: 205px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.85);
             z-index: 2200;
             padding: 6px 0;
@@ -394,6 +392,17 @@
             <!-- Ofertas -->
             <a href="produtos.html?categoria=ofertas" class="nav-item nav-destaque">Ofertas 🔥</a>
 
+            <!-- Submenu Atendimento ao Cliente (Acessível direto no Menu) -->
+            <div class="nav-dropdown">
+                <a href="suporte.html" class="nav-link-dropdown">
+                    Atendimento <span class="seta-menu">▾</span>
+                </a>
+                <div class="dropdown-conteudo">
+                    <a href="suporte.html">🤖 Chat de Suporte</a>
+                    <a href="mailto:contato@vrmodas.com" id="email-suporte-menu">✉️ contato@vrmodas.com</a>
+                </div>
+            </div>
+
             <!-- Linha e Botão Área do Lojista (Exclusivos para Celular na Gaveta) -->
             <hr id="divisor-menu-mobile" class="divisor-menu-mobile">
             <a href="admin.html" id="link-menu-lojista" class="link-menu-lojista">
@@ -488,34 +497,15 @@
         </div>
     </div>
 
-    <!-- Rodapé com Central de Atendimento Dinâmica -->
+    <!-- Rodapé Limpo -->
     <footer class="footer">
-        <div class="footer-container">
-            <!-- Coluna 1: Sobre a Loja -->
-            <div class="footer-col">
+        <div class="footer-container" style="justify-content: center; text-align: center;">
+            <div class="footer-col" style="max-width: 480px;">
                 <div class="logo-footer">
                     <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
                 </div>
                 <p>Elegância, sofisticação e estilo exclusivo para todas as ocasiões.</p>
-            </div>
-
-            <!-- Coluna 2: Suporte e Atendimento -->
-            <div class="footer-col">
-                <h4>Atendimento ao Cliente</h4>
-                <div class="info-contato">
-                    <p>
-                        <strong>Central de Ajuda:</strong>
-                        <a href="suporte.html" class="link-suporte">
-                            🤖 Abrir Chat de Suporte
-                        </a>
-                    </p>
-                    <p>
-                        <strong>E-mail:</strong>
-                        <a href="mailto:contato@vrmodas.com" id="email-suporte-footer" class="link-suporte">✉️
-                            contato@vrmodas.com</a>
-                    </p>
-                    <p><small>Atendimento Seg. a Sáb. das 08h às 18h</small></p>
-                </div>
+                <p style="margin-top: 6px; color: #777;"><small>Atendimento Seg. a Sáb. das 08h às 18h</small></p>
             </div>
         </div>
 
@@ -531,22 +521,46 @@
     <script src="js/catalogo.js"></script>
     <script src="js/sacola.js"></script>
 
-    <!-- Script de Gestão do Perfil e Contato Dinâmico -->
+    <!-- Script de Gestão do Perfil e Sincronização Segura de Contato -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Sincroniza o e-mail de suporte salvo pelo lojista
+        document.addEventListener('DOMContentLoaded', async () => {
+            function aplicarEmailMenu(emailRaw) {
+                const linkEmailMenu = document.getElementById('email-suporte-menu');
+                if (!emailRaw || !linkEmailMenu) return;
+                const emailSeguro = String(emailRaw).trim().replace(/[^a-zA-Z0-9@._+-]/g, '');
+                if (emailSeguro) {
+                    linkEmailMenu.href = `mailto:${emailSeguro}`;
+                    linkEmailMenu.textContent = `✉️ ${emailSeguro}`;
+                }
+            }
+
+            // 1. Aplica imediatamente do cache local e sincroniza do banco Neon
             const configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || {};
-            const linkEmailFooter = document.getElementById('email-suporte-footer');
-            if (configLoja.email && linkEmailFooter) {
-                linkEmailFooter.href = `mailto:${configLoja.email}`;
-                linkEmailFooter.innerText = `✉️ ${configLoja.email}`;
+            if (configLoja.email) aplicarEmailMenu(configLoja.email);
+
+            try {
+                if (typeof getSql === 'function') {
+                    const sql = await getSql();
+                    const configs = await sql`SELECT chave, valor FROM configuracoes;`;
+                    if (Array.isArray(configs) && configs.length > 0) {
+                        const mapa = {};
+                        configs.forEach(c => { mapa[c.chave] = c.valor; });
+                        localStorage.setItem('vr_modas_config', JSON.stringify({
+                            whatsapp: (mapa.whatsapp || '').replace(/\D/g, ''),
+                            email: mapa.email || ''
+                        }));
+                        if (mapa.email) aplicarEmailMenu(mapa.email);
+                    }
+                }
+            } catch (e) {
+                console.warn('Usando configurações locais:', e.message);
             }
 
             const btnUsuario = document.getElementById('btn-usuario');
             const menuUsuario = document.getElementById('menu-usuario');
             const btnSair = document.getElementById('btn-sair-sessao');
 
-            // 1. Verifica sessão ativa (Cliente, Admin ou Owner)
+            // 2. Verifica sessão ativa (Cliente, Admin ou Owner)
             function carregarDadosUsuario() {
                 let usuarioAtivo = null;
                 try {
@@ -559,12 +573,10 @@
                     console.error("Erro ao ler dados da sessão:", e);
                 }
 
-                // Reconhece tanto admin quanto owner (dono) ou chave direta de permissão
                 const ehGestor = (usuarioAtivo && (usuarioAtivo.role === 'admin' || usuarioAtivo.role === 'owner')) ||
                     sessionStorage.getItem('vr_admin_logado') === 'true' ||
                     localStorage.getItem('vr_admin_logado') === 'true';
 
-                // Elementos da Área do Lojista
                 const btnAdminTopo = document.getElementById('btn-admin-topo');
                 const linkMenuLojista = document.getElementById('link-menu-lojista');
                 const divisorMobile = document.getElementById('divisor-menu-mobile');
@@ -572,8 +584,6 @@
                 const isMobile = window.innerWidth <= 768;
 
                 if (ehGestor) {
-                    // No celular: mostra na gaveta do menu e esconde a engrenagem do topo
-                    // No computador: esconde na gaveta e mostra a engrenagem no topo
                     if (linkMenuLojista) linkMenuLojista.style.display = isMobile ? 'flex' : 'none';
                     if (divisorMobile) divisorMobile.style.display = isMobile ? 'block' : 'none';
                     if (btnAdminTopo) btnAdminTopo.style.display = isMobile ? 'none' : 'inline-flex';
@@ -583,7 +593,6 @@
                     if (divisorMobile) divisorMobile.style.display = 'none';
                 }
 
-                // Elementos de perfil do utilizador
                 const textoUsuario = document.getElementById('texto-usuario');
                 const dropdownNome = document.getElementById('dropdown-nome');
                 const linkLogin = document.getElementById('link-login-dropdown');
@@ -622,7 +631,6 @@
             carregarDadosUsuario();
             window.addEventListener('resize', carregarDadosUsuario);
 
-            // 2. Alternar abertura do menu com suporte a clique e toque
             function alternarMenu(e) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -634,26 +642,27 @@
                 btnUsuario.addEventListener('touchend', alternarMenu);
             }
 
-            // 3. Impedir que cliques dentro do próprio menu fechem a janela
             if (menuUsuario) {
                 menuUsuario.addEventListener('click', (e) => e.stopPropagation());
                 menuUsuario.addEventListener('touchend', (e) => e.stopPropagation());
             }
 
-            // 4. Fechar se clicar fora do menu e do botão
             document.addEventListener('click', (e) => {
                 if (menuUsuario && btnUsuario && !menuUsuario.contains(e.target) && !btnUsuario.contains(e.target)) {
                     menuUsuario.classList.remove('ativo');
                 }
             });
 
-            // 5. Encerrar sessão
             if (btnSair) {
                 btnSair.addEventListener('click', () => {
+                    sessionStorage.removeItem('vr_auth_token');
+                    sessionStorage.removeItem('vr_token');
                     sessionStorage.removeItem('vr_usuario_ativo');
                     sessionStorage.removeItem('vr_cliente_dados');
                     sessionStorage.removeItem('vr_cliente_logado');
                     sessionStorage.removeItem('vr_admin_logado');
+                    localStorage.removeItem('vr_auth_token');
+                    localStorage.removeItem('vr_token');
                     localStorage.removeItem('vr_usuario_ativo');
                     localStorage.removeItem('vr_cliente_dados');
                     localStorage.removeItem('vr_cliente_logado');

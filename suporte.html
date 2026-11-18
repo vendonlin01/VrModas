@@ -139,7 +139,17 @@
     </main>
 
     <script src="js/db.js"></script>
+   <script src="js/db.js"></script>
     <script>
+        function escaparHtmlSuporte(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             let configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || {
                 whatsapp: "",
@@ -153,8 +163,8 @@
                 if (Array.isArray(configs) && configs.length > 0) {
                     const mapa = {};
                     configs.forEach(c => { mapa[c.chave] = c.valor; });
-                    if (mapa.whatsapp) configLoja.whatsapp = mapa.whatsapp.replace(/\D/g, '');
-                    if (mapa.email) configLoja.email = mapa.email;
+                    if (mapa.whatsapp) configLoja.whatsapp = String(mapa.whatsapp).replace(/\D/g, '');
+                    if (mapa.email) configLoja.email = String(mapa.email).trim();
                     localStorage.setItem('vr_modas_config', JSON.stringify(configLoja));
                 }
             } catch (erroBanco) {
@@ -167,7 +177,7 @@
             document.querySelectorAll('.btn-duvida').forEach(btn => {
                 btn.onclick = function() {
                     const tipo = this.getAttribute('data-tipo');
-                    const textoPergunta = this.innerText;
+                    const textoPergunta = escaparHtmlSuporte(this.innerText);
 
                     chat.insertAdjacentHTML('beforeend', `<div class="msg-box msg-user">${textoPergunta}</div>`);
 
@@ -181,14 +191,17 @@
                         } else if (tipo === 'troca') {
                             respostaBot = `Garantimos trocas em até 7 dias corridos após o recebimento da peça, desde que esteja com a etiqueta original fixada e sem sinais de uso.`;
                         } else if (tipo === 'humano') {
-                            if (configLoja.whatsapp) {
-                                const linkWhats = `https://wa.me/${configLoja.whatsapp}?text=${encodeURIComponent("Olá! Gostaria de falar com uma atendente da VR Modas.")}`;
+                            const whatsLimpo = String(configLoja.whatsapp || '').replace(/\D/g, '');
+                            const emailSeguro = escaparHtmlSuporte(configLoja.email);
+
+                            if (whatsLimpo) {
+                                const linkWhats = `https://wa.me/${whatsLimpo}?text=${encodeURIComponent("Olá! Gostaria de falar com uma atendente da VR Modas.")}`;
                                 respostaBot = `
                                     Perfeito! Clique no botão abaixo para conversar diretamente com a nossa equipe:
-                                    <a href="${linkWhats}" target="_blank" class="btn-whatsapp-direto">
+                                    <a href="${linkWhats}" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-direto">
                                         🟢 Iniciar Conversa no WhatsApp
                                     </a>
-                                    ${configLoja.email ? `<div style="margin-top: 8px; font-size: 11px; color: #888;">Ou envie um e-mail para: <strong>${configLoja.email}</strong></div>` : ''}
+                                    ${emailSeguro ? `<div style="margin-top: 8px; font-size: 11px; color: #888;">Ou envie um e-mail para: <strong>${emailSeguro}</strong></div>` : ''}
                                 `;
                             } else {
                                 respostaBot = `Nosso canal de atendimento está sendo atualizado. Por favor, tente novamente em instantes.`;
