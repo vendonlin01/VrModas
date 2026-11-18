@@ -1,6 +1,104 @@
 /* =====================================================
-   CATÁLOGO & VITRINE DE PRODUTOS - VR MODAS
+   CATÁLOGO, VITRINE & AVALIAÇÕES NOS CARDS - VR MODAS
+   Conectado de forma segura ao Banco de Dados Neon
    ===================================================== */
+
+let mapaAvaliacoesProdutos = {};
+
+function escaparHtmlCatalogo(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
+ * Busca todas as avaliações no Neon e agrupa média e total por produto
+ */
+async function sincronizarAvaliacoesVitrine() {
+    let listaAv = [];
+
+    try {
+        const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
+        if (sql) {
+            const res = await sql`SELECT produto_id, produto_nome, nota FROM avaliacoes;`;
+            if (Array.isArray(res)) {
+                listaAv = res;
+                localStorage.setItem('vr_modas_avaliacoes', JSON.stringify(res));
+            }
+        }
+    } catch (e) {
+        console.warn('Usando avaliações em cache na vitrine:', e.message);
+    }
+
+    if (listaAv.length === 0) {
+        listaAv = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
+    }
+
+    const agrupado = {};
+    listaAv.forEach(av => {
+        const nota = Math.min(5, Math.max(1, Number(av.nota) || 5));
+        const chaveId = av.produto_id ? `id_${String(av.produto_id).trim()}` : null;
+        const chaveNome = av.produto_nome ? `nome_${String(av.produto_nome).toLowerCase().trim()}` : null;
+
+        [chaveId, chaveNome].filter(Boolean).forEach(chave => {
+            if (!agrupado[chave]) {
+                agrupado[chave] = { soma: 0, qtd: 0 };
+            }
+            agrupado[chave].soma += nota;
+            agrupado[chave].qtd += 1;
+        });
+    });
+
+    mapaAvaliacoesProdutos = agrupado;
+
+    if (typeof window.filtrarEOrdenarCatalogo === 'function') {
+        window.filtrarEOrdenarCatalogo();
+    }
+}
+
+function obterResumoAvaliacaoProduto(produto) {
+    const porId = mapaAvaliacoesProdutos[`id_${String(produto.id).trim()}`];
+    const porNome = produto.nome ? mapaAvaliacoesProdutos[`nome_${String(produto.nome).toLowerCase().trim()}`] : null;
+    const dados = porId || porNome;
+
+    if (!dados || dados.qtd === 0) {
+        return { media: 0, qtd: 0 };
+    }
+    return {
+        media: dados.soma / dados.qtd,
+        qtd: dados.qtd
+    };
+}
+
+function gerarHtmlEstrelasCard(produto) {
+    const { media, qtd } = obterResumoAvaliacaoProduto(produto);
+
+    if (qtd === 0) {
+        return `
+            <div class="card-avaliacao-badge" style="display: flex; align-items: center; gap: 4px; margin: 2px 0 6px 0; min-height: 16px;">
+                <span style="color: #444; font-size: 12px; letter-spacing: 1px;">★★★★★</span>
+                <span style="color: #666; font-size: 10.5px;">Novo</span>
+            </div>
+        `;
+    }
+
+    const estrelasCheias = Math.round(media);
+    let estrelasHtml = '';
+    for (let i = 1; i <= 5; i++) {
+        estrelasHtml += `<span style="color: ${i <= estrelasCheias ? 'var(--dourado, #d4af37)' : '#444'};">★</span>`;
+    }
+
+    return `
+        <div class="card-avaliacao-badge" style="display: flex; align-items: center; gap: 5px; margin: 2px 0 6px 0; min-height: 16px;">
+            <span style="font-size: 12px; letter-spacing: 0.5px; line-height: 1;">${estrelasHtml}</span>
+            <span style="color: #ddd; font-size: 11px; font-weight: 700;">${media.toFixed(1)}</span>
+            <span style="color: #777; font-size: 10.5px;">(${qtd})</span>
+        </div>
+    `;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const vitrineProdutos = document.getElementById('vitrine-produtos');
@@ -19,9 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return txt.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
 
-    window.renderizarVitrine = function(lista) {
+    window.renderizarVitrine = function (lista) {
         if (!vitrineProdutos) return;
-        vitrineProdutos.innerHTML = ''; 
+        vitrineProdutos.innerHTML = '';
 
         if (!lista || lista.length === 0) {
             vitrineProdutos.innerHTML = '<p style="color: white; width: 100%; text-align: center; padding: 40px; grid-column: 1 / -1;">Nenhum produto cadastrado ou encontrado com os filtros selecionados.</p>';
@@ -36,9 +134,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const idFormatado = encodeURIComponent(String(produto.id).trim());
             const linkDetalhes = `detalhes.html?id=${idFormatado}`;
+            const nomeSeguro = escaparHtmlCatalogo(produto.nome);
 
             const precoFormatado = Number(produto.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            
+
             let precoHTML = `<p class="preco">${precoFormatado}</p>`;
             if (produto.precoPromocional && Number(produto.precoPromocional) < Number(produto.preco)) {
                 const promoFormatado = Number(produto.precoPromocional).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -50,13 +149,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }
 
+            const estrelasCardHTML = gerarHtmlEstrelasCard(produto);
             let fotoPrincipal = (produto.imagens && produto.imagens.length > 0) ? produto.imagens[0] : (produto.imagem || 'img/produto1.jpg');
             const isFav = favs.some(fav => String(fav.id) === String(produto.id));
             const coracaoIcone = isFav ? '❤️' : '🤍';
 
             const badgeEsgotadoHTML = estaEsgotado ? `<span class="badge-esgotado-foto">Esgotado</span>` : '';
-            
-            const btnAcaoHTML = estaEsgotado 
+
+            const btnAcaoHTML = estaEsgotado
                 ? `<button type="button" class="btn-comprar btn-desativado" disabled>Esgotado</button>`
                 : `<a href="${linkDetalhes}" class="btn-comprar btn-link-detalhes" data-url="${linkDetalhes}">Ver Detalhes</a>`;
 
@@ -67,12 +167,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${coracaoIcone}
                     </button>
                     <a href="${estaEsgotado ? '#' : linkDetalhes}" class="card-link-foto">
-                        <img src="${fotoPrincipal}" class="imagem-produto" alt="${produto.nome}" onerror="this.src='img/produto1.jpg'">
+                        <img src="${fotoPrincipal}" class="imagem-produto" alt="${nomeSeguro}" onerror="this.src='img/produto1.jpg'">
                     </a>
                     <div class="card-info">
                         <a href="${estaEsgotado ? '#' : linkDetalhes}">
-                            <h3>${produto.nome}</h3>
+                            <h3 style="margin-bottom: 2px;">${nomeSeguro}</h3>
                         </a>
+                        ${estrelasCardHTML}
                         ${precoHTML}
                         ${btnAcaoHTML}
                     </div>
@@ -80,9 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
             `);
         });
 
-        // Evento nos botões de favoritar
         vitrineProdutos.querySelectorAll('.btn-favoritar-card').forEach(btn => {
-            btn.onclick = function(e) {
+            btn.onclick = function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 if (typeof alternarFavorito === 'function') {
@@ -91,9 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // Clique no botão "Ver Detalhes"
         vitrineProdutos.querySelectorAll('.btn-link-detalhes').forEach(btn => {
-            btn.onclick = function(e) {
+            btn.onclick = function () {
                 const destino = this.getAttribute('data-url');
                 if (destino) {
                     window.location.href = destino;
@@ -102,11 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    window.filtrarEOrdenarCatalogo = function() {
+    window.filtrarEOrdenarCatalogo = function () {
         if (!vitrineProdutos) return;
         let resultado = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
 
-        // Filtro por Categoria
         if (categoriaAtivaFiltro === 'ofertas') {
             resultado = resultado.filter(p => !!p.promocao || !!p.precoPromocional);
         } else if (categoriaAtivaFiltro === 'acessorios') {
@@ -119,13 +217,11 @@ document.addEventListener('DOMContentLoaded', () => {
             resultado = resultado.filter(p => normalizarTexto(p.categoria).includes(alvo));
         }
 
-        // Busca por Texto
         if (inputBusca && inputBusca.value.trim() !== '') {
             const termo = normalizarTexto(inputBusca.value);
             resultado = resultado.filter(p => normalizarTexto(p.nome).includes(termo) || normalizarTexto(p.categoria).includes(termo));
         }
 
-        // Filtro por Faixa de Preço
         const radioPreco = document.querySelector('.filtro-preco:checked');
         if (radioPreco) {
             const valorFaixa = radioPreco.value;
@@ -138,19 +234,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Filtro por Tamanho
         const tamanhosSelecionados = Array.from(document.querySelectorAll('.filtro-tamanho:checked')).map(cb => cb.value);
         if (tamanhosSelecionados.length > 0) {
             resultado = resultado.filter(p => p.tamanhos && p.tamanhos.some(t => tamanhosSelecionados.includes(t)));
         }
 
-        // Ordenação
         if (selectOrdenacao) {
             const criterio = selectOrdenacao.value;
             if (criterio === 'menor-preco') resultado.sort((a, b) => Number(a.precoPromocional || a.preco) - Number(b.precoPromocional || b.preco));
             else if (criterio === 'maior-preco') resultado.sort((a, b) => Number(b.precoPromocional || b.preco) - Number(a.precoPromocional || a.preco));
             else if (criterio === 'nome-az') resultado.sort((a, b) => a.nome.localeCompare(b.nome));
             else if (criterio === 'recentes') resultado.sort((a, b) => (b.id || 0) - (a.id || 0));
+            else if (criterio === 'melhores-avaliados') {
+                resultado.sort((a, b) => obterResumoAvaliacaoProduto(b).media - obterResumoAvaliacaoProduto(a).media);
+            }
         }
 
         if (contagemTopo) {
@@ -160,11 +257,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.renderizarVitrine(resultado);
     };
 
-    // Botões de Categorias (Chips)
     const botoesChips = document.querySelectorAll('.chip-cat');
     if (botoesChips.length > 0) {
         botoesChips.forEach(chip => {
-            chip.onclick = function(e) {
+            chip.onclick = function (e) {
                 e.preventDefault();
                 botoesChips.forEach(c => c.classList.remove('ativo'));
                 this.classList.add('ativo');
@@ -183,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Ações dos botões e campos
     if (inputBusca) {
         inputBusca.addEventListener('input', window.filtrarEOrdenarCatalogo);
         inputBusca.addEventListener('keyup', (e) => { if (e.key === 'Enter') window.filtrarEOrdenarCatalogo(); });
@@ -192,7 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnAplicarFiltros) btnAplicarFiltros.onclick = (e) => { e.preventDefault(); window.filtrarEOrdenarCatalogo(); };
     if (selectOrdenacao) selectOrdenacao.onchange = window.filtrarEOrdenarCatalogo;
 
-    // Fechar gaveta de filtros mobile ao clicar em Ver Resultados
     document.addEventListener('click', (e) => {
         const btnResultados = e.target.closest('#btn-ver-resultados, .btn-ver-resultados');
         if (btnResultados) {
@@ -218,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectOrdenacao) selectOrdenacao.value = 'padrao';
             if (inputBusca) inputBusca.value = '';
             categoriaAtivaFiltro = 'todos';
-            
+
             botoesChips.forEach(c => c.classList.remove('ativo'));
             const chipTodos = document.querySelector('.chip-cat[data-categoria="todos"]');
             if (chipTodos) chipTodos.classList.add('ativo');
@@ -228,6 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Renderização inicial
     window.filtrarEOrdenarCatalogo();
+    sincronizarAvaliacoesVitrine();
 });
