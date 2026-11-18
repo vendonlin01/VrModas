@@ -17,7 +17,7 @@ async function getSql() {
 
             if (!resposta.ok) {
                 const errData = await resposta.json().catch(() => ({}));
-                throw new Error(errData.error || `Erro HTTP ${resposta.status}`);
+                throw new Error(`${errData.error || 'Erro HTTP ' + resposta.status} ${errData.detalhe ? '-> ' + errData.detalhe : ''}`);
             }
 
             const dados = await resposta.json();
