@@ -245,16 +245,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const btnCupom = document.getElementById('btn-aplicar-cupom-sacola');
         if (btnCupom) {
-            btnCupom.onclick = function() {
+            btnCupom.onclick = async function() {
                 const codDigitado = document.getElementById('input-cupom-sacola').value.trim().toUpperCase();
-                const cuponsDisponiveis = JSON.parse(localStorage.getItem('vr_modas_cupons')) || [{ id: 1, codigo: 'BEMVINDA10', tipo: 'porcentagem', valor: 10 }];
-                const cupomAchado = cuponsDisponiveis.find(c => c.codigo === codDigitado);
-                if (cupomAchado) {
-                    cupomAtivo = cupomAchado;
-                    if (typeof mostrarToast === 'function') mostrarToast(`Cupom ${cupomAchado.codigo} aplicado!`);
-                    renderizarOpcoesPagamento();
-                } else {
-                    alert("Cupom inválido ou expirado.");
+                if (!codDigitado) {
+                    alert("Digite o código do cupom.");
+                    return;
+                }
+
+                btnCupom.disabled = true;
+                btnCupom.innerText = "...";
+
+                try {
+                    const sql = await obterSqlSacolaSeguro();
+                    let cupomAchado = null;
+
+                    if (sql) {
+                        const resCupom = await sql`
+                            SELECT * FROM cupons 
+                            WHERE UPPER(codigo) = ${codDigitado} AND ativo = true 
+                            LIMIT 1;
+                        `;
+                        if (Array.isArray(resCupom) && resCupom.length > 0) {
+                            cupomAchado = {
+                                id: resCupom[0].id,
+                                codigo: resCupom[0].codigo,
+                                tipo: resCupom[0].tipo,
+                                valor: parseFloat(resCupom[0].valor)
+                            };
+                        }
+                    }
+
+                    // Fallback local caso esteja offline
+                    if (!cupomAchado) {
+                        const cuponsLocais = JSON.parse(localStorage.getItem('vr_modas_cupons')) || [];
+                        cupomAchado = cuponsLocais.find(c => String(c.codigo).toUpperCase() === codDigitado);
+                    }
+
+                    if (cupomAchado) {
+                        cupomAtivo = cupomAchado;
+                        if (typeof mostrarToast === 'function') mostrarToast(`Cupom ${cupomAchado.codigo} aplicado!`);
+                        renderizarOpcoesPagamento();
+                    } else {
+                        alert("Cupom inválido ou expirado.");
+                    }
+                } catch (err) {
+                    console.error("Erro ao validar cupom:", err);
+                    alert("Erro ao verificar cupom. Tente novamente.");
+                } finally {
+                    if (btnCupom) {
+                        btnCupom.disabled = false;
+                        btnCupom.innerText = "Aplicar";
+                    }
                 }
             };
         }
