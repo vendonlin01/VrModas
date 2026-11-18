@@ -37,8 +37,6 @@
             align-items: center;
             gap: 6px;
         }
-        
-        /* Card Compacto & Elegante */
         .card-pedido-cliente {
             background: #131313;
             border: 1px solid #222222;
@@ -55,8 +53,6 @@
             padding-bottom: 10px;
             margin-bottom: 12px;
         }
-
-        /* Linha do Tempo Compacta */
         .tracker-container {
             display: flex;
             justify-content: space-between;
@@ -121,7 +117,6 @@
         }
         .tracker-passo.ativo .tracker-legenda { color: var(--dourado, #d4af37); }
         .tracker-passo.concluido .tracker-legenda { color: #aaa; }
-
         .loader-pedidos {
             text-align: center;
             color: var(--dourado, #d4af37);
@@ -155,11 +150,16 @@
     </main>
 
     <script src="js/db.js"></script>
+    <script>
+        function escaparHtmlPedidos(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
-    <script type="module">
-        import { neon } from 'https://esm.sh/@neondatabase/serverless';
-
-        // Tratamento seguro de cor para eliminar de vez [object Object]
         function extrairTextoCor(corRaw) {
             if (!corRaw) return 'Padrão';
             if (typeof corRaw === 'string') {
@@ -196,7 +196,7 @@
                     } else {
                         return end;
                     }
-                } catch(e) {
+                } catch (e) {
                     return end;
                 }
             }
@@ -230,56 +230,45 @@
 
         function obterNumeroSuporteDinamico() {
             try {
-                const configSalva = JSON.parse(localStorage.getItem('vr_configuracoes_loja') || '{}');
+                const configSalva = JSON.parse(localStorage.getItem('vr_modas_config') || '{}');
                 return configSalva.whatsapp ? configSalva.whatsapp.replace(/\D/g, '') : '';
             } catch (e) {
                 return '';
             }
         }
 
-        async function obterInstanciaSqlSegura() {
-            if (typeof window.getSql === 'function') {
-                const s = await window.getSql();
-                if (s) return s;
-            }
-            if (window.sql) return window.sql;
-
-            const connStr = window.NEON_DATABASE_URL || 
-                            window.DATABASE_URL || 
-                            sessionStorage.getItem('vr_neon_url');
-
-            if (connStr) return neon(connStr);
-            return null;
-        }
-
         async function carregarPedidosTela() {
             const container = document.getElementById('lista-pedidos-cliente');
             if (!container) return;
 
-            const clienteSessao = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) || 
-                                  JSON.parse(sessionStorage.getItem('vr_cliente_dados')) || 
+            const clienteSessao = JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
+                                  JSON.parse(localStorage.getItem('vr_usuario_ativo')) ||
+                                  JSON.parse(sessionStorage.getItem('vr_cliente_dados')) ||
                                   JSON.parse(localStorage.getItem('vr_cliente_dados')) || null;
+
+            // Trava de privacidade: exige login para consultar o histórico na nuvem
+            if (!clienteSessao || !clienteSessao.email) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: #888; padding: 40px 20px; background: #131313; border-radius: 10px; border: 1px solid #222;">
+                        <div style="font-size: 30px; margin-bottom: 8px;">🔒</div>
+                        <p style="margin: 0 0 12px 0; font-size: 13.5px; color: #ccc;">Faça login na sua conta para acompanhar seus pedidos com segurança.</p>
+                        <a href="login.html" style="background: var(--dourado, #d4af37); color: #000; padding: 10px 18px; border-radius: 6px; font-weight: 700; font-size: 12px; text-decoration: none; display: inline-block;">Entrar na Minha Conta</a>
+                    </div>
+                `;
+                return;
+            }
 
             let pedidosExibir = [];
 
             try {
-                const sql = await obterInstanciaSqlSegura();
-                
+                const sql = (typeof window.getSql === 'function') ? await window.getSql() : window.sql;
                 if (sql) {
-                    let dadosBanco = [];
-                    if (clienteSessao && (clienteSessao.email || clienteSessao.nome)) {
-                        const emailFiltro = (clienteSessao.email || '').toLowerCase().trim();
-                        const nomeFiltro = `%${(clienteSessao.nome || '').trim()}%`;
-
-                        dadosBanco = await sql`
-                            SELECT * FROM pedidos 
-                            WHERE LOWER(cliente_email) = ${emailFiltro} 
-                               OR cliente_nome ILIKE ${nomeFiltro}
-                            ORDER BY id DESC;
-                        `;
-                    } else {
-                        dadosBanco = await sql`SELECT * FROM pedidos ORDER BY id DESC LIMIT 10;`;
-                    }
+                    const emailFiltro = clienteSessao.email.toLowerCase().trim();
+                    const dadosBanco = await sql`
+                        SELECT * FROM pedidos 
+                        WHERE LOWER(TRIM(cliente_email)) = ${emailFiltro}
+                        ORDER BY id DESC;
+                    `;
 
                     if (Array.isArray(dadosBanco) && dadosBanco.length > 0) {
                         pedidosExibir = dadosBanco.map(p => {
@@ -292,7 +281,7 @@
                                     itensParsed = raw.itens || [];
                                     dadosExtra = raw;
                                 }
-                            } catch(e) {
+                            } catch (e) {
                                 itensParsed = [];
                             }
 
@@ -325,7 +314,7 @@
                         formaPagamento: p.formaPagamento || 'PIX',
                         status: p.status || 'Pendente',
                         total: parseFloat(p.total || 0),
-                        endereco: formatarEnderecoCompleto(p.endereco),
+                        endereco: formatarEnderecoCompleto(p.endereco || p.cliente?.endereco),
                         tipoEnvio: p.tipoEnvio || 'entrega'
                     }));
                 }
@@ -335,7 +324,7 @@
                 container.innerHTML = `
                     <div style="text-align: center; color: #888; padding: 40px 20px; background: #131313; border-radius: 10px; border: 1px solid #222;">
                         <div style="font-size: 30px; margin-bottom: 8px;">🛍️</div>
-                        <p style="margin: 0; font-size: 13.5px; color: #ccc;">Nenhum pedido encontrado.</p>
+                        <p style="margin: 0; font-size: 13.5px; color: #ccc;">Nenhum pedido encontrado na sua conta.</p>
                         <a href="home.html" class="btn-voltar-link" style="margin-top: 12px; display: inline-block;">Ver Coleção</a>
                     </div>
                 `;
@@ -352,16 +341,17 @@
                 const urlMapsApp = `https://www.google.com/maps/search/?api=1&query=${localBusca}`;
 
                 const itensHTML = (ped.itens || []).map(it => {
-                    const tam = extrairTextoTamanho(it.tamanho);
-                    const cor = extrairTextoCor(it.cor);
+                    const tam = escaparHtmlPedidos(extrairTextoTamanho(it.tamanho));
+                    const cor = escaparHtmlPedidos(extrairTextoCor(it.cor));
+                    const nomeSeguro = escaparHtmlPedidos(it.nome);
                     const subtotal = (Number(it.preco || 0) * (it.quantidade || 1)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                    const foto = it.imagem || 'img/placeholder.png';
+                    const foto = it.imagem || 'img/produto1.jpg';
 
                     return `
                         <div style="display: flex; gap: 10px; align-items: center; background: #0c0c0c; border: 1px solid #1f1f1f; padding: 7px 10px; border-radius: 6px; margin-bottom: 6px;">
-                            <img src="${foto}" style="width: 38px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid #2a2a2a;" onerror="this.src='img/placeholder.png'">
+                            <img src="${foto}" style="width: 38px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid #2a2a2a;" onerror="this.src='img/produto1.jpg'">
                             <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 700; color: #fff; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${it.nome}</div>
+                                <div style="font-weight: 700; color: #fff; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeSeguro}</div>
                                 <small style="color: #777; font-size: 10.5px;">Tam: <strong style="color: #bbb;">${tam}</strong> | Cor: <strong style="color: #bbb;">${cor}</strong></small>
                             </div>
                             <div style="text-align: right; flex-shrink: 0;">
@@ -373,23 +363,21 @@
                 }).join('') || '<p style="color: #777; font-size: 11px;">Peças diversas</p>';
 
                 const linkWhatsAppSuporte = numSuporte
-                    ? `https://wa.me/55${numSuporte}?text=${encodeURIComponent(`Olá! Gostaria de acompanhar meu pedido ${ped.codigo} na VR Modas.`)}`
-                    : `home.html#contato`;
+                    ? `https://wa.me/${numSuporte}?text=${encodeURIComponent(`Olá! Gostaria de acompanhar meu pedido ${ped.codigo} na VR Modas.`)}`
+                    : `suporte.html`;
 
                 return `
                     <div class="card-pedido-cliente">
-                        <!-- Topo com Código e Status em Badge -->
                         <div class="topo-card-pedido">
                             <div>
-                                <strong style="color: var(--dourado, #d4af37); font-size: 14.5px;">${ped.codigo}</strong>
-                                <div style="font-size: 10.5px; color: #777; margin-top: 1px;">${ped.data}</div>
+                                <strong style="color: var(--dourado, #d4af37); font-size: 14.5px;">${escaparHtmlPedidos(ped.codigo)}</strong>
+                                <div style="font-size: 10.5px; color: #777; margin-top: 1px;">${escaparHtmlPedidos(ped.data)}</div>
                             </div>
                             <span style="font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid ${infoRastreio.cor}; color: ${infoRastreio.cor}; text-transform: uppercase;">
-                                ${ped.status}
+                                ${escaparHtmlPedidos(ped.status)}
                             </span>
                         </div>
 
-                        <!-- Steptracker Compacto -->
                         <div class="tracker-container">
                             <div class="tracker-linha-ativa" style="width: ${infoRastreio.porcentagem};"></div>
 
@@ -411,26 +399,23 @@
                             </div>
                         </div>
 
-                        <!-- Linha de Endereço Limpa com Botão GPS -->
                         <div style="background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                             <div style="flex: 1; min-width: 0;">
                                 <small style="font-size: 9.5px; color: #666; text-transform: uppercase; font-weight: 700; display: block;">${ehRetirada ? 'Retirada no Balcão' : 'Entrega em'}</small>
-                                <span style="font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${ped.endereco}</span>
+                                <span style="font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">${escaparHtmlPedidos(ped.endereco)}</span>
                             </div>
                             <a href="${urlMapsApp}" target="_blank" style="background: #181818; border: 1px solid #2e2e2e; color: #4fc3f7; padding: 4px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 700; text-decoration: none; flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px;">
                                 📍 GPS
                             </a>
                         </div>
 
-                        <!-- Lista de Itens -->
                         <div style="margin-bottom: 10px;">
                             ${itensHTML}
                         </div>
 
-                        <!-- Rodapé do Card -->
                         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1a1a1a; padding-top: 10px;">
                             <div>
-                                <small style="font-size: 10px; color: #666; display: block;">${ped.formaPagamento}</small>
+                                <small style="font-size: 10px; color: #666; display: block;">${escaparHtmlPedidos(ped.formaPagamento)}</small>
                                 <strong style="color: var(--dourado, #d4af37); font-size: 15px;">${totalValor}</strong>
                             </div>
                             <a href="${linkWhatsAppSuporte}" target="_blank" style="background: #162419; border: 1px solid #264b2c; color: #4cd137; padding: 6px 12px; border-radius: 5px; font-size: 11px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">

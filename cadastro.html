@@ -266,7 +266,7 @@
         </div>
     </div>
 
-    <script>
+   <script>
         document.addEventListener('DOMContentLoaded', () => {
             const inputCpf = document.getElementById('cad-cpf');
             const inputWhats = document.getElementById('cad-whatsapp');
@@ -341,7 +341,6 @@
                 const enderecoTexto = `${enderecoObj.rua}, Nº ${enderecoObj.numero} - ${enderecoObj.bairro}, ${enderecoObj.cidade} (CEP: ${enderecoObj.cep})`;
 
                 try {
-                    // Envia requisição para a API segura
                     const resposta = await fetch('/api/auth', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -366,30 +365,25 @@
                         return;
                     }
 
-                    // Sessão autenticada com sucesso
                     if (dados.token) {
                         sessionStorage.setItem('vr_auth_token', dados.token);
+                        localStorage.setItem('vr_auth_token', dados.token);
                     }
 
+                    // Guarda apenas dados não-sensíveis necessários para entrega e saudação
                     const sessaoCliente = {
                         id: dados.usuario.id,
                         nome: dados.usuario.nome,
                         email: dados.usuario.email,
                         whatsapp: dados.usuario.telefone,
-                        cpf,
-                        endereco: enderecoObj,
-                        enderecoTexto,
+                        endereco: { ...enderecoObj, enderecoFormatado: enderecoTexto },
                         role: 'cliente'
                     };
 
                     sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
                     sessionStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
-                    sessionStorage.setItem('vr_cliente_logado', 'true');
-
-                    // Mantém cache local sincronizado para fallback
-                    let usuariosLocais = JSON.parse(localStorage.getItem('vr_modas_usuarios')) || [];
-                    usuariosLocais.push(sessaoCliente);
-                    localStorage.setItem('vr_modas_usuarios', JSON.stringify(usuariosLocais));
+                    localStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
+                    localStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
 
                     alert('Cadastro concluído com sucesso! Bem-vindo(a) à VR Modas.');
                     window.location.href = 'home.html';
