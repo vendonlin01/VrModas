@@ -1,4 +1,4 @@
-// js/db.js - Conexão e sincronização Neon (PostgreSQL)
+// js/db.js - Conexão Centralizada e Sincronização Neon (PostgreSQL)
 const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
 
 let instanciaNeonSql = null;
@@ -17,6 +17,29 @@ async function getSql() {
 
 // Garante disponibilidade global no objeto window
 window.getSql = getSql;
+
+/**
+ * Normaliza o array de cores para strings limpas (evita [object Object] em toda a loja)
+ */
+function limparArrayCoresDb(coresRaw) {
+    if (!coresRaw) return ['Padrão'];
+    let arr = coresRaw;
+    if (typeof coresRaw === 'string') {
+        try {
+            arr = coresRaw.trim().startsWith('[') ? JSON.parse(coresRaw) : coresRaw.split(',');
+        } catch (e) {
+            arr = coresRaw.split(',');
+        }
+    }
+    if (!Array.isArray(arr) || arr.length === 0) return ['Padrão'];
+
+    return arr.map(c => {
+        if (typeof c === 'object' && c !== null) {
+            return String(c.nome || c.cor || 'Padrão').trim();
+        }
+        return String(c).trim();
+    }).filter(Boolean);
+}
 
 async function sincronizarProdutosNeon() {
     try {
@@ -41,12 +64,10 @@ async function sincronizarProdutosNeon() {
                 tamanhos: Array.isArray(item.tamanhos) 
                     ? item.tamanhos 
                     : (typeof item.tamanhos === 'string' ? JSON.parse(item.tamanhos) : ['P', 'M', 'G']),
-                cores: Array.isArray(item.cores) 
-                    ? item.cores 
-                    : (typeof item.cores === 'string' ? JSON.parse(item.cores) : ['Padrão'])
+                cores: limparArrayCoresDb(item.cores)
             }));
 
-            // Atualiza o cache local
+            // Atualiza o cache local já limpo
             localStorage.setItem('vr_modas_db', JSON.stringify(produtosFormatados));
 
             // Atualiza a vitrine e catálogo na tela na hora
@@ -54,7 +75,7 @@ async function sincronizarProdutosNeon() {
                 window.filtrarEOrdenarCatalogo();
             }
 
-            console.log('✅ Base de dados Neon sincronizada com sucesso!', produtosFormatados);
+            console.log('✅ Base de dados Neon sincronizada com sucesso!');
         }
     } catch (erro) {
         console.warn('⚠️ A usar base de dados local temporária:', erro.message);

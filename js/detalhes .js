@@ -1,17 +1,35 @@
 /* =====================================================
    DETALHES DO PRODUTO, FAVORITOS & AVALIAÇÕES - VR MODAS
-   Conectado 100% ao Banco de Dados Neon (PostgreSQL)
+   Conectado de forma segura ao Banco de Dados Neon
    ===================================================== */
 
-const NEON_DETALHES_JS_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
-
-let sqlNeonDetalhes = null;
-async function getSqlDetalhes() {
-    if (!sqlNeonDetalhes) {
-        const { neon } = await import('https://esm.sh/@neondatabase/serverless');
-        sqlNeonDetalhes = neon(NEON_DETALHES_JS_CONN);
+async function obterSqlDetalhesSeguro() {
+    if (typeof window.getSql === 'function') {
+        const s = await window.getSql();
+        if (s) return s;
     }
-    return sqlNeonDetalhes;
+    if (window.sql) return window.sql;
+    return null;
+}
+
+function normalizarListaCores(coresRaw) {
+    if (!coresRaw) return ['Padrão'];
+    let arr = coresRaw;
+    if (typeof coresRaw === 'string') {
+        try {
+            arr = coresRaw.trim().startsWith('[') ? JSON.parse(coresRaw) : coresRaw.split(',');
+        } catch (e) {
+            arr = coresRaw.split(',');
+        }
+    }
+    if (!Array.isArray(arr) || arr.length === 0) return ['Padrão'];
+
+    return arr.map(item => {
+        if (typeof item === 'object' && item !== null) {
+            return String(item.nome || item.cor || 'Padrão').trim();
+        }
+        return String(item).trim();
+    }).filter(Boolean);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -26,26 +44,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         produto = produtos.find(p => String(p.id).trim() === String(produtoIdUrl).trim());
     }
 
-    // 2. Se não achou no cache ou deu F5 direto, busca no Neon
+    // 2. Se não achou no cache ou deu F5 direto, busca no Neon de forma segura
     if (!produto && produtoIdUrl) {
         try {
-            const sql = await getSqlDetalhes();
-            const res = await sql`SELECT * FROM produtos WHERE id = ${parseInt(produtoIdUrl)} LIMIT 1;`;
-            if (res.length > 0) {
-                const item = res[0];
-                produto = {
-                    id: item.id,
-                    nome: item.nome,
-                    preco: parseFloat(item.preco),
-                    precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
-                    descricao: item.descricao || '',
-                    categoria: item.categoria || 'geral',
-                    estoque: item.estoque !== null ? parseInt(item.estoque) : 10,
-                    imagem: item.imagem || 'img/produto1.jpg',
-                    imagens: Array.isArray(item.imagens) ? item.imagens : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
-                    tamanhos: Array.isArray(item.tamanhos) ? item.tamanhos : ['P', 'M', 'G'],
-                    cores: Array.isArray(item.cores) ? item.cores : ['Padrão']
-                };
+            const sql = await obterSqlDetalhesSeguro();
+            if (sql) {
+                const res = await sql`SELECT * FROM produtos WHERE id = ${parseInt(produtoIdUrl)} LIMIT 1;`;
+                if (res.length > 0) {
+                    const item = res[0];
+                    produto = {
+                        id: item.id,
+                        nome: item.nome,
+                        preco: parseFloat(item.preco),
+                        precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
+                        descricao: item.descricao || '',
+                        categoria: item.categoria || 'geral',
+                        estoque: item.estoque !== null ? parseInt(item.estoque) : 10,
+                        imagem: item.imagem || 'img/produto1.jpg',
+                        imagens: Array.isArray(item.imagens) ? item.imagens : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
+                        tamanhos: Array.isArray(item.tamanhos) ? item.tamanhos : ['P', 'M', 'G'],
+                        cores: item.cores || ['Padrão']
+                    };
+                }
             }
         } catch (e) {
             console.warn("Aviso ao buscar peça no Neon:", e);
@@ -122,17 +142,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==========================================
-    // 2. SELETOR DE TAMANHOS E CORES
+    // 2. SELETOR DE TAMANHOS E CORES (LIMPOS)
     // ==========================================
     const containerTamanhos = document.getElementById('detalhe-tamanhos');
     if (containerTamanhos) {
         containerTamanhos.innerHTML = '';
-        const gradeTamanhos = produto.tamanhos && produto.tamanhos.length > 0 ? produto.tamanhos : ['P', 'M', 'G'];
+        let gradeTamanhos = ['P', 'M', 'G'];
+        if (Array.isArray(produto.tamanhos) && produto.tamanhos.length > 0) {
+            gradeTamanhos = produto.tamanhos;
+        } else if (typeof produto.tamanhos === 'string' && produto.tamanhos.trim().startsWith('[')) {
+            try { gradeTamanhos = JSON.parse(produto.tamanhos); } catch (e) {}
+        }
+
         gradeTamanhos.forEach((tam, idx) => {
+            const tamTexto = typeof tam === 'object' ? (tam.tamanho || 'Único') : String(tam);
             containerTamanhos.insertAdjacentHTML('beforeend', `
                 <label style="cursor: pointer; margin-right: 6px;">
-                    <input type="radio" name="tamanho" value="${tam}" ${idx === 0 ? 'checked' : ''}>
-                    <span class="box-tamanho">${tam}</span>
+                    <input type="radio" name="tamanho" value="${tamTexto}" ${idx === 0 ? 'checked' : ''}>
+                    <span class="box-tamanho">${tamTexto}</span>
                 </label>
             `);
         });
@@ -142,18 +169,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (containerCores) {
         containerCores.innerHTML = '';
         const mapaCoresHex = {
-            'preto': '#000000', 'branco': '#ffffff', 'dourado': '#d4af37', 'vermelho': '#d32f2f',
-            'azul': '#1e88e5', 'rosa': '#e91e63', 'verde': '#2e7d32', 'bege': '#f5f5dc', 'vinho': '#58111a'
+            'preto': '#000000', 'preta': '#000000',
+            'branco': '#ffffff', 'branca': '#ffffff',
+            'dourado': '#d4af37', 'amarelo': '#fbc02d', 'amarela': '#fbc02d',
+            'vermelho': '#d32f2f', 'vermelha': '#d32f2f',
+            'azul': '#1e88e5', 'azul marinho': '#0d1b2a', 'azul claro': '#81d4fa',
+            'rosa': '#e91e63', 'pink': '#ec407a',
+            'verde': '#2e7d32', 'verde militar': '#4b5320',
+            'bege': '#f5f5dc', 'nude': '#e3bc9a', 'marrom': '#5d4037',
+            'vinho': '#58111a', 'roxo': '#7b1fa2', 'lilás': '#ce93d8',
+            'cinza': '#757575', 'laranja': '#f57c00'
         };
 
-        const listaCores = typeof produto.cores === 'string' ? produto.cores.split(',') : (produto.cores || ['Padrão']);
-        listaCores.forEach((c, idx) => {
-            const nomeCor = String(c).trim();
+        const listaCoresLimpas = normalizarListaCores(produto.cores);
+        listaCoresLimpas.forEach((nomeCor, idx) => {
             const corHex = mapaCoresHex[nomeCor.toLowerCase()] || '#d4af37';
             containerCores.insertAdjacentHTML('beforeend', `
-                <label title="${nomeCor}" style="cursor: pointer; margin-right: 6px;">
+                <label title="${nomeCor}" style="cursor: pointer; margin-right: 8px; display: inline-flex; align-items: center; gap: 5px;">
                     <input type="radio" name="cor" value="${nomeCor}" ${idx === 0 ? 'checked' : ''} style="display:none;">
-                    <span class="box-cor" style="background-color: ${corHex};"></span>
+                    <span class="box-cor" style="background-color: ${corHex}; border: 1px solid #555;"></span>
+                    <small style="color: #ccc; font-size: 11px;">${nomeCor}</small>
                 </label>
             `);
         });
@@ -288,29 +323,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function carregarAvaliacoes() {
         let daPeca = [];
 
-        // 1. Busca direto no Neon
         try {
-            const sql = await getSqlDetalhes();
-            const res = await sql`
-                SELECT * FROM avaliacoes 
-                WHERE produto_id = ${prodIdFinal} OR LOWER(produto_nome) = ${prodNomeFinal.toLowerCase()}
-                ORDER BY id DESC;
-            `;
-            if (Array.isArray(res)) {
-                daPeca = res.map(a => ({
-                    id: a.id,
-                    produtoId: a.produto_id,
-                    produtoNome: a.produto_nome,
-                    autor: a.autor,
-                    texto: a.texto,
-                    nota: parseInt(a.nota || 5)
-                }));
+            const sql = await obterSqlDetalhesSeguro();
+            if (sql) {
+                const res = await sql`
+                    SELECT * FROM avaliacoes 
+                    WHERE produto_id = ${prodIdFinal} OR LOWER(produto_nome) = ${prodNomeFinal.toLowerCase()}
+                    ORDER BY id DESC;
+                `;
+                if (Array.isArray(res)) {
+                    daPeca = res.map(a => ({
+                        id: a.id,
+                        produtoId: a.produto_id,
+                        produtoNome: a.produto_nome,
+                        autor: a.autor,
+                        texto: a.texto,
+                        nota: parseInt(a.nota || 5)
+                    }));
+                }
             }
         } catch (e) {
             console.warn("Buscando avaliações em cache:", e);
         }
 
-        // Fallback local
         if (daPeca.length === 0) {
             const todasAv = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
             daPeca = todasAv.filter(a => 
@@ -319,7 +354,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             );
         }
 
-        // Atualiza estrelas do topo
         const txtQtdTopo = document.getElementById('detalhe-qtd-avaliacoes');
         const estrelasSpans = document.querySelectorAll('#detalhe-estrelas span, #detalhe-estrelas .est-item');
 
@@ -402,18 +436,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btnSubmitAv.innerText = "Publicando...";
             }
 
-            // Grava no Neon
             try {
-                const sql = await getSqlDetalhes();
-                await sql`
-                    INSERT INTO avaliacoes (produto_id, produto_nome, autor, texto, nota)
-                    VALUES (${prodIdFinal}, ${prodNomeFinal}, ${autor}, ${texto}, ${notaSelecionada});
-                `;
+                const sql = await obterSqlDetalhesSeguro();
+                if (sql) {
+                    await sql`
+                        INSERT INTO avaliacoes (produto_id, produto_nome, autor, texto, nota)
+                        VALUES (${prodIdFinal}, ${prodNomeFinal}, ${autor}, ${texto}, ${notaSelecionada});
+                    `;
+                }
             } catch (erroBanco) {
                 console.warn("Erro ao salvar avaliação no Neon:", erroBanco);
             }
 
-            // Salva no cache local
             const nova = {
                 id: Date.now(),
                 produtoId: prodIdFinal,

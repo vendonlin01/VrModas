@@ -1,9 +1,7 @@
 /* =====================================================
    SACOLA, ENVIO (CASA/LOJA) & FINALIZAÇÃO - VR MODAS
-   Conectado ao Neon (PostgreSQL) para gravação de pedidos e baixa de estoque
+   Conectado de forma segura ao Banco de Dados Neon
    ===================================================== */
-
-const NEON_SACOLA_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
 
 document.addEventListener('DOMContentLoaded', () => {
     const carrinhoLateral = document.getElementById('carrinho-lateral');
@@ -27,9 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let metodoPagamentoSelecionado = 'pix';
     let cupomAtivo = null;
-
-    // Estado da modalidade: 'entrega' (Receber em Casa) ou 'retirada' (Retirar na Loja)
     let tipoEnvioSelecionado = 'entrega';
+
+    async function obterSqlSacolaSeguro() {
+        if (typeof window.getSql === 'function') {
+            const s = await window.getSql();
+            if (s) return s;
+        }
+        if (window.sql) return window.sql;
+        return null;
+    }
 
     function obterClienteAtual() {
         return JSON.parse(localStorage.getItem('vr_modas_usuario_logado')) ||
@@ -38,16 +43,56 @@ document.addEventListener('DOMContentLoaded', () => {
                null;
     }
 
+    function limparTextoCor(corRaw) {
+        if (!corRaw) return 'Padrão';
+        if (typeof corRaw === 'object' && corRaw !== null) {
+            return String(corRaw.nome || corRaw.cor || 'Padrão').trim();
+        }
+        if (typeof corRaw === 'string') {
+            const trimmed = corRaw.trim();
+            if (trimmed === '[object Object]') return 'Padrão';
+            if (trimmed.startsWith('{')) {
+                try {
+                    const parsed = JSON.parse(trimmed);
+                    return String(parsed.nome || parsed.cor || 'Padrão').trim();
+                } catch (e) {
+                    return 'Padrão';
+                }
+            }
+            return trimmed;
+        }
+        return String(corRaw);
+    }
+
     function formatarEnderecoParaTexto(end) {
-        if (!end) return 'Retirada na Loja / A combinar';
-        if (typeof end === 'string') return end;
-        const rua = end.rua || end.logradouro || '';
-        const num = end.numero || 'S/N';
-        const bairro = end.bairro || '';
-        const cidade = end.cidade || '';
-        const cep = end.cep ? `(CEP: ${end.cep})` : '';
-        const partes = [rua ? `${rua}, Nº ${num}` : '', bairro, cidade, cep].filter(p => p.trim() !== '');
-        return partes.length > 0 ? partes.join(' - ') : 'Retirada na Loja / A combinar';
+        if (!end) return '';
+        let obj = end;
+
+        if (typeof end === 'string') {
+            const trimmed = end.trim();
+            if (trimmed.startsWith('{')) {
+                try {
+                    obj = JSON.parse(trimmed);
+                } catch (e) {
+                    return trimmed;
+                }
+            } else {
+                return trimmed;
+            }
+        }
+
+        if (typeof obj === 'object' && obj !== null) {
+            if (obj.enderecoFormatado) return obj.enderecoFormatado;
+            const rua = obj.rua || obj.logradouro || '';
+            const num = obj.numero || 'S/N';
+            const bairro = obj.bairro || '';
+            const cidade = obj.cidade || '';
+            const cep = obj.cep ? `(CEP: ${obj.cep})` : '';
+            const partes = [rua ? `${rua}, Nº ${num}` : '', bairro, cidade, cep].filter(p => p.trim() !== '');
+            return partes.length > 0 ? partes.join(' - ') : '';
+        }
+
+        return '';
     }
 
     let clienteAtual = obterClienteAtual();
@@ -69,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         itensNoCarrinhoData.forEach(item => {
+            item.cor = limparTextoCor(item.cor);
             const subtotal = item.preco * item.quantidade;
             totalCarrinho += subtotal;
             qtdItensCarrinho += item.quantidade;
@@ -228,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // ADICIONAR À SACOLA
+    // ADICIONAR À SACOLA (DADOS 100% LIMPOS)
     // ==========================================
     const btnAdicionarSacola = document.getElementById('btn-adicionar-sacola');
     if (btnAdicionarSacola) {
@@ -245,17 +291,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 prodRef = produtosAtuais[0];
             }
 
-            const estoqueMax = parseInt(prodRef?.estoque || 0);
+            const estoqueMax = parseInt(prodRef?.estoque || 10);
             if (estoqueMax <= 0) {
                 alert("Este produto está esgotado no momento.");
                 return;
             }
 
-            const nomeStr = document.getElementById('detalhe-nome')?.innerText || prodRef?.nome;
+            const nomeStr = document.getElementById('detalhe-nome')?.innerText || prodRef?.nome || 'Peça VR Modas';
             const tamSelecionado = document.querySelector('input[name="tamanho"]:checked')?.value || 'Padrão';
-            const corSelecionada = document.querySelector('input[name="cor"]:checked')?.value || 'Padrão';
+            const corBruta = document.querySelector('input[name="cor"]:checked')?.value || 'Padrão';
+            const corSelecionada = limparTextoCor(corBruta);
 
-            let precoCobrado = prodRef?.preco || 0;
+            let precoCobrado = Number(prodRef?.preco || 0);
             if (prodRef?.precoPromocional && Number(prodRef.precoPromocional) < Number(prodRef.preco)) {
                 precoCobrado = Number(prodRef.precoPromocional);
             }
@@ -344,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const itensHtml = pedido.itens.map(i => `
             <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; color:#ccc;">
-                <span>${i.quantidade}x ${i.nome} (${i.tamanho} / ${i.cor})</span>
+                <span>${i.quantidade}x ${i.nome} (${i.tamanho} / ${limparTextoCor(i.cor)})</span>
                 <span style="color:var(--dourado, #d4af37); font-weight:bold;">${(i.preco * i.quantidade).toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</span>
             </div>
         `).join('');
@@ -384,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // FINALIZAR PEDIDO (GRAVAÇÃO DIRETA NO NEON)
+    // FINALIZAR PEDIDO (GRAVAÇÃO SEGURA NO NEON)
     // ==========================================
     const btnFinalizarCompra = document.getElementById('btn-finalizar-compra') || document.querySelector('.btn-finalizar');
     if (btnFinalizarCompra) {
@@ -399,10 +446,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const clienteSessao = obterClienteAtual();
             const clienteNome = clienteSessao ? clienteSessao.nome : "Cliente Visitante";
+            const clienteEmail = clienteSessao ? (clienteSessao.email || "") : "";
             const clienteWhats = (clienteSessao && (clienteSessao.whatsapp || clienteSessao.telefone)) ? (clienteSessao.whatsapp || clienteSessao.telefone) : "Não informado";
             
             let clienteEndereco = (tipoEnvioSelecionado === 'retirada')
-                ? "🏬 Retirada na Loja Física (Sem frete)"
+                ? "Retirada na Loja Física"
                 : (enderecoEntregaCustom || "A combinar na entrega");
 
             let descFinal = 0;
@@ -415,49 +463,54 @@ document.addEventListener('DOMContentLoaded', () => {
             const agora = new Date();
             const dataHora = `${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
 
-            // Estrutura de itens com metadados de envio e pagamento embutidos no JSONB
+            // Garante que os itens gravados tenham texto limpo
+            const itensLimpos = itensNoCarrinhoData.map(it => ({
+                ...it,
+                cor: limparTextoCor(it.cor)
+            }));
+
             const dadosItensCompletos = {
-                itens: itensNoCarrinhoData,
+                itens: itensLimpos,
                 endereco_entrega: clienteEndereco,
                 forma_pagamento: metodoPagamentoSelecionado.toUpperCase(),
                 tipo_envio: tipoEnvioSelecionado
             };
 
-            // 1. Grava no Neon de forma segura utilizando as colunas existentes
+            // 1. Grava no Neon utilizando a conexão segura centralizada (js/db.js)
             try {
-                const { neon } = await import('https://esm.sh/@neondatabase/serverless');
-                const sql = neon(NEON_SACOLA_CONN);
+                const sql = await obterSqlSacolaSeguro();
+                if (sql) {
+                    const resPedido = await sql`
+                        INSERT INTO pedidos (
+                            cliente_nome, 
+                            cliente_email,
+                            cliente_telefone, 
+                            total, 
+                            itens, 
+                            status
+                        ) VALUES (
+                            ${clienteNome},
+                            ${clienteEmail},
+                            ${clienteWhats},
+                            ${totalComDesconto},
+                            ${JSON.stringify(dadosItensCompletos)}::jsonb,
+                            'Pendente'
+                        )
+                        RETURNING id;
+                    `;
 
-                // Executa a inserção direcionando para 'cliente_telefone'
-                const resPedido = await sql`
-                    INSERT INTO pedidos (
-                        cliente_nome, 
-                        cliente_telefone, 
-                        total, 
-                        itens, 
-                        status
-                    ) VALUES (
-                        ${clienteNome},
-                        ${clienteWhats},
-                        ${totalComDesconto},
-                        ${JSON.stringify(dadosItensCompletos)}::jsonb,
-                        'Pendente'
-                    )
-                    RETURNING id;
-                `;
+                    if (resPedido && resPedido.length > 0) {
+                        idPedidoCriado = resPedido[0].id;
+                    }
 
-                if (resPedido && resPedido.length > 0) {
-                    idPedidoCriado = resPedido[0].id;
-                }
-
-                // Baixa de estoque no Neon para cada item
-                for (const itemComprado of itensNoCarrinhoData) {
-                    if (itemComprado.idProduto) {
-                        await sql`
-                            UPDATE produtos 
-                            SET estoque = GREATEST(0, COALESCE(estoque, 0) - ${itemComprado.quantidade})
-                            WHERE id = ${parseInt(itemComprado.idProduto)};
-                        `;
+                    for (const itemComprado of itensLimpos) {
+                        if (itemComprado.idProduto) {
+                            await sql`
+                                UPDATE produtos 
+                                SET estoque = GREATEST(0, COALESCE(estoque, 0) - ${itemComprado.quantidade})
+                                WHERE id = ${parseInt(itemComprado.idProduto)};
+                            `;
+                        }
                     }
                 }
             } catch (errNeon) {
@@ -471,14 +524,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 codigo: numeroPedido,
                 data: dataHora,
                 cliente: { nome: clienteNome, whatsapp: clienteWhats, endereco: clienteEndereco },
-                itens: [...itensNoCarrinhoData],
+                itens: itensLimpos,
                 formaPagamento: metodoPagamentoSelecionado.toUpperCase(),
                 cupom: cupomAtivo ? cupomAtivo.codigo : null,
                 total: totalComDesconto,
                 status: "Pendente"
             };
 
-            // 2. Salva localmente (Admin)
+            // 2. Salva localmente
             let pedidosAtuais = JSON.parse(localStorage.getItem('vr_modas_pedidos')) || [];
             pedidosAtuais.unshift(novoPedido);
             localStorage.setItem('vr_modas_pedidos', JSON.stringify(pedidosAtuais));
