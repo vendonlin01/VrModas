@@ -137,19 +137,16 @@
         </div>
     </main>
 
+    <script src="js/db.js"></script>
     <script>
-        const NEON_SUPORTE_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
-
         document.addEventListener('DOMContentLoaded', async () => {
             let configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || {
-                whatsapp: "5589999999999",
-                email: "contato@vrmodas.com"
+                whatsapp: "",
+                email: ""
             };
 
-            // Consulta configurações atualizadas no Neon
             try {
-                const { neon } = await import('https://esm.sh/@neondatabase/serverless');
-                const sql = neon(NEON_SUPORTE_CONN);
+                const sql = await getSql();
                 const configs = await sql`SELECT chave, valor FROM configuracoes;`;
                 
                 if (Array.isArray(configs) && configs.length > 0) {
@@ -160,14 +157,11 @@
                     localStorage.setItem('vr_modas_config', JSON.stringify(configLoja));
                 }
             } catch (erroBanco) {
-                console.warn('⚠️ Falha ao buscar configurações no Neon, usando dados locais:', erroBanco);
+                console.warn('⚠️ Usando configurações locais:', erroBanco);
             }
 
             const chat = document.getElementById('chat-mensagens');
-
-            function rolarAbaixo() {
-                chat.scrollTop = chat.scrollHeight;
-            }
+            function rolarAbaixo() { chat.scrollTop = chat.scrollHeight; }
 
             document.querySelectorAll('.btn-duvida').forEach(btn => {
                 btn.onclick = function() {
@@ -186,14 +180,18 @@
                         } else if (tipo === 'troca') {
                             respostaBot = `Garantimos trocas em até 7 dias corridos após o recebimento da peça, desde que esteja com a etiqueta original fixada e sem sinais de uso.`;
                         } else if (tipo === 'humano') {
-                            const linkWhats = `https://wa.me/${configLoja.whatsapp}?text=${encodeURIComponent("Olá! Gostaria de falar com uma atendente da VR Modas sobre um atendimento.")}`;
-                            respostaBot = `
-                                Perfeito! Clique no botão abaixo para conversar diretamente com a nossa equipe:
-                                <a href="${linkWhats}" target="_blank" class="btn-whatsapp-direto">
-                                    🟢 Iniciar Conversa no WhatsApp
-                                </a>
-                                <div style="margin-top: 8px; font-size: 11px; color: #888;">Ou envie um e-mail para: <strong>${configLoja.email}</strong></div>
-                            `;
+                            if (configLoja.whatsapp) {
+                                const linkWhats = `https://wa.me/${configLoja.whatsapp}?text=${encodeURIComponent("Olá! Gostaria de falar com uma atendente da VR Modas.")}`;
+                                respostaBot = `
+                                    Perfeito! Clique no botão abaixo para conversar diretamente com a nossa equipe:
+                                    <a href="${linkWhats}" target="_blank" class="btn-whatsapp-direto">
+                                        🟢 Iniciar Conversa no WhatsApp
+                                    </a>
+                                    ${configLoja.email ? `<div style="margin-top: 8px; font-size: 11px; color: #888;">Ou envie um e-mail para: <strong>${configLoja.email}</strong></div>` : ''}
+                                `;
+                            } else {
+                                respostaBot = `Nosso canal de atendimento está sendo atualizado. Por favor, tente novamente em instantes.`;
+                            }
                         }
 
                         chat.insertAdjacentHTML('beforeend', `<div class="msg-box msg-bot">${respostaBot}</div>`);

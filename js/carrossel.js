@@ -1,14 +1,13 @@
 /* =====================================================
    CARROSSEL DE BANNERS - VR MODAS
-   Deslize Contínuo (Swipe) + 3s Automático + Setas + Neon DB
+   Deslize Contínuo (Swipe) + 3s Automático + Setas + API Segura
    ===================================================== */
-
-const NEON_CARROSSEL_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
 
 async function sincronizarBannersNeon() {
     try {
-        const { neon } = await import('https://esm.sh/@neondatabase/serverless');
-        const sql = neon(NEON_CARROSSEL_CONN);
+        const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
+        if (!sql) return;
+
         const dadosBanners = await sql`SELECT * FROM banners WHERE ativo = true ORDER BY ordem ASC, id ASC;`;
 
         if (Array.isArray(dadosBanners) && dadosBanners.length > 0) {
@@ -43,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let timerAuto = null;
     const TEMPO_ROTATIVO = 3000;
 
-    window.inicializarCarrosselUI = function() {
+    window.inicializarCarrosselUI = function () {
         const banners = JSON.parse(localStorage.getItem('vr_modas_banners')) || [];
 
         if (banners.length > 0) {
@@ -74,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (btnNext) btnNext.style.display = '';
         }
 
-        // Bolinhas indicadoras
         if (containerIndicadores) {
             containerIndicadores.innerHTML = '';
             for (let i = 0; i < totalSlides; i++) {
@@ -102,13 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
             atualizarIndicadores();
         }
 
-        function proximo() {
-            irPara(slideAtual + 1);
-        }
-
-        function anterior() {
-            irPara(slideAtual - 1);
-        }
+        function proximo() { irPara(slideAtual + 1); }
+        function anterior() { irPara(slideAtual - 1); }
 
         function iniciarAuto() {
             pararAuto();
@@ -122,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Ações das setas
         if (btnNext) {
             btnNext.onclick = (e) => {
                 e.stopPropagation();
@@ -142,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
         container.onmouseenter = pararAuto;
         container.onmouseleave = iniciarAuto;
 
-        // Arrasto / Touch no Celular
         let touchStartX = 0;
         let touchStartY = 0;
         let touchEndX = 0;
@@ -179,9 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
         iniciarAuto();
     };
 
-    // Renderiza o cache local primeiro
     window.inicializarCarrosselUI();
-
-    // Sincroniza do Neon em seguida
     sincronizarBannersNeon();
 });

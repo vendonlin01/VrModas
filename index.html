@@ -24,7 +24,6 @@
             position: relative;
         }
 
-        /* Efeito de brilho radial dourado suave */
         .brilho-fundo {
             position: absolute;
             width: 320px;
@@ -51,17 +50,10 @@
         }
 
         @keyframes surgirSuave {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.96);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            from { opacity: 0; transform: translateY(20px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* Logotipo VR MODAS */
         .splash-logo {
             font-size: 38px;
             font-weight: 900;
@@ -92,7 +84,6 @@
             margin-bottom: 35px;
         }
 
-        /* Barra de carregamento fina em dourado */
         .carregador-container {
             width: 180px;
             height: 3px;
@@ -130,7 +121,6 @@
             font-weight: 600;
         }
 
-        /* Efeito de saída suave */
         .desaparecer {
             opacity: 0;
             transform: scale(1.05);
@@ -155,16 +145,11 @@
         <span class="texto-carregando" id="status-texto">Carregando coleção...</span>
     </main>
 
+    <script src="js/db.js"></script>
     <script>
-        const NEON_PRELOAD_CONN = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
-
-        // 1. Pré-carregamento em background durante a animação
-        async function preaquecerDadosNeon() {
+        async function preaquecerDadosSeguros() {
             try {
-                const { neon } = await import('https://esm.sh/@neondatabase/serverless');
-                const sql = neon(NEON_PRELOAD_CONN);
-
-                // Busca simultânea de produtos e banners
+                const sql = await getSql();
                 const [produtosBanco, bannersBanco] = await Promise.all([
                     sql`SELECT * FROM produtos ORDER BY id DESC;`,
                     sql`SELECT * FROM banners WHERE ativo = true ORDER BY ordem ASC, id ASC;`
@@ -182,7 +167,7 @@
                         imagem: item.imagem || 'img/produto1.jpg',
                         imagens: Array.isArray(item.imagens) ? item.imagens : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
                         tamanhos: Array.isArray(item.tamanhos) ? item.tamanhos : ['P', 'M', 'G'],
-                        cores: Array.isArray(item.cores) ? item.cores : ['Padrão'],
+                        cores: typeof limparArrayCoresDb === 'function' ? limparArrayCoresDb(item.cores) : ['Padrão'],
                         promocao: item.destaque || !!item.preco_promocional
                     }));
                     localStorage.setItem('vr_modas_db', JSON.stringify(formatados));
@@ -200,19 +185,15 @@
                     localStorage.setItem('vr_modas_banners', JSON.stringify(bannersFormatados));
                 }
             } catch (erro) {
-                console.warn('Pré-aquecimento do Neon concluído com fallback local:', erro.message);
+                console.warn('Pré-aquecimento concluído com cache local:', erro.message);
             }
         }
 
-        // Inicia a sincronização de fundo
-        preaquecerDadosNeon();
+        preaquecerDadosSeguros();
 
-        // 2. Animação e Redirecionamento suave para a home
         setTimeout(() => {
             const card = document.getElementById('splash-card');
-            if (card) {
-                card.classList.add('desaparecer');
-            }
+            if (card) card.classList.add('desaparecer');
         }, 3300);
 
         setTimeout(() => {

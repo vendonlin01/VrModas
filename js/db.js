@@ -1,26 +1,36 @@
-// js/db.js - Conexão Centralizada e Sincronização Neon (PostgreSQL)
-const NEON_CONNECTION_STRING = 'postgresql://neondb_owner:npg_KUabnTq58ujk@ep-ancient-fog-b61fg1o3-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require';
+// js/db.js - Cliente Seguro Sem Exposição de Credenciais
+let instanciaSeguraSql = null;
 
-let instanciaNeonSql = null;
-
-/**
- * Retorna a instância global da conexão SQL do Neon para qualquer módulo do sistema
- */
 async function getSql() {
-    if (!instanciaNeonSql) {
-        const { neon } = await import('https://esm.sh/@neondatabase/serverless');
-        instanciaNeonSql = neon(NEON_CONNECTION_STRING);
-        window.sql = instanciaNeonSql;
+    if (!instanciaSeguraSql) {
+        instanciaSeguraSql = async function (strings, ...values) {
+            let query = strings[0];
+            for (let i = 0; i < values.length; i++) {
+                query += `$${i + 1}${strings[i + 1]}`;
+            }
+
+            const resposta = await fetch('/api/db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, params: values })
+            });
+
+            if (!resposta.ok) {
+                const errData = await resposta.json().catch(() => ({}));
+                throw new Error(errData.error || `Erro HTTP ${resposta.status}`);
+            }
+
+            const dados = await resposta.json();
+            return dados.rows || [];
+        };
+
+        window.sql = instanciaSeguraSql;
     }
-    return instanciaNeonSql;
+    return instanciaSeguraSql;
 }
 
-// Garante disponibilidade global no objeto window
 window.getSql = getSql;
 
-/**
- * Normaliza o array de cores para strings limpas (evita [object Object] em toda a loja)
- */
 function limparArrayCoresDb(coresRaw) {
     if (!coresRaw) return ['Padrão'];
     let arr = coresRaw;
@@ -44,8 +54,6 @@ function limparArrayCoresDb(coresRaw) {
 async function sincronizarProdutosNeon() {
     try {
         const sql = await getSql();
-
-        // Consulta direta na tabela de produtos
         const dadosNeon = await sql`SELECT * FROM produtos ORDER BY id DESC;`;
 
         if (Array.isArray(dadosNeon) && dadosNeon.length > 0) {
@@ -58,31 +66,26 @@ async function sincronizarProdutosNeon() {
                 categoria: item.categoria || 'geral',
                 estoque: item.estoque !== null && item.estoque !== undefined ? parseInt(item.estoque) : 10,
                 imagem: item.imagem || 'img/produto1.jpg',
-                imagens: Array.isArray(item.imagens) 
-                    ? item.imagens 
+                imagens: Array.isArray(item.imagens)
+                    ? item.imagens
                     : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
-                tamanhos: Array.isArray(item.tamanhos) 
-                    ? item.tamanhos 
+                tamanhos: Array.isArray(item.tamanhos)
+                    ? item.tamanhos
                     : (typeof item.tamanhos === 'string' ? JSON.parse(item.tamanhos) : ['P', 'M', 'G']),
                 cores: limparArrayCoresDb(item.cores)
             }));
 
-            // Atualiza o cache local já limpo
             localStorage.setItem('vr_modas_db', JSON.stringify(produtosFormatados));
 
-            // Atualiza a vitrine e catálogo na tela na hora
             if (typeof window.filtrarEOrdenarCatalogo === 'function') {
                 window.filtrarEOrdenarCatalogo();
             }
-
-            console.log('✅ Base de dados Neon sincronizada com sucesso!');
         }
     } catch (erro) {
-        console.warn('⚠️ A usar base de dados local temporária:', erro.message);
+        console.warn('⚠️ Operando com cache local:', erro.message);
     }
 }
 
-// Dispara a sincronização automaticamente ao carregar a página
 document.addEventListener('DOMContentLoaded', () => {
     sincronizarProdutosNeon();
 });
