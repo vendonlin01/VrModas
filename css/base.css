@@ -15,11 +15,14 @@
     box-sizing: border-box;
 }
 
-html, body {
+html {
+    background-color: var(--preto);
+}
+
+body {
     width: 100%;
-    max-width: 100vw;
+    min-height: 100vh;
     overflow-x: hidden;
-    position: relative;
     background-color: var(--preto);
     color: var(--branco);
     font-family: 'Montserrat', sans-serif;
@@ -30,6 +33,7 @@ html.menu-mobile-aberto,
 body.menu-mobile-aberto {
     overflow: hidden !important;
     overscroll-behavior: none !important;
+    touch-action: none !important; 
 }
 
 a {

@@ -603,12 +603,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     }
-
-    const btnMenu = document.getElementById('btn-menu');
-    const navbar = document.getElementById('navbar');
-    const btnFecharMenu = document.getElementById('fechar-menu');
-    if (btnMenu && navbar) {
-        btnMenu.onclick = () => navbar.classList.add('aberto');
-        if (btnFecharMenu) btnFecharMenu.onclick = () => navbar.classList.remove('aberto');
-    }
 });
