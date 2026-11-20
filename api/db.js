@@ -74,9 +74,9 @@ export default async function handler(req, res) {
             return res.status(403).json({ error: 'Sessão administrativa expirada ou inválida. Faça login novamente.' });
         }
 
-        // 4. Protege alteração ou exclusão de pedidos (apenas gestores podem alterar status ou excluir)
-        if (/\bPEDIDOS\b/.test(sqlUpper) && /^(UPDATE|DELETE)/.test(sqlUpper) && !ehGestor) {
-            return res.status(403).json({ error: 'Apenas administradores podem alterar ou remover pedidos.' });
+        // 4. Bloqueia INSERT/UPDATE/DELETE direto na tabela pedidos via proxy SQL genérico para não-gestores
+        if (/\bPEDIDOS\b/.test(sqlUpper) && /^(INSERT|UPDATE|DELETE)/.test(sqlUpper) && !ehGestor) {
+            return res.status(403).json({ error: 'Pedidos devem ser finalizados pelo checkout oficial.' });
         }
 
         const sql = neon(databaseUrl);
