@@ -31,10 +31,17 @@
         }
 
         #navbar.aberto {
-            z-index: 2000;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            overscroll-behavior: contain;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            width: min(82vw, 320px) !important;
+            height: 100dvh !important;
+            z-index: 2000 !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior: contain !important;
+            touch-action: pan-y !important;
         }
 
         /* =========================================
@@ -531,10 +538,61 @@
             const navbar = document.getElementById('navbar');
             const btnFecharMenu = document.getElementById('fechar-menu');
             const overlayMenu = document.getElementById('overlay-menu-mobile');
+            let scrollYGuardado = 0;
+            let toqueInicialY = 0;
+
+            function bloquearTouchFundo(e) {
+                if (!navbar || !navbar.classList.contains('aberto')) return;
+
+                if (!navbar.contains(e.target)) {
+                    e.preventDefault();
+                    return;
+                }
+
+                const atualY = e.touches && e.touches[0] ? e.touches[0].clientY : toqueInicialY;
+                const deltaY = atualY - toqueInicialY;
+                const noTopo = navbar.scrollTop <= 0 && deltaY > 0;
+                const noFundo = (navbar.scrollTop + navbar.clientHeight >= navbar.scrollHeight - 1) && deltaY < 0;
+
+                if (navbar.scrollHeight <= navbar.clientHeight || noTopo || noFundo) {
+                    e.preventDefault();
+                }
+            }
+
+            function registarToqueInicial(e) {
+                if (e.touches && e.touches[0]) {
+                    toqueInicialY = e.touches[0].clientY;
+                }
+            }
 
             function travarRolagemFundo(travar) {
-                document.documentElement.style.overflow = travar ? 'hidden' : '';
-                document.body.style.overflow = travar ? 'hidden' : '';
+                if (travar) {
+                    scrollYGuardado = window.scrollY || window.pageYOffset || 0;
+                    document.documentElement.style.overflow = 'hidden';
+                    document.documentElement.style.overscrollBehavior = 'none';
+                    document.body.style.overflow = 'hidden';
+                    document.body.style.overscrollBehavior = 'none';
+                    document.body.style.position = 'fixed';
+                    document.body.style.top = `-${scrollYGuardado}px`;
+                    document.body.style.left = '0';
+                    document.body.style.right = '0';
+                    document.body.style.width = '100%';
+                    document.addEventListener('touchstart', registarToqueInicial, { passive: true });
+                    document.addEventListener('touchmove', bloquearTouchFundo, { passive: false });
+                } else {
+                    document.removeEventListener('touchstart', registarToqueInicial);
+                    document.removeEventListener('touchmove', bloquearTouchFundo);
+                    document.documentElement.style.overflow = '';
+                    document.documentElement.style.overscrollBehavior = '';
+                    document.body.style.overflow = '';
+                    document.body.style.overscrollBehavior = '';
+                    document.body.style.position = '';
+                    document.body.style.top = '';
+                    document.body.style.left = '';
+                    document.body.style.right = '';
+                    document.body.style.width = '';
+                    window.scrollTo(0, scrollYGuardado);
+                }
             }
 
             function abrirMenuMobile(e) {
@@ -560,7 +618,11 @@
             if (overlayMenu) overlayMenu.addEventListener('click', fecharMenuMobile);
             if (navbar) {
                 navbar.querySelectorAll('a').forEach(link => {
-                    link.addEventListener('click', () => fecharMenuMobile());
+                    link.addEventListener('click', () => {
+                        travarRolagemFundo(false);
+                        navbar.classList.remove('aberto');
+                        if (overlayMenu) overlayMenu.classList.remove('ativo');
+                    });
                 });
             }
 
