@@ -44,17 +44,27 @@ async function getSql() {
 
 window.getSql = getSql;
 
-function limparArrayCoresDb(coresRaw) {
-    if (!coresRaw) return ['Padrão'];
-    let arr = coresRaw;
-    if (typeof coresRaw === 'string') {
+function parseListaSeguraDb(raw, fallback) {
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') {
+        const trimmed = raw.trim();
+        if (!trimmed) return fallback;
         try {
-            arr = coresRaw.trim().startsWith('[') ? JSON.parse(coresRaw) : coresRaw.split(',');
+            if (trimmed.startsWith('[')) {
+                const parsed = JSON.parse(trimmed);
+                return Array.isArray(parsed) ? parsed : fallback;
+            }
+            return trimmed.split(',').map(s => s.trim()).filter(Boolean);
         } catch (e) {
-            arr = coresRaw.split(',');
+            return trimmed.split(',').map(s => s.trim()).filter(Boolean);
         }
     }
-    if (!Array.isArray(arr) || arr.length === 0) return ['Padrão'];
+    return fallback;
+}
+
+function limparArrayCoresDb(coresRaw) {
+    const arr = parseListaSeguraDb(coresRaw, ['Padrão']);
+    if (arr.length === 0) return ['Padrão'];
 
     return arr.map(c => {
         if (typeof c === 'object' && c !== null) {
@@ -70,23 +80,27 @@ async function sincronizarProdutosNeon() {
         const dadosNeon = await sql`SELECT * FROM produtos ORDER BY id DESC;`;
 
         if (Array.isArray(dadosNeon) && dadosNeon.length > 0) {
-            const produtosFormatados = dadosNeon.map(item => ({
-                id: item.id,
-                nome: item.nome,
-                preco: parseFloat(item.preco),
-                precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
-                descricao: item.descricao || '',
-                categoria: item.categoria || 'geral',
-                estoque: item.estoque !== null && item.estoque !== undefined ? parseInt(item.estoque) : 10,
-                imagem: item.imagem || 'img/produto1.jpg',
-                imagens: Array.isArray(item.imagens)
-                    ? item.imagens
-                    : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
-                tamanhos: Array.isArray(item.tamanhos)
-                    ? item.tamanhos
-                    : (typeof item.tamanhos === 'string' ? JSON.parse(item.tamanhos) : ['P', 'M', 'G']),
-                cores: limparArrayCoresDb(item.cores)
-            }));
+            const produtosFormatados = dadosNeon.map(item => {
+                const imagens = parseListaSeguraDb(item.imagens, [item.imagem || 'img/produto1.jpg']);
+                const tamanhos = parseListaSeguraDb(item.tamanhos, ['P', 'M', 'G']);
+                const estoqueNum = (item.estoque !== null && item.estoque !== undefined && !Number.isNaN(parseInt(item.estoque, 10)))
+                    ? parseInt(item.estoque, 10)
+                    : 10;
+
+                return {
+                    id: item.id,
+                    nome: item.nome,
+                    preco: parseFloat(item.preco),
+                    precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
+                    descricao: item.descricao || '',
+                    categoria: item.categoria || 'geral',
+                    estoque: estoqueNum,
+                    imagem: item.imagem || imagens[0] || 'img/produto1.jpg',
+                    imagens,
+                    tamanhos,
+                    cores: limparArrayCoresDb(item.cores)
+                };
+            });
 
             localStorage.setItem('vr_modas_db', JSON.stringify(produtosFormatados));
 

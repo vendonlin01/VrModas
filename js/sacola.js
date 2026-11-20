@@ -11,6 +11,22 @@ function escaparHtmlSacola(str) {
         .replace(/'/g, '&#39;');
 }
 
+function urlImagemSeguraSacola(src) {
+    const val = String(src || '').trim();
+    if (!val) return 'img/produto1.jpg';
+    if (
+        val.startsWith('data:image/png;base64,') ||
+        val.startsWith('data:image/jpeg;base64,') ||
+        val.startsWith('data:image/webp;base64,')
+    ) {
+        return val;
+    }
+    if (/^(https?:\/\/|\/|\.\/|img\/)/i.test(val)) {
+        return escaparHtmlSacola(val);
+    }
+    return 'img/produto1.jpg';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const carrinhoLateral = document.getElementById('carrinho-lateral');
     const btnAbrirCarrinho = document.getElementById('abrir-carrinho');
@@ -45,11 +61,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function obterClienteAtual() {
-        return JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
-               JSON.parse(localStorage.getItem('vr_usuario_ativo')) ||
-               JSON.parse(sessionStorage.getItem('vr_cliente_dados')) ||
-               JSON.parse(localStorage.getItem('vr_cliente_dados')) ||
-               null;
+        try {
+            return JSON.parse(sessionStorage.getItem('vr_usuario_ativo')) ||
+                JSON.parse(localStorage.getItem('vr_usuario_ativo')) ||
+                JSON.parse(sessionStorage.getItem('vr_cliente_dados')) ||
+                JSON.parse(localStorage.getItem('vr_cliente_dados')) ||
+                null;
+        } catch (e) {
+            return null;
+        }
     }
 
     function limparTextoCor(corRaw) {
@@ -91,13 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (typeof obj === 'object' && obj !== null) {
-            if (obj.enderecoFormatado) return obj.enderecoFormatado;
+            if (obj.enderecoFormatado) return String(obj.enderecoFormatado);
             const rua = obj.rua || obj.logradouro || '';
             const num = obj.numero || 'S/N';
             const bairro = obj.bairro || '';
             const cidade = obj.cidade || '';
             const cep = obj.cep ? `(CEP: ${obj.cep})` : '';
-            const partes = [rua ? `${rua}, Nº ${num}` : '', bairro, cidade, cep].filter(p => p.trim() !== '');
+            const partes = [rua ? `${rua}, Nº ${num}` : '', bairro, cidade, cep].filter(p => String(p).trim() !== '');
             return partes.length > 0 ? partes.join(' - ') : '';
         }
 
@@ -124,17 +144,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         itensNoCarrinhoData.forEach(item => {
             item.cor = limparTextoCor(item.cor);
-            const subtotal = item.preco * item.quantidade;
+            const qtdNum = Math.max(1, parseInt(item.quantidade, 10) || 1);
+            const precoNum = Math.max(0, Number(item.preco) || 0);
+            const subtotal = precoNum * qtdNum;
             totalCarrinho += subtotal;
-            qtdItensCarrinho += item.quantidade;
+            qtdItensCarrinho += qtdNum;
 
+            const idRefSeguro = escaparHtmlSacola(item.idRef);
             const nomeSeguro = escaparHtmlSacola(item.nome);
             const tamSeguro = escaparHtmlSacola(item.tamanho);
             const corSegura = escaparHtmlSacola(item.cor);
+            const imgSegura = urlImagemSeguraSacola(item.imagem);
 
             listaItens.insertAdjacentHTML('beforeend', `
-                <div class="item-na-sacola" data-idref="${item.idRef}" style="display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #222;">
-                    <img src="${item.imagem}" alt="${nomeSeguro}" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/produto1.jpg'">
+                <div class="item-na-sacola" data-idref="${idRefSeguro}" style="display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #222;">
+                    <img src="${imgSegura}" alt="${nomeSeguro}" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/produto1.jpg'">
 
                     <div class="item-info" style="flex: 1; min-width: 0;">
                         <h4 style="font-size: 13px; margin: 0 0 3px 0; color: var(--branco, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeSeguro}</h4>
@@ -143,12 +167,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <div style="display: flex; align-items: center; gap: 6px; background: #141414; padding: 3px 6px; border-radius: 4px; border: 1px solid #333; flex-shrink: 0;">
-                        <button type="button" class="btn-sacola-qtd btn-sacola-menos" data-idref="${item.idRef}" style="background: none; border: none; color: #fff; font-size: 13px; cursor: pointer; padding: 0 3px; font-weight: bold;">-</button>
-                        <span style="font-size: 12px; font-weight: bold; min-width: 12px; text-align: center;">${item.quantidade}</span>
-                        <button type="button" class="btn-sacola-qtd btn-sacola-mais" data-idref="${item.idRef}" style="background: none; border: none; color: #fff; font-size: 13px; cursor: pointer; padding: 0 3px; font-weight: bold;">+</button>
+                        <button type="button" class="btn-sacola-qtd btn-sacola-menos" data-idref="${idRefSeguro}" style="background: none; border: none; color: #fff; font-size: 13px; cursor: pointer; padding: 0 3px; font-weight: bold;">-</button>
+                        <span style="font-size: 12px; font-weight: bold; min-width: 12px; text-align: center;">${qtdNum}</span>
+                        <button type="button" class="btn-sacola-qtd btn-sacola-mais" data-idref="${idRefSeguro}" style="background: none; border: none; color: #fff; font-size: 13px; cursor: pointer; padding: 0 3px; font-weight: bold;">+</button>
                     </div>
 
-                    <button class="btn-remover" data-idref="${item.idRef}" style="background: none; color: #ff4444; border: none; cursor: pointer; font-size: 15px; padding: 4px; flex-shrink: 0;" title="Remover item">✕</button>
+                    <button type="button" class="btn-remover" data-idref="${idRefSeguro}" style="background: none; color: #ff4444; border: none; cursor: pointer; font-size: 15px; padding: 4px; flex-shrink: 0;" title="Remover item">✕</button>
                 </div>
             `);
         });
@@ -166,7 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let valorDesconto = 0;
         if (cupomAtivo) {
-            valorDesconto = (cupomAtivo.tipo === 'porcentagem') ? (totalCarrinho * cupomAtivo.valor) / 100 : cupomAtivo.valor;
+            const valCupom = Number(cupomAtivo.valor) || 0;
+            valorDesconto = (cupomAtivo.tipo === 'porcentagem') ? (totalCarrinho * valCupom) / 100 : valCupom;
         }
         const totalFinalCalculado = Math.max(0, totalCarrinho - valorDesconto);
 
@@ -249,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (document.getElementById('btn-salvar-novo-endereco')) {
             document.getElementById('btn-salvar-novo-endereco').onclick = () => {
-                enderecoEntregaCustom = inputNovoEnd.value.trim() || 'Retirada na Loja / A combinar';
+                enderecoEntregaCustom = inputNovoEnd.value.trim().slice(0, 300) || 'Retirada na Loja / A combinar';
                 formAltEnd.style.display = 'none';
                 const txtEnd = document.getElementById('texto-endereco-sacola');
                 if (txtEnd) txtEnd.innerText = enderecoEntregaCustom;
@@ -260,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnCupom = document.getElementById('btn-aplicar-cupom-sacola');
         if (btnCupom) {
             btnCupom.onclick = async function () {
-                const codDigitado = document.getElementById('input-cupom-sacola').value.trim().toUpperCase();
+                const codDigitado = document.getElementById('input-cupom-sacola').value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
                 if (!codDigitado) {
                     alert("Digite o código do cupom.");
                     return;
@@ -332,7 +357,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btnAdicionarSacola.onclick = () => {
             const urlParams = new URLSearchParams(window.location.search);
             const produtoIdNaUrl = urlParams.get('id');
-            const produtosAtuais = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
+            let produtosAtuais = [];
+            try {
+                produtosAtuais = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
+            } catch (e) {
+                produtosAtuais = [];
+            }
 
             let prodRef = null;
             if (produtoIdNaUrl) {
@@ -342,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 prodRef = produtosAtuais[0];
             }
 
-            const estoqueMax = parseInt(prodRef?.estoque || 10);
+            const estoqueMax = Math.max(0, parseInt(prodRef?.estoque || 10, 10));
             if (estoqueMax <= 0) {
                 alert("Este produto está esgotado no momento.");
                 return;
@@ -362,11 +392,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const fotoAtual = imgEl ? imgEl.src : (prodRef?.imagem || 'img/produto1.jpg');
 
             const inputQtd = document.getElementById('qtd-produto');
-            let qtd = parseInt(inputQtd?.value || inputQtd?.innerText || '1');
+            let qtd = parseInt(inputQtd?.value || inputQtd?.innerText || '1', 10);
             if (isNaN(qtd) || qtd < 1) qtd = 1;
             if (qtd > estoqueMax) qtd = estoqueMax;
 
-            const itemExistente = itensNoCarrinhoData.find(it => it.nome === nomeStr && it.tamanho === tamSelecionado && it.cor === corSelecionada);
+            const itemExistente = itensNoCarrinhoData.find(it =>
+                it.nome === nomeStr && it.tamanho === tamSelecionado && it.cor === corSelecionada
+            );
+
             if (itemExistente) {
                 if (itemExistente.quantidade + qtd <= estoqueMax) {
                     itemExistente.quantidade += qtd;
@@ -436,12 +469,16 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(modal);
         }
 
-        const itensHtml = pedido.itens.map(i => `
-            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; color:#ccc;">
-                <span>${i.quantidade}x ${escaparHtmlSacola(i.nome)} (${escaparHtmlSacola(i.tamanho)} / ${escaparHtmlSacola(limparTextoCor(i.cor))})</span>
-                <span style="color:var(--dourado, #d4af37); font-weight:bold;">${(i.preco * i.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
-            </div>
-        `).join('');
+        const itensHtml = (pedido.itens || []).map(i => {
+            const qtdNum = Math.max(1, parseInt(i.quantidade, 10) || 1);
+            const precoNum = Math.max(0, Number(i.preco) || 0);
+            return `
+                <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; color:#ccc;">
+                    <span>${qtdNum}x ${escaparHtmlSacola(i.nome)} (${escaparHtmlSacola(i.tamanho)} / ${escaparHtmlSacola(limparTextoCor(i.cor))})</span>
+                    <span style="color:var(--dourado, #d4af37); font-weight:bold;">${(precoNum * qtdNum).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                </div>
+            `;
+        }).join('');
 
         modal.innerHTML = `
             <div style="background:#141414; border:1px solid #333; border-top:3px solid var(--dourado, #d4af37); border-radius:8px; max-width:440px; width:100%; padding:22px; color:#fff; text-align:center; box-shadow:0 15px 35px rgba(0,0,0,0.9);">
@@ -457,17 +494,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="margin-bottom:8px;">${itensHtml}</div>
                     <div style="display:flex; justify-content:space-between; border-top:1px solid #1f1f1f; padding-top:6px;">
                         <strong style="font-size:13px;">Total:</strong>
-                        <strong style="font-size:15px; color:var(--dourado, #d4af37);">${pedido.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                        <strong style="font-size:15px; color:var(--dourado, #d4af37);">${Number(pedido.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
                     </div>
                 </div>
 
                 <div style="background:#1a1a1a; padding:10px; border-radius:6px; font-size:11px; color:#aaa; margin-bottom:15px; text-align:left;">
                     <span style="color:var(--dourado, #d4af37); font-weight:bold;">📦 Forma de Recebimento:</span><br>
-                    ${escaparHtmlSacola(pedido.cliente.endereco)}<br><br>
-                    <span style="color:var(--dourado, #d4af37); font-weight:bold;">💳 Forma de Pagamento:</span> ${escaparHtmlSacola(pedido.formaPagamento)}
+                    ${escaparHtmlSacola(pedido.cliente?.endereco || '')}<br><br>
+                    <span style="color:var(--dourado, #d4af37); font-weight:bold;">💳 Forma de Pagamento:</span> ${escaparHtmlSacola(pedido.formaPagamento || '')}
                 </div>
 
-                <button id="btn-fechar-modal-pedido" style="width:100%; background:var(--dourado, #d4af37); color:#000; border:none; padding:11px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">Continuar Comprando</button>
+                <button type="button" id="btn-fechar-modal-pedido" style="width:100%; background:var(--dourado, #d4af37); color:#000; border:none; padding:11px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">Continuar Comprando</button>
             </div>
         `;
 
@@ -477,9 +514,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // ==========================================
-    // FINALIZAR PEDIDO (CHECKOUT ANTIFRAUDE NO SERVIDOR)
-    // ==========================================
     const btnFinalizarCompra = document.getElementById('btn-finalizar-compra') || document.querySelector('.btn-finalizar');
     if (btnFinalizarCompra) {
         btnFinalizarCompra.onclick = async () => {
@@ -527,8 +561,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (!resposta.ok || !dadosServidor.sucesso) {
                     alert(dadosServidor.erro || "Não foi possível finalizar o pedido.");
-                    btnFinalizarCompra.disabled = false;
-                    btnFinalizarCompra.innerText = "Finalizar Compra";
                     return;
                 }
 

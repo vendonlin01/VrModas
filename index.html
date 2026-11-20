@@ -148,6 +148,31 @@
 
     <script src="js/db.js"></script>
     <script>
+        function imagemPreAquecimentoSegura(src) {
+            const val = String(src || '').trim();
+            if (!val) return 'img/produto1.jpg';
+            if (
+                val.startsWith('data:image/png;base64,') ||
+                val.startsWith('data:image/jpeg;base64,') ||
+                val.startsWith('data:image/webp;base64,')
+            ) {
+                return val;
+            }
+            if (/^(https?:\/\/|\/|\.\/|img\/)/i.test(val)) {
+                return val;
+            }
+            return 'img/produto1.jpg';
+        }
+
+        function linkPreAquecimentoSeguro(url) {
+            const val = String(url || '').trim();
+            if (!val) return 'produtos.html';
+            if (/^(https?:\/\/|\/|\.\/|#|[a-zA-Z0-9_-]+\.html(\?.*)?)/i.test(val)) {
+                return val;
+            }
+            return 'produtos.html';
+        }
+
         async function preaquecerDadosSeguros() {
             try {
                 const sql = await getSql();
@@ -157,20 +182,29 @@
                 ]);
 
                 if (Array.isArray(produtosBanco) && produtosBanco.length > 0) {
-                    const formatados = produtosBanco.map(item => ({
-                        id: item.id,
-                        nome: item.nome,
-                        preco: parseFloat(item.preco),
-                        precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
-                        descricao: item.descricao || '',
-                        categoria: item.categoria || 'geral',
-                        estoque: item.estoque !== null ? parseInt(item.estoque) : 10,
-                        imagem: item.imagem || 'img/produto1.jpg',
-                        imagens: Array.isArray(item.imagens) ? item.imagens : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
-                        tamanhos: Array.isArray(item.tamanhos) ? item.tamanhos : ['P', 'M', 'G'],
-                        cores: typeof limparArrayCoresDb === 'function' ? limparArrayCoresDb(item.cores) : ['Padrão'],
-                        promocao: item.destaque || !!item.preco_promocional
-                    }));
+                    const formatados = produtosBanco.map(item => {
+                        const imagens = typeof parseListaSeguraDb === 'function'
+                            ? parseListaSeguraDb(item.imagens, [item.imagem || 'img/produto1.jpg'])
+                            : (Array.isArray(item.imagens) ? item.imagens : [item.imagem || 'img/produto1.jpg']);
+                        const tamanhos = typeof parseListaSeguraDb === 'function'
+                            ? parseListaSeguraDb(item.tamanhos, ['P', 'M', 'G'])
+                            : (Array.isArray(item.tamanhos) ? item.tamanhos : ['P', 'M', 'G']);
+
+                        return {
+                            id: item.id,
+                            nome: item.nome,
+                            preco: parseFloat(item.preco),
+                            precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
+                            descricao: item.descricao || '',
+                            categoria: item.categoria || 'geral',
+                            estoque: item.estoque !== null ? parseInt(item.estoque, 10) : 10,
+                            imagem: imagemPreAquecimentoSegura(item.imagem || imagens[0]),
+                            imagens: imagens.map(imagemPreAquecimentoSegura),
+                            tamanhos,
+                            cores: typeof limparArrayCoresDb === 'function' ? limparArrayCoresDb(item.cores) : ['Padrão'],
+                            promocao: item.destaque || !!item.preco_promocional
+                        };
+                    });
                     localStorage.setItem('vr_modas_db', JSON.stringify(formatados));
                 }
 
@@ -179,8 +213,8 @@
                         id: b.id,
                         titulo: b.titulo || '',
                         subtitulo: b.subtitulo || '',
-                        imagem: b.imagem,
-                        btnLink: b.btn_link || 'produtos.html',
+                        imagem: imagemPreAquecimentoSegura(b.imagem),
+                        btnLink: linkPreAquecimentoSeguro(b.btn_link),
                         btnTexto: b.btn_texto || 'Ver Coleção'
                     }));
                     localStorage.setItem('vr_modas_banners', JSON.stringify(bannersFormatados));
