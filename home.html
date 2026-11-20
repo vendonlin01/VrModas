@@ -543,6 +543,7 @@
                 navbar.classList.add('aberto');
                 if (overlayMenu) overlayMenu.classList.add('ativo');
                 travarRolagemFundo(true);
+                if (typeof window.pausarCarrossel === 'function') window.pausarCarrossel();
             }
 
             function fecharMenuMobile(e) {
@@ -551,6 +552,7 @@
                 navbar.classList.remove('aberto');
                 if (overlayMenu) overlayMenu.classList.remove('ativo');
                 travarRolagemFundo(false);
+                if (typeof window.retomarCarrossel === 'function') window.retomarCarrossel();
             }
 
             if (btnMenu) btnMenu.addEventListener('click', abrirMenuMobile);
