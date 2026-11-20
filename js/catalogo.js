@@ -21,12 +21,12 @@ async function sincronizarAvaliacoesVitrine() {
     let listaAv = [];
 
     try {
-        const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
-        if (sql) {
-            const res = await sql`SELECT produto_id, produto_nome, nota FROM avaliacoes;`;
-            if (Array.isArray(res)) {
-                listaAv = res;
-                localStorage.setItem('vr_modas_avaliacoes', JSON.stringify(res));
+        const resp = await fetch('/api/avaliacoes');
+        if (resp.ok) {
+            const dados = await resp.json();
+            if (Array.isArray(dados.avaliacoes)) {
+                listaAv = dados.avaliacoes;
+                localStorage.setItem('vr_modas_avaliacoes', JSON.stringify(listaAv));
             }
         }
     } catch (e) {
