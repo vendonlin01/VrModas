@@ -23,6 +23,7 @@ export default async function handler(req, res) {
                 produto_nome TEXT,
                 autor TEXT,
                 texto TEXT,
+                comentario TEXT,
                 nota INTEGER DEFAULT 5,
                 criado_em TIMESTAMP DEFAULT NOW()
             );
@@ -31,12 +32,19 @@ export default async function handler(req, res) {
         await sql`ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS produto_nome TEXT;`;
         await sql`ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS autor TEXT;`;
         await sql`ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS texto TEXT;`;
+        await sql`ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS comentario TEXT;`;
         await sql`ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS nota INTEGER DEFAULT 5;`;
+
+        try {
+            await sql`ALTER TABLE avaliacoes ALTER COLUMN comentario DROP NOT NULL;`;
+        } catch (_) {
+            // Ignora caso a coluna já aceite valores nulos
+        }
 
         if (req.method === 'GET') {
             const rows = await sql`
                 SELECT id, produto_id, produto_nome, autor,
-                       COALESCE(NULLIF(texto, ''), '') AS texto,
+                       COALESCE(NULLIF(texto, ''), NULLIF(comentario, ''), '') AS texto,
                        COALESCE(nota, 5) AS nota,
                        criado_em
                 FROM avaliacoes
@@ -62,9 +70,9 @@ export default async function handler(req, res) {
             }
 
             const [inserida] = await sql`
-                INSERT INTO avaliacoes (produto_id, produto_nome, autor, texto, nota)
-                VALUES (${prodIdLimpo}, ${prodNomeLimpo}, ${autorLimpo}, ${textoLimpo}, ${notaNum})
-                RETURNING id, produto_id, produto_nome, autor, texto, nota;
+                INSERT INTO avaliacoes (produto_id, produto_nome, autor, texto, comentario, nota)
+                VALUES (${prodIdLimpo}, ${prodNomeLimpo}, ${autorLimpo}, ${textoLimpo}, ${textoLimpo}, ${notaNum})
+                RETURNING id, produto_id, produto_nome, autor, texto, comentario, nota;
             `;
 
             return res.status(201).json({ sucesso: true, avaliacao: inserida });
