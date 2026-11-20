@@ -244,9 +244,53 @@
 }
 
 /* =========================================
+   BLOQUEIO DE ROLAGEM DO FUNDO NO MENU MOBILE
+   ========================================= */
+html.menu-mobile-aberto,
+body.menu-mobile-aberto {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+    height: 100% !important;
+}
+
+body.menu-mobile-aberto .carrossel-container,
+body.menu-mobile-aberto #vitrine,
+body.menu-mobile-aberto .footer {
+    pointer-events: none;
+}
+
+.overlay-menu-mobile {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: 1990;
+    touch-action: none;
+}
+
+.overlay-menu-mobile.ativo {
+    display: block;
+}
+
+/* =========================================
    RESPONSIVIDADE (MOBILE / CELULARES)
    ========================================= */
 @media (max-width: 768px) {
+    #navbar.aberto {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: min(82vw, 320px) !important;
+        height: 100dvh !important;
+        z-index: 2000 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+        touch-action: pan-y !important;
+    }
+
     .carrossel-container {
         height: 340px;
     }
