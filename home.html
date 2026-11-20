@@ -17,6 +17,13 @@
         /* =========================================
            OVERLAY E TRAVA DE ROLAGEM DO MENU LATERAL
            ========================================= */
+        html.menu-mobile-aberto,
+        body.menu-mobile-aberto {
+            overflow: hidden !important;
+            overscroll-behavior: none !important;
+            height: 100% !important;
+        }
+
         .overlay-menu-mobile {
             display: none;
             position: fixed;
@@ -24,6 +31,7 @@
             background: rgba(0, 0, 0, 0.65);
             backdrop-filter: blur(2px);
             z-index: 1990;
+            touch-action: none;
         }
 
         .overlay-menu-mobile.ativo {
@@ -538,7 +546,6 @@
             const navbar = document.getElementById('navbar');
             const btnFecharMenu = document.getElementById('fechar-menu');
             const overlayMenu = document.getElementById('overlay-menu-mobile');
-            let scrollYGuardado = 0;
             let toqueInicialY = 0;
 
             function bloquearTouchFundo(e) {
@@ -567,31 +574,15 @@
 
             function travarRolagemFundo(travar) {
                 if (travar) {
-                    scrollYGuardado = window.scrollY || window.pageYOffset || 0;
-                    document.documentElement.style.overflow = 'hidden';
-                    document.documentElement.style.overscrollBehavior = 'none';
-                    document.body.style.overflow = 'hidden';
-                    document.body.style.overscrollBehavior = 'none';
-                    document.body.style.position = 'fixed';
-                    document.body.style.top = `-${scrollYGuardado}px`;
-                    document.body.style.left = '0';
-                    document.body.style.right = '0';
-                    document.body.style.width = '100%';
+                    document.documentElement.classList.add('menu-mobile-aberto');
+                    document.body.classList.add('menu-mobile-aberto');
                     document.addEventListener('touchstart', registarToqueInicial, { passive: true });
                     document.addEventListener('touchmove', bloquearTouchFundo, { passive: false });
                 } else {
                     document.removeEventListener('touchstart', registarToqueInicial);
                     document.removeEventListener('touchmove', bloquearTouchFundo);
-                    document.documentElement.style.overflow = '';
-                    document.documentElement.style.overscrollBehavior = '';
-                    document.body.style.overflow = '';
-                    document.body.style.overscrollBehavior = '';
-                    document.body.style.position = '';
-                    document.body.style.top = '';
-                    document.body.style.left = '';
-                    document.body.style.right = '';
-                    document.body.style.width = '';
-                    window.scrollTo(0, scrollYGuardado);
+                    document.documentElement.classList.remove('menu-mobile-aberto');
+                    document.body.classList.remove('menu-mobile-aberto');
                 }
             }
 
