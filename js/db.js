@@ -2,10 +2,26 @@
 let instanciaSeguraSql = null;
 
 function obterTokenSessao() {
-    return sessionStorage.getItem('vr_auth_token') ||
-           localStorage.getItem('vr_auth_token') ||
-           sessionStorage.getItem('vr_token') ||
-           localStorage.getItem('vr_token') || '';
+    try {
+        const tokenDireto = sessionStorage.getItem('vr_auth_token') ||
+            localStorage.getItem('vr_auth_token') ||
+            sessionStorage.getItem('vr_token') ||
+            localStorage.getItem('vr_token') || '';
+        if (tokenDireto) return String(tokenDireto).trim();
+
+        const usuarioRaw = sessionStorage.getItem('vr_usuario_ativo') ||
+            localStorage.getItem('vr_usuario_ativo') ||
+            localStorage.getItem('usuarioLogado') || '';
+        if (usuarioRaw) {
+            const parsed = JSON.parse(usuarioRaw);
+            if (parsed && (parsed.token || parsed.jwt)) {
+                return String(parsed.token || parsed.jwt).trim();
+            }
+        }
+    } catch (e) {
+        console.warn('Erro ao recuperar token da sessão:', e.message);
+    }
+    return '';
 }
 
 async function getSql() {
@@ -30,7 +46,9 @@ async function getSql() {
 
             if (!resposta.ok) {
                 const errData = await resposta.json().catch(() => ({}));
-                throw new Error(`${errData.error || 'Erro HTTP ' + resposta.status} ${errData.detalhe ? '-> ' + errData.detalhe : ''}`);
+                const mensagemErro = errData.error || errData.message || `Erro HTTP ${resposta.status}`;
+                const detalhe = errData.detalhe ? ` -> ${errData.detalhe}` : '';
+                throw new Error(`${mensagemErro}${detalhe}`);
             }
 
             const dados = await resposta.json();

@@ -76,16 +76,23 @@ async function carregarListaEquipe() {
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         ${ehDono ? '' : `
-                            <button type="button" onclick="editarPermissoesMembro(${idNum})" title="Editar Permissões" style="background: rgba(212,175,55,0.1); border: 1px solid var(--dourado, #d4af37); color: var(--dourado, #d4af37); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                            <button type="button" class="btn-editar-membro" data-id="${idNum}" title="Editar Permissões" style="background: rgba(212,175,55,0.1); border: 1px solid var(--dourado, #d4af37); color: var(--dourado, #d4af37); padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
                                 ✏️ Editar
                             </button>
-                            <button type="button" onclick="revogarAcessoAdmin(${idNum})" title="Revogar Acesso" style="background: rgba(255,68,68,0.1); border: 1px solid #ff4444; color: #ff4444; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                            <button type="button" class="btn-revogar-membro" data-id="${idNum}" title="Revogar Acesso" style="background: rgba(255,68,68,0.1); border: 1px solid #ff4444; color: #ff4444; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
                                 🗑️ Revogar
                             </button>
                         `}
                     </div>
                 </div>
             `);
+        });
+
+        listaEquipeAdmin.querySelectorAll('.btn-editar-membro').forEach(btn => {
+            btn.addEventListener('click', () => editarPermissoesMembro(btn.getAttribute('data-id')));
+        });
+        listaEquipeAdmin.querySelectorAll('.btn-revogar-membro').forEach(btn => {
+            btn.addEventListener('click', () => revogarAcessoAdmin(btn.getAttribute('data-id')));
         });
 
     } catch (e) {
@@ -96,7 +103,7 @@ async function carregarListaEquipe() {
 window.carregarListaEquipe = carregarListaEquipe;
 
 function editarPermissoesMembro(idMembro) {
-    const membro = listaMembrosEquipe.find(m => m.id == idMembro);
+    const membro = listaMembrosEquipe.find(m => String(m.id) === String(idMembro));
     if (!membro) {
         alert('Membro não encontrado.');
         return;
@@ -146,7 +153,9 @@ function editarPermissoesMembro(idMembro) {
         btnCancelar.style.display = 'block';
     }
 
-    inputEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (inputEmail) {
+        inputEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 window.editarPermissoesMembro = editarPermissoesMembro;
 
@@ -238,6 +247,9 @@ async function salvarMembroEquipe(e) {
     } finally {
         if (btnSubmit) {
             btnSubmit.disabled = false;
+            if (!btnSubmit.innerText.includes('Atualizar')) {
+                btnSubmit.innerText = 'Salvar Permissões do Colaborador';
+            }
         }
     }
 }

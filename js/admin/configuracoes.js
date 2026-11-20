@@ -19,6 +19,10 @@ async function carregarConfiguracoesAdmin() {
     const inputWhats = document.getElementById('config-whatsapp');
     const inputEmail = document.getElementById('config-email');
 
+    const configLocal = JSON.parse(localStorage.getItem('vr_modas_config') || '{}');
+    if (inputWhats && configLocal.whatsapp) inputWhats.value = configLocal.whatsapp;
+    if (inputEmail && configLocal.email) inputEmail.value = configLocal.email;
+
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
         if (!sql) return;
@@ -52,18 +56,6 @@ async function carregarEAtualizarListaCupons() {
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
         if (!sql) throw new Error('Conexão SQL indisponível.');
-
-        // Garante que a tabela exista no Neon caso ainda não tenha sido criada
-        await sql`
-            CREATE TABLE IF NOT EXISTS cupons (
-                id SERIAL PRIMARY KEY,
-                codigo VARCHAR(50) UNIQUE NOT NULL,
-                tipo VARCHAR(20) NOT NULL DEFAULT 'porcentagem',
-                valor NUMERIC(10, 2) NOT NULL,
-                ativo BOOLEAN DEFAULT true,
-                criado_em TIMESTAMP DEFAULT NOW()
-            );
-        `;
 
         const dados = await sql`SELECT * FROM cupons WHERE ativo = true ORDER BY id DESC;`;
         if (Array.isArray(dados)) {
@@ -130,7 +122,6 @@ function renderizarTabelaCupons(cupons) {
 // 3. INICIALIZAÇÃO DOS FORMULÁRIOS
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Formulário de Cadastro de Cupom
     const formCupom = document.getElementById('form-cadastro-cupom');
     if (formCupom) {
         formCupom.onsubmit = async function (e) {
@@ -192,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Formulário de Configurações de Atendimento
     const formConfig = document.getElementById('form-config-loja');
     if (formConfig) {
         formConfig.onsubmit = async function (e) {
@@ -226,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Exportação e Restauração de Backup
     const btnExportarBackup = document.getElementById('btn-exportar-backup');
     if (btnExportarBackup) {
         btnExportarBackup.onclick = function () {
@@ -248,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Carrega dados iniciais
     carregarConfiguracoesAdmin();
     carregarEAtualizarListaCupons();
 });
