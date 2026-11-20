@@ -12,6 +12,22 @@ function escaparHtmlDetalhes(str) {
         .replace(/'/g, '&#39;');
 }
 
+function urlImagemSeguraDetalhes(src) {
+    const val = String(src || '').trim();
+    if (!val) return 'img/produto1.jpg';
+    if (
+        val.startsWith('data:image/png;base64,') ||
+        val.startsWith('data:image/jpeg;base64,') ||
+        val.startsWith('data:image/webp;base64,')
+    ) {
+        return val;
+    }
+    if (/^(https?:\/\/|\/|\.\/|img\/)/i.test(val)) {
+        return escaparHtmlDetalhes(val);
+    }
+    return 'img/produto1.jpg';
+}
+
 async function obterSqlDetalhesSeguro() {
     if (typeof window.getSql === 'function') {
         const s = await window.getSql();
@@ -55,29 +71,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Se não achou no cache ou deu F5 direto, busca no Neon de forma segura
     if (!produto && produtoIdUrl) {
-        try {
-            const sql = await obterSqlDetalhesSeguro();
-            if (sql) {
-                const res = await sql`SELECT * FROM produtos WHERE id = ${parseInt(produtoIdUrl)} LIMIT 1;`;
-                if (res.length > 0) {
-                    const item = res[0];
-                    produto = {
-                        id: item.id,
-                        nome: item.nome,
-                        preco: parseFloat(item.preco),
-                        precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
-                        descricao: item.descricao || '',
-                        categoria: item.categoria || 'geral',
-                        estoque: item.estoque !== null ? parseInt(item.estoque) : 10,
-                        imagem: item.imagem || 'img/produto1.jpg',
-                        imagens: Array.isArray(item.imagens) ? item.imagens : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
-                        tamanhos: Array.isArray(item.tamanhos) ? item.tamanhos : ['P', 'M', 'G'],
-                        cores: item.cores || ['Padrão']
-                    };
+        const idNumUrl = parseInt(produtoIdUrl, 10);
+        if (!isNaN(idNumUrl)) {
+            try {
+                const sql = await obterSqlDetalhesSeguro();
+                if (sql) {
+                    const res = await sql`SELECT * FROM produtos WHERE id = ${idNumUrl} LIMIT 1;`;
+                    if (res.length > 0) {
+                        const item = res[0];
+                        produto = {
+                            id: item.id,
+                            nome: item.nome,
+                            preco: parseFloat(item.preco),
+                            precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
+                            descricao: item.descricao || '',
+                            categoria: item.categoria || 'geral',
+                            estoque: item.estoque !== null ? parseInt(item.estoque, 10) : 10,
+                            imagem: item.imagem || 'img/produto1.jpg',
+                            imagens: Array.isArray(item.imagens) ? item.imagens : (typeof item.imagens === 'string' ? JSON.parse(item.imagens) : [item.imagem || 'img/produto1.jpg']),
+                            tamanhos: Array.isArray(item.tamanhos) ? item.tamanhos : ['P', 'M', 'G'],
+                            cores: item.cores || ['Padrão']
+                        };
+                    }
                 }
+            } catch (e) {
+                console.warn("Aviso ao buscar peça no Neon:", e);
             }
-        } catch (e) {
-            console.warn("Aviso ao buscar peça no Neon:", e);
         }
     }
 
@@ -114,8 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (promoVal > 0 && promoVal < precoVal) {
             const promoFormatado = promoVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             elPreco.innerHTML = `
-                <span style="text-decoration: line-through; color: #777; font-size: 16px; margin-right: 8px;">${precoFormatado}</span>
-                <span style="color: var(--dourado, #d4af37); font-weight: bold;">${promoFormatado}</span>
+                <span style="text-decoration: line-through; color: #777; font-size: 16px; margin-right: 8px;">${escaparHtmlDetalhes(precoFormatado)}</span>
+                <span style="color: var(--dourado, #d4af37); font-weight: bold;">${escaparHtmlDetalhes(promoFormatado)}</span>
             `;
         } else {
             elPreco.innerText = precoFormatado;
@@ -126,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const fotos = (produto.imagens && produto.imagens.length > 0) ? produto.imagens : [produto.imagem || 'img/produto1.jpg'];
     if (elImg) {
-        elImg.src = fotos[0];
+        elImg.src = urlImagemSeguraDetalhes(fotos[0]);
         elImg.onerror = () => { elImg.src = 'img/produto1.jpg'; };
     }
 
@@ -137,11 +156,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const containerMinis = document.createElement('div');
         containerMinis.className = 'miniaturas';
         fotos.forEach((foto, idx) => {
+            const fotoSegura = urlImagemSeguraDetalhes(foto);
             const thumb = document.createElement('img');
-            thumb.src = foto;
+            thumb.src = fotoSegura;
             thumb.className = `miniatura-foto ${idx === 0 ? 'ativa' : ''}`;
             thumb.onclick = () => {
-                if (elImg) elImg.src = foto;
+                if (elImg) elImg.src = fotoSegura;
                 containerMinis.querySelectorAll('.miniatura-foto').forEach(t => t.classList.remove('ativa'));
                 thumb.classList.add('ativa');
             };
@@ -209,7 +229,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==========================================
     const inputQtd = document.getElementById('qtd-produto');
     const controleQtd = document.querySelector('.controle-quantidade') || document.querySelector('.controle-qtd');
-    const estoqueMax = parseInt(produto.estoque || 1);
+    const estoqueMax = parseInt(produto.estoque || 1, 10);
     const btnAddSacola = document.getElementById('btn-adicionar-sacola');
 
     if (estoqueMax <= 0 && btnAddSacola) {
@@ -221,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (controleQtd && inputQtd && estoqueMax > 0) {
         controleQtd.onclick = (e) => {
-            let val = parseInt(inputQtd.value || '1');
+            let val = parseInt(inputQtd.value || '1', 10);
             const target = e.target;
             if (target.classList.contains('btn-mais') || target.innerText === '+') {
                 if (val < estoqueMax) {
@@ -321,7 +341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     estrelasClique.forEach(star => {
         star.onclick = function () {
-            const val = parseInt(this.getAttribute('data-valor') || this.getAttribute('data-nota') || '5');
+            const val = parseInt(this.getAttribute('data-valor') || this.getAttribute('data-nota') || '5', 10);
             notaSelecionada = val;
             if (inputNotaOculto) inputNotaOculto.value = val;
             estrelasClique.forEach((s, idx) => {
@@ -330,14 +350,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     });
 
+    async function garantirEstruturaTabelaAvaliacoes(sql) {
+        await sql`
+            CREATE TABLE IF NOT EXISTS avaliacoes (
+                id SERIAL PRIMARY KEY,
+                produto_id TEXT,
+                produto_nome TEXT,
+                autor TEXT,
+                texto TEXT,
+                nota INTEGER DEFAULT 5,
+                criado_em TIMESTAMP DEFAULT NOW()
+            );
+        `;
+        await sql`ALTER TABLE avaliacoes ADD COLUMN IF NOT EXISTS texto TEXT;`;
+    }
+
     async function carregarAvaliacoes() {
         let daPeca = [];
 
         try {
             const sql = await obterSqlDetalhesSeguro();
             if (sql) {
+                await garantirEstruturaTabelaAvaliacoes(sql);
                 const res = await sql`
-                    SELECT * FROM avaliacoes 
+                    SELECT id, produto_id, produto_nome, autor,
+                           COALESCE(texto, comentario, '') AS texto,
+                           nota
+                    FROM avaliacoes 
                     WHERE TRIM(CAST(produto_id AS TEXT)) = ${prodIdFinal.trim()} 
                        OR LOWER(TRIM(produto_nome)) = ${prodNomeFinal.toLowerCase().trim()}
                     ORDER BY id DESC;
@@ -349,7 +388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         produtoNome: a.produto_nome,
                         autor: a.autor,
                         texto: a.texto,
-                        nota: parseInt(a.nota || 5)
+                        nota: parseInt(a.nota || 5, 10)
                     }));
                 }
             }
@@ -359,8 +398,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (daPeca.length === 0) {
             const todasAv = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
-            daPeca = todasAv.filter(a => 
-                String(a.produtoId || a.produto_id || '').trim() === prodIdFinal.trim() || 
+            daPeca = todasAv.filter(a =>
+                String(a.produtoId || a.produto_id || '').trim() === prodIdFinal.trim() ||
                 ((a.produtoNome || a.produto_nome || '').toLowerCase().trim() === prodNomeFinal.toLowerCase().trim())
             );
         }
@@ -409,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         daPeca.forEach(av => {
             const textoComentario = escaparHtmlDetalhes(av.texto || av.comentario || '');
             const autorSeguro = escaparHtmlDetalhes(av.autor || 'Cliente');
-            const notaVal = Math.min(5, Math.max(1, parseInt(av.nota || 5)));
+            const notaVal = Math.min(5, Math.max(1, parseInt(av.nota || 5, 10)));
             const estrelasTxt = '★'.repeat(notaVal) + '☆'.repeat(5 - notaVal);
             containerListaAv.insertAdjacentHTML('beforeend', `
                 <div class="card-avaliacao-item">
@@ -450,13 +489,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btnSubmitAv.innerText = "Publicando...";
             }
 
+            let salvouNoNeon = false;
             try {
                 const sql = await obterSqlDetalhesSeguro();
                 if (sql) {
+                    await garantirEstruturaTabelaAvaliacoes(sql);
                     await sql`
                         INSERT INTO avaliacoes (produto_id, produto_nome, autor, texto, nota)
                         VALUES (${prodIdFinal}, ${prodNomeFinal}, ${autor}, ${texto}, ${notaSelecionada});
                     `;
+                    salvouNoNeon = true;
                 }
             } catch (erroBanco) {
                 console.warn("Erro ao salvar avaliação no Neon:", erroBanco);
@@ -488,7 +530,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             await carregarAvaliacoes();
-            mostrarToastNotificacao("Avaliação publicada com sucesso! ✨");
+            mostrarToastNotificacao(salvouNoNeon ? "Avaliação publicada com sucesso! ✨" : "Avaliação salva localmente.");
         };
     }
 

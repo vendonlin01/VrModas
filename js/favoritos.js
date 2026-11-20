@@ -3,6 +3,31 @@
    Compatível com a Gaveta Lateral e com favoritos.html
    ===================================================== */
 
+function escaparHtmlFavoritos(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function urlImagemSeguraFavoritos(src) {
+    const val = String(src || '').trim();
+    if (!val) return 'img/produto1.jpg';
+    if (
+        val.startsWith('data:image/png;base64,') ||
+        val.startsWith('data:image/jpeg;base64,') ||
+        val.startsWith('data:image/webp;base64,')
+    ) {
+        return val;
+    }
+    if (/^(https?:\/\/|\/|\.\/|img\/)/i.test(val)) {
+        return escaparHtmlFavoritos(val);
+    }
+    return 'img/produto1.jpg';
+}
+
 function obterFavoritos() {
     try {
         return JSON.parse(localStorage.getItem('vr_modas_favoritos')) || [];
@@ -18,7 +43,6 @@ function salvarFavoritos(lista) {
     renderizarPaginaFavoritos();
 }
 
-// Atualiza os contadores numéricos (ícone do topo com coração)
 function atualizarContadorFavoritos() {
     const lista = obterFavoritos();
     document.querySelectorAll('.contador-favoritos').forEach(el => {
@@ -26,7 +50,6 @@ function atualizarContadorFavoritos() {
     });
 }
 
-// Renderiza os itens dentro da gaveta lateral de favoritos
 function renderizarListaFavoritos() {
     const listaFavoritosEl = document.getElementById('lista-favoritos');
     if (!listaFavoritosEl) return;
@@ -41,24 +64,24 @@ function renderizarListaFavoritos() {
 
     lista.forEach(item => {
         const precoFormatado = Number(item.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const foto = item.imagem || 'img/produto1.jpg';
-        const nome = item.nome || 'Produto sem nome';
-        const idItem = item.id !== undefined && item.id !== null ? String(item.id) : '';
+        const foto = urlImagemSeguraFavoritos(item.imagem || 'img/produto1.jpg');
+        const nomeSeguro = escaparHtmlFavoritos(item.nome || 'Produto sem nome');
+        const idItem = item.id !== undefined && item.id !== null ? String(item.id).trim() : '';
+        const linkDetalhes = `detalhes.html?id=${encodeURIComponent(idItem)}`;
 
         listaFavoritosEl.insertAdjacentHTML('beforeend', `
             <div class="item-na-sacola" style="display: flex; gap: 12px; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
                 <img src="${foto}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #333;" onerror="this.src='img/produto1.jpg'">
                 <div style="flex: 1;">
-                    <a href="detalhes.html?id=${idItem}" style="color: var(--branco, #fff); text-decoration: none; font-size: 13px; font-weight: 700; display: block;">${nome}</a>
+                    <a href="${linkDetalhes}" style="color: var(--branco, #fff); text-decoration: none; font-size: 13px; font-weight: 700; display: block;">${nomeSeguro}</a>
                     <span style="color: var(--dourado, #d4af37); font-size: 13px;">${precoFormatado}</span>
                 </div>
-                <button type="button" class="btn-remover-favorito" data-id="${idItem}" data-nome="${nome}" style="background: transparent; color: #ff4444; border: none; font-size: 18px; cursor: pointer; padding: 6px;" title="Remover dos favoritos">✕</button>
+                <button type="button" class="btn-remover-favorito" data-id="${escaparHtmlFavoritos(idItem)}" data-nome="${nomeSeguro}" style="background: transparent; color: #ff4444; border: none; font-size: 18px; cursor: pointer; padding: 6px;" title="Remover dos favoritos">✕</button>
             </div>
         `);
     });
 }
 
-// Renderiza a grade completa na página dedicada favoritos.html
 function renderizarPaginaFavoritos() {
     const gradeFav = document.getElementById('vitrine-pagina-favoritos');
     if (!gradeFav) return;
@@ -77,22 +100,23 @@ function renderizarPaginaFavoritos() {
     }
 
     lista.forEach(item => {
-        const idFormatado = encodeURIComponent(String(item.id).trim());
-        const linkDetalhes = `detalhes.html?id=${idFormatado}`;
+        const idStr = String(item.id || '').trim();
+        const linkDetalhes = `detalhes.html?id=${encodeURIComponent(idStr)}`;
         const precoFormatado = Number(item.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        const foto = item.imagem || 'img/produto1.jpg';
+        const foto = urlImagemSeguraFavoritos(item.imagem || 'img/produto1.jpg');
+        const nomeSeguro = escaparHtmlFavoritos(item.nome || 'Produto sem nome');
 
         gradeFav.insertAdjacentHTML('beforeend', `
-            <div class="card-produto" data-id="${item.id}" style="position: relative;">
-                <button type="button" class="btn-favoritar-card" data-id="${item.id}" title="Remover dos Favoritos" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: none; font-size: 18px; cursor: pointer; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; z-index: 5;">
+            <div class="card-produto" data-id="${escaparHtmlFavoritos(idStr)}" style="position: relative;">
+                <button type="button" class="btn-favoritar-card" data-id="${escaparHtmlFavoritos(idStr)}" title="Remover dos Favoritos" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); border: none; font-size: 18px; cursor: pointer; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; z-index: 5;">
                     ❤️
                 </button>
                 <a href="${linkDetalhes}" class="card-link-foto">
-                    <img src="${foto}" class="imagem-produto" alt="${item.nome}" onerror="this.src='img/produto1.jpg'">
+                    <img src="${foto}" class="imagem-produto" alt="${nomeSeguro}" onerror="this.src='img/produto1.jpg'">
                 </a>
                 <div class="card-info">
                     <a href="${linkDetalhes}" style="text-decoration: none; color: inherit;">
-                        <h3>${item.nome}</h3>
+                        <h3>${nomeSeguro}</h3>
                     </a>
                     <p class="preco" style="color: var(--dourado, #d4af37); font-weight: 800; margin: 8px 0;">${precoFormatado}</p>
                     <a href="${linkDetalhes}" class="btn-comprar">Ver Detalhes</a>
@@ -101,9 +125,8 @@ function renderizarPaginaFavoritos() {
         `);
     });
 
-    // Ouvinte nos botões da grade de favoritos
     gradeFav.querySelectorAll('.btn-favoritar-card').forEach(btn => {
-        btn.onclick = function(e) {
+        btn.onclick = function (e) {
             e.preventDefault();
             e.stopPropagation();
             alternarFavorito(this.getAttribute('data-id'));
@@ -111,7 +134,6 @@ function renderizarPaginaFavoritos() {
     });
 }
 
-// Remove com segurança da gaveta
 function removerItemFavorito(id, nome) {
     let lista = obterFavoritos();
     const nomeItem = nome || "Produto";
@@ -131,7 +153,6 @@ function removerItemFavorito(id, nome) {
     atualizarIconesCoracaoNaPagina(novaLista);
 }
 
-// Alterna o estado de favorito vindo de botões na vitrine/detalhes/grade
 function alternarFavorito(id) {
     const produtosAtuais = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
     const prod = produtosAtuais.find(p => String(p.id) === String(id));
@@ -163,7 +184,6 @@ function alternarFavorito(id) {
     atualizarIconesCoracaoNaPagina(lista);
 }
 
-// Atualiza o desenho do coração caso esteja na vitrine ou catálogo
 function atualizarIconesCoracaoNaPagina(lista) {
     document.querySelectorAll('.card-produto').forEach(card => {
         const btnFav = card.querySelector('.btn-favorito, .card-favorito, .btn-favoritar-card');
@@ -182,7 +202,6 @@ function atualizarIconesCoracaoNaPagina(lista) {
     }
 }
 
-// Captura de clique no botão "✕" da gaveta
 document.addEventListener('click', (e) => {
     const btn = e.target.closest('.btn-remover-favorito');
     if (!btn) return;
@@ -195,7 +214,6 @@ document.addEventListener('click', (e) => {
     removerItemFavorito(id, nome);
 });
 
-// Inicialização geral
 document.addEventListener('DOMContentLoaded', () => {
     const abrirFavoritos = document.getElementById('abrir-favoritos');
     const fecharFavoritos = document.getElementById('fechar-favoritos');
@@ -217,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Botão "Limpar Todos" da página favoritos.html
     if (btnLimparTodos) {
         btnLimparTodos.onclick = () => {
             if (confirm('Tem certeza de que deseja limpar todos os favoritos?')) {
