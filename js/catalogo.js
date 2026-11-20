@@ -1,6 +1,5 @@
 /* =====================================================
-   CATÁLOGO, VITRINE & AVALIAÇÕES NOS CARDS - VR MODAS
-   Conectado de forma segura ao Banco de Dados Neon
+   CATÁLOGO, VITRINE, FILTROS & AVALIAÇÕES - VR MODAS
    ===================================================== */
 
 let mapaAvaliacoesProdutos = {};
@@ -14,63 +13,40 @@ function escaparHtmlCatalogo(str) {
         .replace(/'/g, '&#39;');
 }
 
-/**
- * Busca todas as avaliações no Neon e agrupa média e total por produto
- */
-async function sincronizarAvaliacoesVitrine() {
-    let listaAv = [];
-
-    try {
-        const resp = await fetch('/api/avaliacoes');
-        if (resp.ok) {
-            const dados = await resp.json();
-            if (Array.isArray(dados.avaliacoes)) {
-                listaAv = dados.avaliacoes;
-                localStorage.setItem('vr_modas_avaliacoes', JSON.stringify(listaAv));
-            }
-        }
-    } catch (e) {
-        console.warn('Usando avaliações em cache na vitrine:', e.message);
+function urlImagemSeguraCatalogo(src) {
+    const val = String(src || '').trim();
+    if (!val) return 'img/produto1.jpg';
+    if (
+        val.startsWith('data:image/png;base64,') ||
+        val.startsWith('data:image/jpeg;base64,') ||
+        val.startsWith('data:image/webp;base64,')
+    ) {
+        return val;
     }
-
-    if (listaAv.length === 0) {
-        listaAv = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
+    if (/^(https?:\/\/|\/|\.\/|img\/)/i.test(val)) {
+        return escaparHtmlCatalogo(val);
     }
-
-    const agrupado = {};
-    listaAv.forEach(av => {
-        const nota = Math.min(5, Math.max(1, Number(av.nota) || 5));
-        const chaveId = av.produto_id ? `id_${String(av.produto_id).trim()}` : null;
-        const chaveNome = av.produto_nome ? `nome_${String(av.produto_nome).toLowerCase().trim()}` : null;
-
-        [chaveId, chaveNome].filter(Boolean).forEach(chave => {
-            if (!agrupado[chave]) {
-                agrupado[chave] = { soma: 0, qtd: 0 };
-            }
-            agrupado[chave].soma += nota;
-            agrupado[chave].qtd += 1;
-        });
-    });
-
-    mapaAvaliacoesProdutos = agrupado;
-
-    if (typeof window.filtrarEOrdenarCatalogo === 'function') {
-        window.filtrarEOrdenarCatalogo();
-    }
+    return 'img/produto1.jpg';
 }
 
 function obterResumoAvaliacaoProduto(produto) {
-    const porId = mapaAvaliacoesProdutos[`id_${String(produto.id).trim()}`];
-    const porNome = produto.nome ? mapaAvaliacoesProdutos[`nome_${String(produto.nome).toLowerCase().trim()}`] : null;
-    const dados = porId || porNome;
+    const idChave = produto && produto.id !== undefined && produto.id !== null
+        ? `id_${String(produto.id).trim()}`
+        : null;
+    const nomeChave = produto && produto.nome
+        ? `nome_${String(produto.nome).toLowerCase().trim()}`
+        : null;
 
-    if (!dados || dados.qtd === 0) {
-        return { media: 0, qtd: 0 };
+    if (idChave && mapaAvaliacoesProdutos[idChave] && mapaAvaliacoesProdutos[idChave].qtd > 0) {
+        const dados = mapaAvaliacoesProdutos[idChave];
+        return { media: dados.soma / dados.qtd, qtd: dados.qtd };
     }
-    return {
-        media: dados.soma / dados.qtd,
-        qtd: dados.qtd
-    };
+    if (nomeChave && mapaAvaliacoesProdutos[nomeChave] && mapaAvaliacoesProdutos[nomeChave].qtd > 0) {
+        const dados = mapaAvaliacoesProdutos[nomeChave];
+        return { media: dados.soma / dados.qtd, qtd: dados.qtd };
+    }
+
+    return { media: 0, qtd: 0 };
 }
 
 function gerarHtmlEstrelasCard(produto) {
@@ -95,228 +71,306 @@ function gerarHtmlEstrelasCard(produto) {
     `;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const vitrineProdutos = document.getElementById('vitrine-produtos');
-    const inputBusca = document.getElementById('input-busca');
-    const btnBusca = document.getElementById('btn-busca');
-    const selectOrdenacao = document.getElementById('ordenar-produtos');
-    const btnAplicarFiltros = document.getElementById('btn-aplicar-filtros');
-    const btnLimparFiltros = document.getElementById('btn-limpar-filtros');
-    const contagemTopo = document.getElementById('contagem-produtos-topo');
+async function sincronizarAvaliacoesVitrine() {
+    let listaAv = [];
 
-    const urlParamsConsulta = new URLSearchParams(window.location.search);
-    let categoriaAtivaFiltro = urlParamsConsulta.get('categoria') || 'todos';
-
-    function normalizarTexto(txt) {
-        if (!txt) return '';
-        return txt.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    try {
+        const resp = await fetch('/api/avaliacoes');
+        if (resp.ok) {
+            const dados = await resp.json();
+            if (Array.isArray(dados.avaliacoes)) {
+                listaAv = dados.avaliacoes;
+                localStorage.setItem('vr_modas_avaliacoes', JSON.stringify(listaAv));
+            }
+        }
+    } catch (e) {
+        console.warn('Usando avaliações em cache na vitrine:', e.message);
     }
 
-    window.renderizarVitrine = function (lista) {
-        if (!vitrineProdutos) return;
-        vitrineProdutos.innerHTML = '';
+    if (listaAv.length === 0) {
+        listaAv = JSON.parse(localStorage.getItem('vr_modas_avaliacoes')) || [];
+    }
 
-        if (!lista || lista.length === 0) {
-            vitrineProdutos.innerHTML = '<p style="color: white; width: 100%; text-align: center; padding: 40px; grid-column: 1 / -1;">Nenhum produto cadastrado ou encontrado com os filtros selecionados.</p>';
+    const agrupado = {};
+    listaAv.forEach(av => {
+        const nota = Math.min(5, Math.max(1, Number(av.nota) || 5));
+        const prodId = av.produto_id !== undefined && av.produto_id !== null ? av.produto_id : av.produtoId;
+        const prodNome = av.produto_nome || av.produtoNome;
+
+        const chaveId = prodId ? `id_${String(prodId).trim()}` : null;
+        const chaveNome = prodNome ? `nome_${String(prodNome).toLowerCase().trim()}` : null;
+
+        [chaveId, chaveNome].filter(Boolean).forEach(chave => {
+            if (!agrupado[chave]) {
+                agrupado[chave] = { soma: 0, qtd: 0 };
+            }
+            agrupado[chave].soma += nota;
+            agrupado[chave].qtd += 1;
+        });
+    });
+
+    mapaAvaliacoesProdutos = agrupado;
+
+    if (typeof window.filtrarEOrdenarCatalogo === 'function') {
+        window.filtrarEOrdenarCatalogo();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const vitrineEl = document.getElementById('vitrine-produtos');
+    if (!vitrineEl) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let categoriaAtual = (urlParams.get('categoria') || 'todos').toLowerCase().trim();
+    let termoBuscaAtual = (urlParams.get('busca') || '').trim().toLowerCase();
+
+    const inputBusca = document.getElementById('input-busca');
+    const btnBusca = document.getElementById('btn-busca');
+    if (inputBusca && termoBuscaAtual) {
+        inputBusca.value = termoBuscaAtual;
+    }
+
+    // Marca chip ativo inicial no catálogo, se existir
+    document.querySelectorAll('.chip-cat').forEach(chip => {
+        const catChip = (chip.getAttribute('data-categoria') || '').toLowerCase().trim();
+        chip.classList.toggle('ativo', catChip === categoriaAtual);
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.chip-cat').forEach(c => c.classList.remove('ativo'));
+            chip.classList.add('ativo');
+            categoriaAtual = catChip || 'todos';
+            window.filtrarEOrdenarCatalogo();
+        });
+    });
+
+    function obterPrecoEfetivo(prod) {
+        const normal = Number(prod.preco || 0);
+        const promo = Number(prod.precoPromocional || prod.preco_promocional || 0);
+        if (promo > 0 && promo < normal) return promo;
+        return normal;
+    }
+
+    function ehOferta(prod) {
+        const normal = Number(prod.preco || 0);
+        const promo = Number(prod.precoPromocional || prod.preco_promocional || 0);
+        return Boolean(prod.destaque || prod.promocao || (promo > 0 && promo < normal));
+    }
+
+    function renderizarProdutos(lista) {
+        vitrineEl.innerHTML = '';
+
+        const contadorTopo = document.getElementById('contagem-produtos-topo');
+        if (contadorTopo) {
+            contadorTopo.innerText = `${lista.length} ${lista.length === 1 ? 'peça' : 'peças'}`;
+        }
+
+        if (!Array.isArray(lista) || lista.length === 0) {
+            vitrineEl.innerHTML = `
+                <div style="text-align: center; padding: 45px 15px; color: #888; grid-column: 1 / -1;">
+                    <p style="color: #fff; font-weight: 700; margin-bottom: 6px;">Nenhuma peça encontrada.</p>
+                    <small>Tente alterar os filtros ou buscar por outro termo.</small>
+                </div>
+            `;
             return;
         }
 
-        const favs = JSON.parse(localStorage.getItem('vr_modas_favoritos')) || [];
+        let favoritosIds = [];
+        try {
+            const favs = JSON.parse(localStorage.getItem('vr_modas_favoritos')) || [];
+            favoritosIds = favs.map(f => String(f.id).trim());
+        } catch (e) {
+            favoritosIds = [];
+        }
 
-        lista.forEach(produto => {
-            const estoqueDisponivel = parseInt(produto.estoque || 0);
-            const estaEsgotado = estoqueDisponivel <= 0;
+        lista.forEach(prod => {
+            const idStr = String(prod.id || '').trim();
+            const linkDetalhes = `detalhes.html?id=${encodeURIComponent(idStr)}`;
+            const nomeSeguro = escaparHtmlCatalogo(prod.nome || 'Peça VR Modas');
+            const fotoRaw = (Array.isArray(prod.imagens) && prod.imagens.length > 0)
+                ? prod.imagens[0]
+                : (prod.imagem || 'img/produto1.jpg');
+            const fotoSegura = urlImagemSeguraCatalogo(fotoRaw);
 
-            const idFormatado = encodeURIComponent(String(produto.id).trim());
-            const linkDetalhes = `detalhes.html?id=${idFormatado}`;
-            const nomeSeguro = escaparHtmlCatalogo(produto.nome);
+            const precoNormal = Number(prod.preco || 0);
+            const precoPromo = Number(prod.precoPromocional || prod.preco_promocional || 0);
+            const temPromo = precoPromo > 0 && precoPromo < precoNormal;
 
-            const precoFormatado = Number(produto.preco).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const precoHtml = temPromo
+                ? `<span style="text-decoration: line-through; color: #777; font-size: 11.5px; margin-right: 6px;">${precoNormal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span><span style="color: var(--dourado, #d4af37); font-weight: 800;">${precoPromo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>`
+                : `<span style="color: var(--dourado, #d4af37); font-weight: 800;">${precoNormal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>`;
 
-            let precoHTML = `<p class="preco">${precoFormatado}</p>`;
-            if (produto.precoPromocional && Number(produto.precoPromocional) < Number(produto.preco)) {
-                const promoFormatado = Number(produto.precoPromocional).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                precoHTML = `
-                    <p class="preco" style="display: flex; flex-direction: column; gap: 2px;">
-                        <span style="text-decoration: line-through; color: #777; font-size: 11px; font-weight: normal;">${precoFormatado}</span>
-                        <span style="color: var(--dourado, #d4af37); font-weight: 800;">${promoFormatado}</span>
-                    </p>
-                `;
-            }
+            const estaFav = favoritosIds.includes(idStr);
+            const htmlEstrelas = gerarHtmlEstrelasCard(prod);
 
-            const estrelasCardHTML = gerarHtmlEstrelasCard(produto);
-            let fotoPrincipal = (produto.imagens && produto.imagens.length > 0) ? produto.imagens[0] : (produto.imagem || 'img/produto1.jpg');
-            const isFav = favs.some(fav => String(fav.id) === String(produto.id));
-            const coracaoIcone = isFav ? '❤️' : '🤍';
-
-            const badgeEsgotadoHTML = estaEsgotado ? `<span class="badge-esgotado-foto">Esgotado</span>` : '';
-
-            const btnAcaoHTML = estaEsgotado
-                ? `<button type="button" class="btn-comprar btn-desativado" disabled>Esgotado</button>`
-                : `<a href="${linkDetalhes}" class="btn-comprar btn-link-detalhes" data-url="${linkDetalhes}">Ver Detalhes</a>`;
-
-            vitrineProdutos.insertAdjacentHTML('beforeend', `
-                <div class="card-produto ${estaEsgotado ? 'esgotado' : ''}" style="position: relative;">
-                    ${badgeEsgotadoHTML}
-                    <button type="button" class="btn-favoritar-card" data-id="${produto.id}" title="Favoritar">
-                        ${coracaoIcone}
+            vitrineEl.insertAdjacentHTML('beforeend', `
+                <article class="card-produto" data-id="${escaparHtmlCatalogo(idStr)}" style="position: relative; display: flex; flex-direction: column;">
+                    <button type="button" class="btn-favoritar-card ${estaFav ? 'ativo' : ''}" data-id="${escaparHtmlCatalogo(idStr)}" title="Favoritar" style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.65); border: none; font-size: 16px; cursor: pointer; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 4;">
+                        ${estaFav ? '❤️' : '🤍'}
                     </button>
-                    <a href="${estaEsgotado ? '#' : linkDetalhes}" class="card-link-foto">
-                        <img src="${fotoPrincipal}" class="imagem-produto" alt="${nomeSeguro}" onerror="this.src='img/produto1.jpg'">
+                    <a href="${linkDetalhes}" class="card-link-foto">
+                        <img src="${fotoSegura}" class="imagem-produto" alt="${nomeSeguro}" onerror="this.src='img/produto1.jpg'">
                     </a>
                     <div class="card-info">
-                        <a href="${estaEsgotado ? '#' : linkDetalhes}">
-                            <h3 style="margin-bottom: 2px;">${nomeSeguro}</h3>
+                        <a href="${linkDetalhes}" style="text-decoration: none; color: inherit;">
+                            <h3 style="margin: 0 0 2px 0; font-size: 13px;">${nomeSeguro}</h3>
                         </a>
-                        ${estrelasCardHTML}
-                        ${precoHTML}
-                        ${btnAcaoHTML}
+                        ${htmlEstrelas}
+                        <p class="preco" style="margin: 2px 0 10px 0; font-size: 13.5px;">${precoHtml}</p>
+                        <a href="${linkDetalhes}" class="btn-comprar" style="margin-top: auto !important;">Ver Detalhes</a>
                     </div>
-                </div>
+                </article>
             `);
         });
 
-        vitrineProdutos.querySelectorAll('.btn-favoritar-card').forEach(btn => {
-            btn.onclick = function (e) {
+        vitrineEl.querySelectorAll('.btn-favoritar-card').forEach(btn => {
+            btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (typeof alternarFavorito === 'function') {
-                    alternarFavorito(this.getAttribute('data-id'));
+                const idProd = btn.getAttribute('data-id');
+                if (typeof window.alternarFavorito === 'function') {
+                    window.alternarFavorito(idProd);
                 }
-            };
+            });
         });
+    }
 
-        vitrineProdutos.querySelectorAll('.btn-link-detalhes').forEach(btn => {
-            btn.onclick = function () {
-                const destino = this.getAttribute('data-url');
-                if (destino) {
-                    window.location.href = destino;
-                }
-            };
-        });
-    };
+    function atualizarBadgeFiltros(qtdFiltros) {
+        const badge = document.getElementById('badge-filtros-ativos');
+        if (!badge) return;
+        if (qtdFiltros > 0) {
+            badge.innerText = qtdFiltros;
+            badge.style.display = 'inline-flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
 
     window.filtrarEOrdenarCatalogo = function () {
-        if (!vitrineProdutos) return;
-        let resultado = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
+        let banco = [];
+        try {
+            banco = JSON.parse(localStorage.getItem('vr_modas_db')) || [];
+        } catch (e) {
+            banco = [];
+        }
 
-        if (categoriaAtivaFiltro === 'ofertas') {
-            resultado = resultado.filter(p => !!p.promocao || !!p.precoPromocional);
-        } else if (categoriaAtivaFiltro === 'acessorios') {
-            resultado = resultado.filter(p => {
-                const c = normalizarTexto(p.categoria);
-                return ['acessorio', 'acessorios', 'bolsa', 'bolsas', 'cinto', 'cintos', 'joia', 'joias'].some(term => c.includes(term));
+        let filtrados = [...banco];
+
+        if (categoriaAtual && categoriaAtual !== 'todos') {
+            if (categoriaAtual === 'ofertas') {
+                filtrados = filtrados.filter(p => ehOferta(p));
+            } else {
+                filtrados = filtrados.filter(p => String(p.categoria || '').toLowerCase().trim() === categoriaAtual);
+            }
+        }
+
+        if (termoBuscaAtual) {
+            filtrados = filtrados.filter(p => {
+                const nome = String(p.nome || '').toLowerCase();
+                const desc = String(p.descricao || '').toLowerCase();
+                const cat = String(p.categoria || '').toLowerCase();
+                return nome.includes(termoBuscaAtual) || desc.includes(termoBuscaAtual) || cat.includes(termoBuscaAtual);
             });
-        } else if (categoriaAtivaFiltro !== 'todos') {
-            const alvo = normalizarTexto(categoriaAtivaFiltro);
-            resultado = resultado.filter(p => normalizarTexto(p.categoria).includes(alvo));
         }
 
-        if (inputBusca && inputBusca.value.trim() !== '') {
-            const termo = normalizarTexto(inputBusca.value);
-            resultado = resultado.filter(p => normalizarTexto(p.nome).includes(termo) || normalizarTexto(p.categoria).includes(termo));
-        }
+        const faixaPreco = document.querySelector('input[name="filtro-preco"]:checked')?.value || 'todos';
+        const tamanhosSel = Array.from(document.querySelectorAll('.filtro-tamanho:checked')).map(c => c.value);
 
-        const radioPreco = document.querySelector('.filtro-preco:checked');
-        if (radioPreco) {
-            const valorFaixa = radioPreco.value;
-            resultado = resultado.filter(p => {
-                const precoComp = Number(p.precoPromocional || p.preco);
-                if (valorFaixa === 'ate-150') return precoComp <= 150;
-                if (valorFaixa === '150-250') return precoComp > 150 && precoComp <= 250;
-                if (valorFaixa === 'acima-250') return precoComp > 250;
+        let qtdFiltrosAtivos = 0;
+        if (faixaPreco !== 'todos') {
+            qtdFiltrosAtivos++;
+            filtrados = filtrados.filter(p => {
+                const preco = obterPrecoEfetivo(p);
+                if (faixaPreco === 'ate-150') return preco <= 150;
+                if (faixaPreco === '150-250') return preco > 150 && preco <= 250;
+                if (faixaPreco === 'acima-250') return preco > 250;
                 return true;
             });
         }
 
-        const tamanhosSelecionados = Array.from(document.querySelectorAll('.filtro-tamanho:checked')).map(cb => cb.value);
-        if (tamanhosSelecionados.length > 0) {
-            resultado = resultado.filter(p => p.tamanhos && p.tamanhos.some(t => tamanhosSelecionados.includes(t)));
-        }
-
-        if (selectOrdenacao) {
-            const criterio = selectOrdenacao.value;
-            if (criterio === 'menor-preco') resultado.sort((a, b) => Number(a.precoPromocional || a.preco) - Number(b.precoPromocional || b.preco));
-            else if (criterio === 'maior-preco') resultado.sort((a, b) => Number(b.precoPromocional || b.preco) - Number(a.precoPromocional || a.preco));
-            else if (criterio === 'nome-az') resultado.sort((a, b) => a.nome.localeCompare(b.nome));
-            else if (criterio === 'recentes') resultado.sort((a, b) => (b.id || 0) - (a.id || 0));
-            else if (criterio === 'melhores-avaliados') {
-                resultado.sort((a, b) => obterResumoAvaliacaoProduto(b).media - obterResumoAvaliacaoProduto(a).media);
-            }
-        }
-
-        if (contagemTopo) {
-            contagemTopo.innerText = `${resultado.length} peça(s) encontrada(s)`;
-        }
-
-        window.renderizarVitrine(resultado);
-    };
-
-    const botoesChips = document.querySelectorAll('.chip-cat');
-    if (botoesChips.length > 0) {
-        botoesChips.forEach(chip => {
-            chip.onclick = function (e) {
-                e.preventDefault();
-                botoesChips.forEach(c => c.classList.remove('ativo'));
-                this.classList.add('ativo');
-                categoriaAtivaFiltro = this.getAttribute('data-categoria');
-                window.filtrarEOrdenarCatalogo();
-            };
-        });
-
-        if (categoriaAtivaFiltro !== 'todos') {
-            botoesChips.forEach(c => {
-                if (c.getAttribute('data-categoria') === categoriaAtivaFiltro) {
-                    botoesChips.forEach(b => b.classList.remove('ativo'));
-                    c.classList.add('ativo');
+        if (tamanhosSel.length > 0) {
+            qtdFiltrosAtivos++;
+            filtrados = filtrados.filter(p => {
+                let tams = [];
+                if (Array.isArray(p.tamanhos)) tams = p.tamanhos;
+                else if (typeof p.tamanhos === 'string') {
+                    try { tams = JSON.parse(p.tamanhos); } catch (e) { tams = p.tamanhos.split(','); }
                 }
+                const tamsNorm = tams.map(t => String(typeof t === 'object' ? (t.tamanho || '') : t).trim());
+                return tamanhosSel.some(sel => tamsNorm.includes(sel));
             });
         }
-    }
+
+        atualizarBadgeFiltros(qtdFiltrosAtivos);
+
+        const ordem = document.getElementById('ordenar-produtos')?.value || 'padrao';
+        if (ordem === 'menor-preco') {
+            filtrados.sort((a, b) => obterPrecoEfetivo(a) - obterPrecoEfetivo(b));
+        } else if (ordem === 'maior-preco') {
+            filtrados.sort((a, b) => obterPrecoEfetivo(b) - obterPrecoEfetivo(a));
+        } else if (ordem === 'recentes') {
+            filtrados.sort((a, b) => Number(b.id || 0) - Number(a.id || 0));
+        } else if (ordem === 'nome-az') {
+            filtrados.sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
+        }
+
+        // Na vitrine principal da home (quando não há seletor de ordenação), limita destaques se necessário
+        const ehPaginaCatalogo = Boolean(document.getElementById('ordenar-produtos'));
+        if (!ehPaginaCatalogo && categoriaAtual === 'todos' && !termoBuscaAtual) {
+            renderizarProdutos(filtrados.slice(0, 8));
+        } else {
+            renderizarProdutos(filtrados);
+        }
+    };
 
     if (inputBusca) {
-        inputBusca.addEventListener('input', window.filtrarEOrdenarCatalogo);
-        inputBusca.addEventListener('keyup', (e) => { if (e.key === 'Enter') window.filtrarEOrdenarCatalogo(); });
-    }
-    if (btnBusca) btnBusca.onclick = (e) => { e.preventDefault(); window.filtrarEOrdenarCatalogo(); };
-    if (btnAplicarFiltros) btnAplicarFiltros.onclick = (e) => { e.preventDefault(); window.filtrarEOrdenarCatalogo(); };
-    if (selectOrdenacao) selectOrdenacao.onchange = window.filtrarEOrdenarCatalogo;
-
-    document.addEventListener('click', (e) => {
-        const btnResultados = e.target.closest('#btn-ver-resultados, .btn-ver-resultados');
-        if (btnResultados) {
-            e.preventDefault();
+        inputBusca.addEventListener('input', () => {
+            termoBuscaAtual = inputBusca.value.trim().toLowerCase();
             window.filtrarEOrdenarCatalogo();
-
-            const gavetaFiltros = document.getElementById('filtros-gaveta') || document.querySelector('.gaveta-filtros');
-            if (gavetaFiltros) {
-                gavetaFiltros.classList.remove('aberto', 'ativo');
-                gavetaFiltros.style.display = 'none';
+        });
+        inputBusca.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (!document.getElementById('ordenar-produtos') && inputBusca.value.trim()) {
+                    window.location.href = `produtos.html?busca=${encodeURIComponent(inputBusca.value.trim())}`;
+                } else {
+                    window.filtrarEOrdenarCatalogo();
+                }
             }
-
-            const vitrina = document.getElementById('vitrine-produtos') || document.getElementById('vitrine');
-            if (vitrina) vitrina.scrollIntoView({ behavior: 'smooth' });
-        }
-    });
-
-    if (btnLimparFiltros) {
-        btnLimparFiltros.onclick = () => {
-            document.querySelectorAll('.filtro-tamanho').forEach(cb => cb.checked = false);
-            const radioPadrao = document.querySelector('.filtro-preco[value="todos"]');
-            if (radioPadrao) radioPadrao.checked = true;
-            if (selectOrdenacao) selectOrdenacao.value = 'padrao';
-            if (inputBusca) inputBusca.value = '';
-            categoriaAtivaFiltro = 'todos';
-
-            botoesChips.forEach(c => c.classList.remove('ativo'));
-            const chipTodos = document.querySelector('.chip-cat[data-categoria="todos"]');
-            if (chipTodos) chipTodos.classList.add('ativo');
-
-            window.filtrarEOrdenarCatalogo();
-            if (typeof mostrarToast === 'function') mostrarToast("Filtros limpos!");
-        };
+        });
     }
 
+    if (btnBusca && inputBusca) {
+        btnBusca.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!document.getElementById('ordenar-produtos') && inputBusca.value.trim()) {
+                window.location.href = `produtos.html?busca=${encodeURIComponent(inputBusca.value.trim())}`;
+            } else {
+                termoBuscaAtual = inputBusca.value.trim().toLowerCase();
+                window.filtrarEOrdenarCatalogo();
+            }
+        });
+    }
+
+    const selectOrdenar = document.getElementById('ordenar-produtos');
+    if (selectOrdenar) {
+        selectOrdenar.addEventListener('change', () => window.filtrarEOrdenarCatalogo());
+    }
+
+    const btnLimparFiltros = document.getElementById('btn-limpar-filtros');
+    if (btnLimparFiltros) {
+        btnLimparFiltros.addEventListener('click', () => {
+            const radioTodos = document.querySelector('input[name="filtro-preco"][value="todos"]');
+            if (radioTodos) radioTodos.checked = true;
+            document.querySelectorAll('.filtro-tamanho:checked').forEach(cb => { cb.checked = false; });
+            window.filtrarEOrdenarCatalogo();
+        });
+    }
+
+    const btnAplicarFiltros = document.getElementById('btn-aplicar-filtros');
+    if (btnAplicarFiltros) {
+        btnAplicarFiltros.addEventListener('click', () => window.filtrarEOrdenarCatalogo());
+    }
+
+    // Renderização inicial imediata do cache e sincronização das avaliações
     window.filtrarEOrdenarCatalogo();
     sincronizarAvaliacoesVitrine();
 });
