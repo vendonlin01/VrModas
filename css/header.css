@@ -140,8 +140,8 @@
     border-top: 2px solid var(--dourado);
     border-radius: 6px;
     min-width: 175px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-    z-index: 2500;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
+    z-index: 2600;
     padding: 8px 0;
 }
 
@@ -157,7 +157,7 @@
     border-bottom: 1px solid #222;
 }
 
-.dropdown-usuario a, 
+.dropdown-usuario a,
 .dropdown-usuario button {
     display: block;
     width: 100%;
@@ -171,7 +171,7 @@
     transition: all 0.2s ease;
 }
 
-.dropdown-usuario a:hover, 
+.dropdown-usuario a:hover,
 .dropdown-usuario button:hover {
     background: #141414;
     color: var(--branco);
@@ -285,8 +285,8 @@
         position: fixed;
         top: 0;
         left: -100%;
-        width: 260px;
-        height: 100vh;
+        width: min(82vw, 300px);
+        height: 100dvh;
         background-color: var(--preto-claro);
         flex-direction: column;
         align-items: flex-start;
@@ -294,11 +294,14 @@
         transition: left 0.3s ease;
         z-index: 2500;
         border-right: 1px solid #333;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
     }
 
     .navbar.aberto {
         left: 0;
-        box-shadow: 8px 0 25px rgba(0,0,0,0.85);
+        box-shadow: 8px 0 25px rgba(0, 0, 0, 0.85);
     }
 
     .btn-fechar-menu {
