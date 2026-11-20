@@ -8,6 +8,15 @@ let dataInicioRelatorio = obterDataLocalHoje();
 let dataFimRelatorio = obterDataLocalHoje();
 let pedidosFiltradosPeriodo = [];
 
+function escaparAdminRelatorios(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function obterDataLocalHoje() {
     const agora = new Date();
     const ano = agora.getFullYear();
@@ -16,9 +25,6 @@ function obterDataLocalHoje() {
     return `${ano}-${mes}-${dia}`;
 }
 
-/**
- * 1. Injeta a estrutura completa com container refinado para mobile
- */
 function injetarEstruturaRelatorios() {
     const container = document.getElementById('secao-relatorios');
     if (!container || container.innerHTML.trim() !== '') return;
@@ -35,7 +41,6 @@ function injetarEstruturaRelatorios() {
                 </button>
             </div>
 
-            <!-- Filtros de Período -->
             <div style="background: #0e0e0e; border: 1px solid #242424; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
                 <label style="font-size: 10.5px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Filtrar Período:</label>
                 
@@ -56,7 +61,6 @@ function injetarEstruturaRelatorios() {
                 </div>
             </div>
 
-            <!-- Cards de Métricas -->
             <div class="dashboard-cards" style="margin-bottom: 16px; gap: 8px;">
                 <div class="dash-card borda-dourada" style="padding: 12px 10px;">
                     <h3 style="font-size: 10px; margin-bottom: 6px;">Faturamento</h3>
@@ -76,7 +80,6 @@ function injetarEstruturaRelatorios() {
                 </div>
             </div>
 
-            <!-- Resumo de Formas de Pagamento -->
             <div style="background: #101010; border: 1px solid #222; border-radius: 8px; padding: 12px; margin-bottom: 18px;">
                 <h3 style="color: var(--dourado, #d4af37); font-size: 11.5px; margin: 0 0 8px 0; text-transform: uppercase;">💳 Formas de Pagamento</h3>
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
@@ -95,7 +98,6 @@ function injetarEstruturaRelatorios() {
                 </div>
             </div>
 
-            <!-- Box Elegante de Extrato de Vendas (Scroll Limpo & Compacto) -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <h3 style="font-size: 13px; margin: 0; color: #ddd; text-transform: uppercase; letter-spacing: 0.5px;">📦 Extrato de Pedidos</h3>
                 <span id="contagem-pedidos-box" style="font-size: 11px; color: #777;">0 registro(s)</span>
@@ -110,9 +112,6 @@ function injetarEstruturaRelatorios() {
     configurarEventosFiltros();
 }
 
-/**
- * 2. Eventos dos Botões de Período
- */
 function configurarEventosFiltros() {
     const botoesPeriodo = document.querySelectorAll('.btn-filtro-periodo');
     const inputData = document.getElementById('filtro-data-relatorio');
@@ -160,9 +159,6 @@ function configurarEventosFiltros() {
     }
 }
 
-/**
- * 3. Cálculos de Datas
- */
 function definirIntervaloDatas(periodo) {
     modoIntervaloAtivo = periodo;
     dataFimRelatorio = obterDataLocalHoje();
@@ -209,9 +205,6 @@ function formatarDataParaIso(d) {
     return `${ano}-${mes}-${dia}`;
 }
 
-/**
- * 4. Carrega Vendas e Renderiza Cards Compactos
- */
 async function carregarRelatorioDataSelecionada() {
     injetarEstruturaRelatorios();
 
@@ -303,8 +296,8 @@ async function carregarRelatorioDataSelecionada() {
             return;
         }
 
-        // Renderização dos cards compactos estilo extrato bancário
         containerExtrato.innerHTML = pedidosFiltradosPeriodo.map(p => {
+            const idNum = parseInt(p.id, 10);
             const dataHora = p.criado_em ? new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '--:--';
             const totalFmt = Number(p.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -322,7 +315,11 @@ async function carregarRelatorioDataSelecionada() {
                 arrayItens = [];
             }
 
-            const resumoPecas = arrayItens.map(i => `${i.quantidade || 1}x ${i.nome}`).join(', ') || 'Peça';
+            const resumoPecas = escaparAdminRelatorios(arrayItens.map(i => `${i.quantidade || 1}x ${i.nome}`).join(', ') || 'Peça');
+            const clienteSeguro = escaparAdminRelatorios(p.cliente_nome || 'Cliente');
+            const formaPagSegura = escaparAdminRelatorios(formaPag);
+            const statusSeguro = escaparAdminRelatorios(p.status || 'Pendente');
+
             const statusNorm = String(p.status || '').toLowerCase().normalize('NFD');
             const isCancelado = statusNorm.includes('cancel');
             const isConcluido = statusNorm.includes('concluid') || statusNorm.includes('pago');
@@ -332,28 +329,26 @@ async function carregarRelatorioDataSelecionada() {
 
             return `
                 <div style="background: #141414; border: 1px solid #242424; border-radius: 6px; padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <!-- Lado Esquerdo: Info do Pedido & Cliente -->
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-                            <strong style="color: var(--dourado, #d4af37); font-size: 12.5px;">#${p.id}</strong>
-                            <span style="color: #777; font-size: 11px;">• ${dataHora}</span>
-                            <span style="font-size: 10px; padding: 1px 5px; border-radius: 3px; background: #222; color: #aaa; text-transform: uppercase;">${formaPag}</span>
+                            <strong style="color: var(--dourado, #d4af37); font-size: 12.5px;">#${idNum}</strong>
+                            <span style="color: #777; font-size: 11px;">• ${escaparAdminRelatorios(dataHora)}</span>
+                            <span style="font-size: 10px; padding: 1px 5px; border-radius: 3px; background: #222; color: #aaa; text-transform: uppercase;">${formaPagSegura}</span>
                         </div>
                         <div style="font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            ${p.cliente_nome || 'Cliente'}
+                            ${clienteSeguro}
                         </div>
                         <div style="font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             ${resumoPecas}
                         </div>
                     </div>
 
-                    <!-- Lado Direito: Valor & Status -->
                     <div style="text-align: right; flex-shrink: 0;">
                         <div style="color: var(--dourado, #d4af37); font-weight: 700; font-size: 13.5px; margin-bottom: 3px;">
                             ${totalFmt}
                         </div>
                         <span style="font-size: 10px; font-weight: 700; color: ${corBadge}; background: ${bgBadge}; border: 1px solid ${corBadge}; padding: 2px 6px; border-radius: 4px; display: inline-block;">
-                            ${p.status || 'Pendente'}
+                            ${statusSeguro}
                         </span>
                     </div>
                 </div>
@@ -363,15 +358,12 @@ async function carregarRelatorioDataSelecionada() {
     } catch (e) {
         console.error('Erro ao carregar relatório do período:', e);
         if (containerExtrato) {
-            containerExtrato.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 15px; font-size: 12px; margin: 0;">Falha: ${e.message}</p>`;
+            containerExtrato.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 15px; font-size: 12px; margin: 0;">Falha: ${escaparAdminRelatorios(e.message)}</p>`;
         }
     }
 }
 window.carregarRelatorioDataSelecionada = carregarRelatorioDataSelecionada;
 
-/**
- * 5. Impressão de Fechamento de Caixa
- */
 function imprimirFechamentoDoDia() {
     if (!pedidosFiltradosPeriodo || pedidosFiltradosPeriodo.length === 0) {
         alert('Não há vendas no período selecionado para emitir fechamento.');
@@ -386,6 +378,7 @@ function imprimirFechamentoDoDia() {
     let concluidos = 0;
 
     const linhas = pedidosFiltradosPeriodo.map(p => {
+        const idNum = parseInt(p.id, 10);
         const total = Number(p.total || 0);
         let formaPag = 'PIX';
         let arrayItens = [];
@@ -396,7 +389,7 @@ function imprimirFechamentoDoDia() {
                 arrayItens = raw.itens || [];
                 formaPag = raw.forma_pagamento || 'PIX';
             }
-        } catch(e) {}
+        } catch (e) {}
 
         const statusNorm = String(p.status || '').toLowerCase().normalize('NFD');
         if (statusNorm.includes('concluid') || statusNorm.includes('pago')) {
@@ -415,26 +408,31 @@ function imprimirFechamentoDoDia() {
 
         return `
             <tr>
-                <td style="padding: 6px; border-bottom: 1px solid #ddd;">#${p.id} (${hora})</td>
-                <td style="padding: 6px; border-bottom: 1px solid #ddd;">${p.cliente_nome || 'Cliente'}</td>
-                <td style="padding: 6px; border-bottom: 1px solid #ddd;">${formaPag}</td>
-                <td style="padding: 6px; border-bottom: 1px solid #ddd;">${p.status || 'Pendente'}</td>
+                <td style="padding: 6px; border-bottom: 1px solid #ddd;">#${idNum} (${escaparAdminRelatorios(hora)})</td>
+                <td style="padding: 6px; border-bottom: 1px solid #ddd;">${escaparAdminRelatorios(p.cliente_nome || 'Cliente')}</td>
+                <td style="padding: 6px; border-bottom: 1px solid #ddd;">${escaparAdminRelatorios(formaPag)}</td>
+                <td style="padding: 6px; border-bottom: 1px solid #ddd;">${escaparAdminRelatorios(p.status || 'Pendente')}</td>
                 <td style="padding: 6px; border-bottom: 1px solid #ddd; text-align: right;">${total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
             </tr>
         `;
     }).join('');
 
-    const periodoStr = dataInicioRelatorio === dataFimRelatorio 
-        ? formatarDataBr(dataInicioRelatorio) 
+    const periodoStr = dataInicioRelatorio === dataFimRelatorio
+        ? formatarDataBr(dataInicioRelatorio)
         : `${formatarDataBr(dataInicioRelatorio)} até ${formatarDataBr(dataFimRelatorio)}`;
 
     const win = window.open('', '_blank', 'width=780,height=900');
+    if (!win) {
+        alert('Permita pop-ups no navegador para imprimir o fechamento.');
+        return;
+    }
+
     win.document.write(`
         <!DOCTYPE html>
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
-            <title>Fechamento de Caixa - VR Modas - ${periodoStr}</title>
+            <title>Fechamento de Caixa - VR Modas - ${escaparAdminRelatorios(periodoStr)}</title>
             <style>
                 body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 25px; color: #111; font-size: 13px; }
                 .recibo { max-width: 520px; margin: 0 auto; border: 1px solid #ccc; padding: 20px; border-radius: 6px; }
@@ -449,7 +447,7 @@ function imprimirFechamentoDoDia() {
         <body>
             <div class="recibo">
                 <h1>VR MODAS - FECHAMENTO DE CAIXA</h1>
-                <div class="sub">Período: ${periodoStr} | Emissão: ${new Date().toLocaleTimeString('pt-BR')}</div>
+                <div class="sub">Período: ${escaparAdminRelatorios(periodoStr)} | Emissão: ${escaparAdminRelatorios(new Date().toLocaleTimeString('pt-BR'))}</div>
 
                 <div class="totais">
                     <div><strong>Faturamento Total Concluído:</strong> ${faturamento.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
@@ -488,7 +486,6 @@ function formatarDataBr(dataIso) {
     return dataIso;
 }
 
-// Inicialização automática: injeta e carrega 'hoje'
 document.addEventListener('DOMContentLoaded', () => {
     injetarEstruturaRelatorios();
     definirIntervaloDatas('hoje');

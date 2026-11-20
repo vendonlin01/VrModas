@@ -5,9 +5,40 @@
 
 let bannerImagemBase64 = null;
 
-/**
- * 1. Converte e comprime a foto do banner para Base64
- */
+function escaparAdminBanners(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function urlBannerSegura(src) {
+    const val = String(src || '').trim();
+    if (!val) return 'img/placeholder.png';
+    if (
+        val.startsWith('data:image/png;base64,') ||
+        val.startsWith('data:image/jpeg;base64,') ||
+        val.startsWith('data:image/webp;base64,')
+    ) {
+        return val;
+    }
+    if (/^(https?:\/\/|\/|\.\/|img\/)/i.test(val)) {
+        return escaparAdminBanners(val);
+    }
+    return 'img/placeholder.png';
+}
+
+function linkBannerSeguro(url) {
+    const val = String(url || '').trim();
+    if (!val) return '#vitrine';
+    if (/^(https?:\/\/|\/|\.\/|#|[a-zA-Z0-9_-]+\.html)/i.test(val)) {
+        return escaparAdminBanners(val);
+    }
+    return '#vitrine';
+}
+
 function configurarUploadBanner() {
     const inputBanner = document.getElementById('foto-banner') || document.getElementById('banner-imagem-arquivo');
     const previewContainer = document.getElementById('preview-banner');
@@ -22,7 +53,6 @@ function configurarUploadBanner() {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                // Redimensiona para no máximo 1200px para upload rápido e leve no Neon
                 const larguraMax = 1200;
                 let largura = img.width;
                 let altura = img.height;
@@ -42,7 +72,7 @@ function configurarUploadBanner() {
                 if (previewContainer) {
                     previewContainer.innerHTML = `
                         <div style="margin-top: 10px; position: relative; border-radius: 6px; overflow: hidden; border: 1px solid #444; max-width: 320px;">
-                            <img src="${bannerImagemBase64}" style="width: 100%; height: auto; display: block; object-fit: cover;">
+                            <img src="${urlBannerSegura(bannerImagemBase64)}" style="width: 100%; height: auto; display: block; object-fit: cover;">
                             <button type="button" onclick="limparPreviewBanner()" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.8); color: #ff4444; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold;">&times;</button>
                         </div>
                     `;
@@ -63,9 +93,6 @@ function limparPreviewBanner() {
 }
 window.limparPreviewBanner = limparPreviewBanner;
 
-/**
- * 2. Carrega a lista de banners cadastrados no Neon
- */
 async function carregarEAtualizarListaBanners() {
     const containerLista = document.getElementById('lista-banners-admin');
     if (!containerLista) return;
@@ -84,11 +111,12 @@ async function carregarEAtualizarListaBanners() {
         }
 
         containerLista.innerHTML = banners.map(b => {
-            const img = b.imagem || b.foto || b.url || 'img/placeholder.png';
-            const titulo = b.titulo || 'Sem título';
-            const subtitulo = b.subtitulo || b.descricao || '';
-            const link = b.btn_link || b.link || '#vitrine';
-            const btnTexto = b.btn_texto || b.texto_botao || 'Ver Coleção';
+            const idNum = parseInt(b.id, 10);
+            const img = urlBannerSegura(b.imagem || b.foto || b.url || 'img/placeholder.png');
+            const titulo = escaparAdminBanners(b.titulo || 'Sem título');
+            const subtitulo = escaparAdminBanners(b.subtitulo || b.descricao || '');
+            const link = linkBannerSeguro(b.btn_link || b.link || '#vitrine');
+            const btnTexto = escaparAdminBanners(b.btn_texto || b.texto_botao || 'Ver Coleção');
 
             return `
                 <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid #2e2e2e; border-radius: 8px; padding: 12px; margin-bottom: 12px; gap: 14px; flex-wrap: wrap;">
@@ -101,7 +129,7 @@ async function carregarEAtualizarListaBanners() {
                         </div>
                     </div>
                     <div>
-                        <button type="button" onclick="excluirBannerAdmin(${b.id})" title="Excluir Banner" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        <button type="button" onclick="excluirBannerAdmin(${idNum})" title="Excluir Banner" style="background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
                             🗑️ Excluir
                         </button>
                     </div>
@@ -111,14 +139,11 @@ async function carregarEAtualizarListaBanners() {
 
     } catch (e) {
         console.error('Erro ao listar banners:', e);
-        containerLista.innerHTML = `<p style="color: #ff6b6b; text-align: center; padding: 15px;">Falha ao carregar banners: ${e.message}</p>`;
+        containerLista.innerHTML = `<p style="color: #ff6b6b; text-align: center; padding: 15px;">Falha ao carregar banners: ${escaparAdminBanners(e.message)}</p>`;
     }
 }
 window.carregarEAtualizarListaBanners = carregarEAtualizarListaBanners;
 
-/**
- * 3. Publicar novo Banner no Neon
- */
 async function salvarNovoBanner(e) {
     e.preventDefault();
 
@@ -143,7 +168,6 @@ async function salvarNovoBanner(e) {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
         if (!sql) throw new Error("Instância do Neon SQL não está carregada.");
 
-        // Inserção compatível com a estrutura de banners
         await sql`
             INSERT INTO banners (
                 titulo, subtitulo, imagem, btn_texto, btn_link, ativo
@@ -160,7 +184,6 @@ async function salvarNovoBanner(e) {
 
     } catch (err) {
         console.error('Erro ao cadastrar banner:', err);
-        // Tenta inserção fallback caso a tabela não tenha a coluna ativo ou btn_texto
         try {
             const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
             await sql`
@@ -182,15 +205,12 @@ async function salvarNovoBanner(e) {
     }
 }
 
-/**
- * 4. Excluir Banner
- */
 async function excluirBannerAdmin(idBanner) {
     if (!confirm('Deseja realmente remover este banner da página inicial?')) return;
 
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
-        await sql`DELETE FROM banners WHERE id = ${idBanner};`;
+        await sql`DELETE FROM banners WHERE id = ${parseInt(idBanner, 10)};`;
         await carregarEAtualizarListaBanners();
     } catch (e) {
         console.error('Erro ao excluir banner:', e);
@@ -199,7 +219,6 @@ async function excluirBannerAdmin(idBanner) {
 }
 window.excluirBannerAdmin = excluirBannerAdmin;
 
-// Inicializa eventos ao carregar a página
 document.addEventListener('DOMContentLoaded', () => {
     configurarUploadBanner();
     carregarEAtualizarListaBanners();

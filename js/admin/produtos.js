@@ -4,11 +4,10 @@
 // ==========================================================================
 
 let listaImagensProdutoBase64 = [];
-let coresAdicionadas = []; // Lista de { nome: string, qtd: number }
+let coresAdicionadas = [];
 let categoriaAtivaAdmin = 'todos';
 let listaProdutosGeral = [];
 
-// Grade de tamanhos por categoria
 const gradeTamanhosPorCategoria = {
     'vestidos': ['PP', 'P', 'M', 'G', 'GG', 'Único'],
     'conjuntos': ['PP', 'P', 'M', 'G', 'GG', 'Único'],
@@ -21,9 +20,31 @@ const gradeTamanhosPorCategoria = {
     'acessorios': ['Único']
 };
 
-/**
- * 1. Converte e compacta imagens selecionadas para Base64
- */
+function escaparAdminProdutos(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function urlImagemSeguraAdmin(src) {
+    const val = String(src || '').trim();
+    if (!val) return 'img/placeholder.png';
+    if (
+        val.startsWith('data:image/png;base64,') ||
+        val.startsWith('data:image/jpeg;base64,') ||
+        val.startsWith('data:image/webp;base64,')
+    ) {
+        return val;
+    }
+    if (/^(https?:\/\/|\/|\.\/|img\/)/i.test(val)) {
+        return escaparAdminProdutos(val);
+    }
+    return 'img/placeholder.png';
+}
+
 function configurarUploadImagensProduto() {
     const inputImagens = document.getElementById('foto-produto') || document.getElementById('produto-imagens');
     const previewContainer = document.getElementById('preview-fotos') || document.getElementById('preview-imagens-produto');
@@ -73,7 +94,7 @@ function renderizarPreviewImagens() {
 
     container.innerHTML = listaImagensProdutoBase64.map((img, idx) => `
         <div style="position: relative; width: 70px; height: 70px; border-radius: 6px; overflow: hidden; border: 1px solid #444;">
-            <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;">
+            <img src="${urlImagemSeguraAdmin(img)}" style="width: 100%; height: 100%; object-fit: cover;">
             <button type="button" onclick="removerImagemUpload(${idx})" style="position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: #ff4444; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px;">&times;</button>
         </div>
     `).join('');
@@ -83,10 +104,8 @@ function removerImagemUpload(index) {
     listaImagensProdutoBase64.splice(index, 1);
     renderizarPreviewImagens();
 }
+window.removerImagemUpload = removerImagemUpload;
 
-/**
- * 2. Gerenciador Dinâmico de Cores & Estoque com o Botão (+)
- */
 function configurarGerenciadorCores() {
     const btnAddCor = document.getElementById('btn-adicionar-cor');
     const inputNomeCor = document.getElementById('input-nome-cor');
@@ -137,10 +156,11 @@ function renderizarCoresAdicionadas() {
 
     let somaEstoque = 0;
     container.innerHTML = coresAdicionadas.map((c, idx) => {
-        somaEstoque += c.qtd;
+        const qtdNum = parseInt(c.qtd, 10) || 0;
+        somaEstoque += qtdNum;
         return `
             <div style="display: inline-flex; align-items: center; gap: 6px; background: #1c1c1c; border: 1px solid var(--dourado, #d4af37); padding: 5px 10px; border-radius: 16px; font-size: 12px; color: #fff;">
-                <strong>${c.nome}</strong>: <span style="color: var(--dourado, #d4af37);">${c.qtd} un</span>
+                <strong>${escaparAdminProdutos(c.nome)}</strong>: <span style="color: var(--dourado, #d4af37);">${qtdNum} un</span>
                 <button type="button" onclick="removerCorAdicionada(${idx})" style="background: transparent; border: none; color: #ff5252; cursor: pointer; font-size: 14px; margin-left: 4px; line-height: 1;">&times;</button>
             </div>
         `;
@@ -157,9 +177,6 @@ function removerCorAdicionada(idx) {
 }
 window.removerCorAdicionada = removerCorAdicionada;
 
-/**
- * 3. Gerador Dinâmico de Tamanhos Conforme a Categoria
- */
 function configurarTamanhosPorCategoria() {
     const selectCategoria = document.getElementById('categoria-produto');
     const containerTamanhos = document.getElementById('container-tamanhos-dinamicos');
@@ -173,8 +190,8 @@ function configurarTamanhosPorCategoria() {
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 ${listaTamanhos.map(tam => `
                     <label style="display: inline-flex; align-items: center; gap: 5px; background: #181818; border: 1px solid #333; padding: 6px 12px; border-radius: 6px; cursor: pointer; color: #fff; font-size: 12px; font-weight: 700;">
-                        <input type="checkbox" class="check-tamanho" value="${tam}" style="accent-color: var(--dourado, #d4af37); width: 14px; height: 14px;">
-                        ${tam}
+                        <input type="checkbox" class="check-tamanho" value="${escaparAdminProdutos(tam)}" style="accent-color: var(--dourado, #d4af37); width: 14px; height: 14px;">
+                        ${escaparAdminProdutos(tam)}
                     </label>
                 `).join('')}
             </div>
@@ -182,9 +199,6 @@ function configurarTamanhosPorCategoria() {
     });
 }
 
-/**
- * 4. Cálculo Dinâmico do Desconto Promocional
- */
 function configurarCalculoDesconto() {
     const inputPreco = document.getElementById('preco-produto');
     const inputPromo = document.getElementById('preco-promocional-produto');
@@ -208,9 +222,6 @@ function configurarCalculoDesconto() {
     if (inputPromo) inputPromo.addEventListener('input', calcular);
 }
 
-/**
- * 5. Carregar e Renderizar Lista de Produtos no Formato Compacto Elegante
- */
 async function carregarEAtualizarTabelaProdutos() {
     const tabelaCorpo = document.getElementById('lista-produtos-admin') || document.getElementById('tabela-produtos-corpo');
     if (!tabelaCorpo) return;
@@ -229,7 +240,7 @@ async function carregarEAtualizarTabelaProdutos() {
 
     } catch (e) {
         console.error('Erro ao carregar lista de produtos:', e);
-        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="color: #ff6b6b; text-align: center; padding: 20px; font-size: 12px;">Falha ao obter produtos: ${e.message}</td></tr>`;
+        tabelaCorpo.innerHTML = `<tr><td colspan="6" style="color: #ff6b6b; text-align: center; padding: 20px; font-size: 12px;">Falha ao obter produtos: ${escaparAdminProdutos(e.message)}</td></tr>`;
     }
 }
 window.carregarEAtualizarTabelaProdutos = carregarEAtualizarTabelaProdutos;
@@ -251,9 +262,10 @@ function filtrarERenderizarTabelaProdutos() {
     }
 
     tabelaCorpo.innerHTML = filtrados.map(p => {
+        const idNum = parseInt(p.id, 10);
         const precoFmt = Number(p.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const estoqueTotal = parseInt(p.estoque || 0, 10);
-        
+
         let primeiraImagem = 'img/placeholder.png';
         try {
             const arrImgs = typeof p.imagens === 'string' ? JSON.parse(p.imagens) : p.imagens;
@@ -261,49 +273,49 @@ function filtrarERenderizarTabelaProdutos() {
             else if (p.imagem) primeiraImagem = p.imagem;
         } catch (e) {}
 
-        const cat = (p.categoria || 'Geral').toUpperCase();
+        const srcSegura = urlImagemSeguraAdmin(primeiraImagem);
+        const cat = escaparAdminProdutos((p.categoria || 'Geral').toUpperCase());
+        const nomeSeguro = escaparAdminProdutos(p.nome);
         const corEstoque = estoqueTotal < 5 ? '#ff5252' : '#4cd137';
         const bgEstoque = estoqueTotal < 5 ? 'rgba(255,82,82,0.1)' : 'rgba(76,209,55,0.1)';
 
-        // Resumo curto de cores
         let resumoCores = '';
         try {
             const coresArr = typeof p.cores === 'string' ? JSON.parse(p.cores) : p.cores;
             if (Array.isArray(coresArr) && coresArr.length > 0) {
                 resumoCores = coresArr.map(c => typeof c === 'object' ? `${c.nome} (${c.qtd})` : c).join(', ');
             }
-        } catch(e) {}
+        } catch (e) {}
+        const resumoCoresSeguro = escaparAdminProdutos(resumoCores);
 
         return `
             <tr>
-                <!-- Bloco Esquerdo: Foto, Categoria, ID, Nome e Estoque -->
                 <td style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; text-align: left;">
-                    <img src="${primeiraImagem}" style="width: 38px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/placeholder.png'">
+                    <img src="${srcSegura}" style="width: 38px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/placeholder.png'">
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 2px;">
                             <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: #222; color: var(--dourado, #d4af37); font-weight: 700;">${cat}</span>
-                            <small style="color: #666; font-size: 10px;">#${p.id}</small>
+                            <small style="color: #666; font-size: 10px;">#${idNum}</small>
                         </div>
                         <div style="font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            ${p.nome}
+                            ${nomeSeguro}
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
                             <span style="font-size: 9.5px; color: ${corEstoque}; background: ${bgEstoque}; border: 1px solid ${corEstoque}; padding: 1px 5px; border-radius: 3px; font-weight: 700;">
                                 ${estoqueTotal} un
                             </span>
-                            ${resumoCores ? `<span style="font-size: 10.5px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resumoCores}</span>` : ''}
+                            ${resumoCoresSeguro ? `<span style="font-size: 10.5px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${resumoCoresSeguro}</span>` : ''}
                         </div>
                     </div>
                 </td>
 
-                <!-- Bloco Direito: Preço e Botões Rápidos -->
                 <td style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
                     <div style="color: var(--dourado, #d4af37); font-weight: 700; font-size: 13.5px;">
                         ${precoFmt}
                     </div>
                     <div style="display: flex; gap: 4px;">
-                        <button type="button" onclick="prepararEdicaoProduto(${p.id})" title="Editar Peça" style="background: #1a1a1a; border: 1px solid var(--dourado, #d4af37); color: var(--dourado, #d4af37); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">✏️</button>
-                        <button type="button" onclick="excluirProdutoAdmin(${p.id})" title="Excluir Peça" style="background: #1a1a1a; border: 1px solid #ff4444; color: #ff4444; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️</button>
+                        <button type="button" onclick="prepararEdicaoProduto(${idNum})" title="Editar Peça" style="background: #1a1a1a; border: 1px solid var(--dourado, #d4af37); color: var(--dourado, #d4af37); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">✏️</button>
+                        <button type="button" onclick="excluirProdutoAdmin(${idNum})" title="Excluir Peça" style="background: #1a1a1a; border: 1px solid #ff4444; color: #ff4444; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">🗑️</button>
                     </div>
                 </td>
             </tr>
@@ -328,9 +340,6 @@ function atualizarContadoresCategorias(produtos) {
     }
 }
 
-/**
- * 6. Preparar Edição de Produto
- */
 function prepararEdicaoProduto(idProduto) {
     const produto = listaProdutosGeral.find(p => p.id == idProduto);
     if (!produto) {
@@ -365,7 +374,7 @@ function prepararEdicaoProduto(idProduto) {
             document.querySelectorAll('.check-tamanho').forEach(chk => {
                 chk.checked = tamanhosArr.includes(chk.value);
             });
-        } catch(e) {}
+        } catch (e) {}
     }, 100);
 
     coresAdicionadas = [];
@@ -375,7 +384,7 @@ function prepararEdicaoProduto(idProduto) {
             if (typeof c === 'object' && c !== null) return { nome: c.nome, qtd: Number(c.qtd) || 1 };
             return { nome: String(c), qtd: 1 };
         });
-    } catch(e) {}
+    } catch (e) {}
     renderizarCoresAdicionadas();
 
     listaImagensProdutoBase64 = [];
@@ -403,9 +412,6 @@ function prepararEdicaoProduto(idProduto) {
 }
 window.prepararEdicaoProduto = prepararEdicaoProduto;
 
-/**
- * 7. Cancelar Edição
- */
 function cancelarEdicaoProduto() {
     const inputEditId = document.getElementById('editando-id');
     const form = document.getElementById('form-cadastro-produto');
@@ -431,9 +437,6 @@ function cancelarEdicaoProduto() {
 }
 window.cancelarEdicaoProduto = cancelarEdicaoProduto;
 
-/**
- * 8. Salvar ou Atualizar Produto (INSERT ou UPDATE no Neon)
- */
 async function salvarProduto(e) {
     e.preventDefault();
 
@@ -494,7 +497,7 @@ async function salvarProduto(e) {
                     imagem = ${listaImagensProdutoBase64[0] || 'img/produto1.jpg'},
                     tamanhos = ${JSON.stringify(tamanhos)},
                     cores = ${JSON.stringify(coresAdicionadas)}
-                WHERE id = ${editandoId};
+                WHERE id = ${parseInt(editandoId, 10)};
             `;
             alert('✨ Peça atualizada com sucesso!');
         } else {
@@ -524,16 +527,13 @@ async function salvarProduto(e) {
     }
 }
 
-/**
- * 9. Atualizar estoque rápido
- */
 async function atualizarEstoqueRapido(idProduto, novoEstoque) {
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
         await sql`
             UPDATE produtos 
             SET estoque = ${parseInt(novoEstoque, 10) || 0} 
-            WHERE id = ${idProduto};
+            WHERE id = ${parseInt(idProduto, 10)};
         `;
     } catch (e) {
         console.error('Erro ao atualizar estoque:', e);
@@ -542,14 +542,11 @@ async function atualizarEstoqueRapido(idProduto, novoEstoque) {
 }
 window.atualizarEstoqueRapido = atualizarEstoqueRapido;
 
-/**
- * 10. Excluir produto
- */
 async function excluirProdutoAdmin(idProduto) {
     if (!confirm('Deseja realmente excluir este produto?')) return;
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
-        await sql`DELETE FROM produtos WHERE id = ${idProduto};`;
+        await sql`DELETE FROM produtos WHERE id = ${parseInt(idProduto, 10)};`;
         await carregarEAtualizarTabelaProdutos();
     } catch (e) {
         console.error('Erro ao excluir produto:', e);
@@ -558,7 +555,6 @@ async function excluirProdutoAdmin(idProduto) {
 }
 window.excluirProdutoAdmin = excluirProdutoAdmin;
 
-// Inicialização completa de eventos
 document.addEventListener('DOMContentLoaded', () => {
     configurarUploadImagensProduto();
     configurarGerenciadorCores();

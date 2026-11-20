@@ -130,7 +130,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnLogout = document.getElementById('btn-admin-logout') || document.getElementById('btn-logout-admin');
     if (btnLogout) {
         btnLogout.addEventListener('click', () => {
+            sessionStorage.removeItem('vr_auth_token');
+            sessionStorage.removeItem('vr_token');
             sessionStorage.clear();
+            localStorage.removeItem('vr_auth_token');
+            localStorage.removeItem('vr_token');
             localStorage.removeItem('vr_usuario_ativo');
             localStorage.removeItem('vr_cliente_dados');
             localStorage.removeItem('vr_cliente_logado');
