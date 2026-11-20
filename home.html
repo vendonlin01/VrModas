@@ -15,6 +15,29 @@
 
     <style>
         /* =========================================
+           OVERLAY E TRAVA DE ROLAGEM DO MENU LATERAL
+           ========================================= */
+        .overlay-menu-mobile {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(2px);
+            z-index: 1990;
+        }
+
+        .overlay-menu-mobile.ativo {
+            display: block;
+        }
+
+        #navbar.aberto {
+            z-index: 2000;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+
+        /* =========================================
            ESTILOS DO BOTÃO E MENU DE PERFIL
            ========================================= */
         .perfil-container {
@@ -332,29 +355,24 @@
 
     <!-- Cabeçalho com Barra de Pesquisa -->
     <header class="header">
-        <!-- 1. Menu Hambúrguer (Só visível no celular) -->
         <button id="btn-menu" class="btn-menu">☰</button>
 
-        <!-- 2. Logotipo na Esquerda -->
         <div class="logo">
             <a href="home.html">
                 <span class="logo-vr">VR</span> <span class="logo-modas">MODAS</span>
             </a>
         </div>
 
-        <!-- 3. Barra de Pesquisa no Centro -->
         <div class="caixa-busca">
             <input type="text" id="input-busca" placeholder="Buscar vestidos, calças, camisas...">
             <button id="btn-busca">🔍</button>
         </div>
 
-        <!-- 4. Menu de Navegação Horizontal / Gaveta Mobile -->
         <nav id="navbar" class="navbar">
             <button id="fechar-menu" class="btn-fechar-menu">&times;</button>
             <a href="home.html" class="nav-item" style="color: var(--dourado);">Início</a>
             <a href="produtos.html" class="nav-item">Catálogo</a>
 
-            <!-- Submenu Feminino -->
             <div class="nav-dropdown">
                 <a href="produtos.html?categoria=vestidos" class="nav-link-dropdown">
                     Feminino <span class="seta-menu">▾</span>
@@ -366,7 +384,6 @@
                 </div>
             </div>
 
-            <!-- Submenu Masculino -->
             <div class="nav-dropdown">
                 <a href="produtos.html?categoria=camisas" class="nav-link-dropdown">
                     Masculino <span class="seta-menu">▾</span>
@@ -377,7 +394,6 @@
                 </div>
             </div>
 
-            <!-- Submenu Acessórios -->
             <div class="nav-dropdown">
                 <a href="produtos.html?categoria=acessorios" class="nav-link-dropdown">
                     Acessórios <span class="seta-menu">▾</span>
@@ -389,10 +405,8 @@
                 </div>
             </div>
 
-            <!-- Ofertas -->
             <a href="produtos.html?categoria=ofertas" class="nav-item nav-destaque">Ofertas 🔥</a>
 
-            <!-- Submenu Atendimento ao Cliente (Acessível direto no Menu) -->
             <div class="nav-dropdown">
                 <a href="suporte.html" class="nav-link-dropdown">
                     Atendimento <span class="seta-menu">▾</span>
@@ -403,7 +417,6 @@
                 </div>
             </div>
 
-            <!-- Linha e Botão Área do Lojista (Exclusivos para Celular na Gaveta) -->
             <hr id="divisor-menu-mobile" class="divisor-menu-mobile">
             <a href="admin.html" id="link-menu-lojista" class="link-menu-lojista">
                 <span>⚙️</span>
@@ -411,9 +424,7 @@
             </a>
         </nav>
 
-        <!-- 5. Ações do Cabeçalho: Engrenagem, Perfil, Favoritos e Sacola -->
         <div class="acoes-header">
-            <!-- Botão Engrenagem (Exclusivo Computador) -->
             <a href="admin.html" id="btn-admin-topo" class="btn-admin-topo" title="Área do Lojista / Painel">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
@@ -424,7 +435,6 @@
                 </svg>
             </a>
 
-            <!-- Botão de Perfil -->
             <div class="perfil-container" id="area-perfil">
                 <button id="btn-usuario" class="btn-usuario" title="Minha Conta">
                     <span id="icone-usuario">👤</span>
@@ -435,17 +445,14 @@
                     <a href="login.html" id="link-login-dropdown">Entrar na Conta</a>
                     <a href="cadastro.html" id="link-cadastro-dropdown">Criar Conta</a>
                     <a href="pedidos.html" id="link-pedidos-dropdown" style="display: none;">🛍️ Minhas Compras</a>
-                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪
-                        Sair</button>
+                    <button type="button" id="btn-sair-sessao" class="btn-logout" style="display: none;">🚪 Sair</button>
                 </div>
             </div>
 
-            <!-- Botão de Favoritos -->
             <button id="abrir-favoritos" class="icone-carrinho" title="Meus Favoritos">
                 ❤️ <span class="contador-favoritos">0</span>
             </button>
 
-            <!-- Botão de Carrinho -->
             <button id="abrir-carrinho" class="icone-carrinho" title="Minha Sacola">
                 🛒 <span class="contador-carrinho">0</span>
             </button>
@@ -454,13 +461,9 @@
 
     <!-- CARROSSEL DINÂMICO DE BANNERS (HERO) -->
     <div class="carrossel-container" id="carrossel-home">
-        <button type="button" class="btn-banner-nav btn-banner-prev" id="btn-banner-prev"
-            aria-label="Anterior">&#10094;</button>
-        <div id="trilho-banners" class="trilho-banners">
-            <!-- O JavaScript preenche automaticamente com os banners -->
-        </div>
-        <button type="button" class="btn-banner-nav btn-banner-next" id="btn-banner-next"
-            aria-label="Próximo">&#10095;</button>
+        <button type="button" class="btn-banner-nav btn-banner-prev" id="btn-banner-prev" aria-label="Anterior">&#10094;</button>
+        <div id="trilho-banners" class="trilho-banners"></div>
+        <button type="button" class="btn-banner-nav btn-banner-next" id="btn-banner-next" aria-label="Próximo">&#10095;</button>
         <div class="carrossel-indicadores" id="carrossel-indicadores"></div>
     </div>
 
@@ -476,9 +479,7 @@
             <h2>Meus Favoritos ❤️</h2>
             <button id="fechar-favoritos" class="btn-fechar-carrinho">&times;</button>
         </div>
-        <div id="lista-favoritos" class="itens-carrinho" style="padding: 15px;">
-            <!-- Preenchido dinamicamente pelo JavaScript -->
-        </div>
+        <div id="lista-favoritos" class="itens-carrinho" style="padding: 15px;"></div>
     </div>
 
     <!-- Carrinho Lateral -->
@@ -496,6 +497,8 @@
             <button class="btn-finalizar" id="btn-finalizar-compra">Finalizar Compra</button>
         </div>
     </div>
+
+    <div id="overlay-menu-mobile" class="overlay-menu-mobile" aria-hidden="true"></div>
 
     <!-- Rodapé Limpo -->
     <footer class="footer">
@@ -521,9 +524,44 @@
     <script src="js/catalogo.js"></script>
     <script src="js/sacola.js"></script>
 
-    <!-- Script de Gestão do Perfil e Sincronização Segura de Contato -->
+    <!-- Script de Gestão do Menu Lateral, Perfil e Sincronização Segura de Contato -->
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            const btnMenu = document.getElementById('btn-menu');
+            const navbar = document.getElementById('navbar');
+            const btnFecharMenu = document.getElementById('fechar-menu');
+            const overlayMenu = document.getElementById('overlay-menu-mobile');
+
+            function travarRolagemFundo(travar) {
+                document.documentElement.style.overflow = travar ? 'hidden' : '';
+                document.body.style.overflow = travar ? 'hidden' : '';
+            }
+
+            function abrirMenuMobile(e) {
+                if (e) e.preventDefault();
+                if (!navbar) return;
+                navbar.classList.add('aberto');
+                if (overlayMenu) overlayMenu.classList.add('ativo');
+                travarRolagemFundo(true);
+            }
+
+            function fecharMenuMobile(e) {
+                if (e) e.preventDefault();
+                if (!navbar) return;
+                navbar.classList.remove('aberto');
+                if (overlayMenu) overlayMenu.classList.remove('ativo');
+                travarRolagemFundo(false);
+            }
+
+            if (btnMenu) btnMenu.addEventListener('click', abrirMenuMobile);
+            if (btnFecharMenu) btnFecharMenu.addEventListener('click', fecharMenuMobile);
+            if (overlayMenu) overlayMenu.addEventListener('click', fecharMenuMobile);
+            if (navbar) {
+                navbar.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', () => fecharMenuMobile());
+                });
+            }
+
             function aplicarEmailMenu(emailRaw) {
                 const linkEmailMenu = document.getElementById('email-suporte-menu');
                 if (!emailRaw || !linkEmailMenu) return;
@@ -534,7 +572,6 @@
                 }
             }
 
-            // 1. Aplica imediatamente do cache local e sincroniza do banco Neon
             const configLoja = JSON.parse(localStorage.getItem('vr_modas_config')) || {};
             if (configLoja.email) aplicarEmailMenu(configLoja.email);
 
@@ -560,7 +597,6 @@
             const menuUsuario = document.getElementById('menu-usuario');
             const btnSair = document.getElementById('btn-sair-sessao');
 
-            // 2. Verifica sessão ativa (Cliente, Admin ou Owner)
             function carregarDadosUsuario() {
                 let usuarioAtivo = null;
                 try {
@@ -655,6 +691,7 @@
 
             if (btnSair) {
                 btnSair.addEventListener('click', () => {
+                    travarRolagemFundo(false);
                     sessionStorage.removeItem('vr_auth_token');
                     sessionStorage.removeItem('vr_token');
                     sessionStorage.removeItem('vr_usuario_ativo');

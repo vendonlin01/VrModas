@@ -8,12 +8,11 @@
     overflow: hidden;
     background-color: var(--preto-claro, #111);
     border-bottom: 2px solid var(--dourado, #d4af37);
-    touch-action: pan-y !important; /* Permite rolar a página verticalmente e deslizar o banner na horizontal */
+    touch-action: pan-y !important;
     user-select: none;
     -webkit-user-select: none;
 }
 
-/* Fita contínua horizontal */
 .trilho-banners {
     display: flex;
     width: 100%;
@@ -22,7 +21,6 @@
     will-change: transform;
 }
 
-/* Cada banner fica lado a lado na fita */
 .slide {
     flex: 0 0 100%;
     width: 100%;
@@ -47,28 +45,28 @@
     z-index: 2;
 }
 
-.slide-content h1 { 
-    font-size: clamp(26px, 4.5vw, 54px); 
-    color: var(--dourado, #d4af37); 
-    text-transform: uppercase; 
+.slide-content h1 {
+    font-size: clamp(26px, 4.5vw, 54px);
+    color: var(--dourado, #d4af37);
+    text-transform: uppercase;
     margin: 0;
     font-weight: 900;
     line-height: 1.1;
-    text-shadow: 0 3px 12px rgba(0,0,0,0.8);
-    pointer-events: none; /* Não bloqueia o toque do dedo */
+    text-shadow: 0 3px 12px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
 }
 
-.slide-content p { 
-    font-size: clamp(13px, 2vw, 18px); 
-    color: var(--branco, #fff); 
-    margin: 0; 
-    background: rgba(0, 0, 0, 0.65); 
-    padding: 8px 18px; 
-    border-radius: 4px; 
+.slide-content p {
+    font-size: clamp(13px, 2vw, 18px);
+    color: var(--branco, #fff);
+    margin: 0;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 8px 18px;
+    border-radius: 4px;
     display: inline-block;
     border-left: 3px solid var(--dourado, #d4af37);
-    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-    pointer-events: none; /* Não bloqueia o toque do dedo */
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
 }
 
 .btn-dourado {
@@ -83,11 +81,11 @@
     text-decoration: none;
     display: inline-block;
     box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
-    pointer-events: auto; /* Permite clicar no botão normalmente */
+    pointer-events: auto;
 }
 
-.btn-dourado:hover { 
-    background-color: #b5952f; 
+.btn-dourado:hover {
+    background-color: #b5952f;
     transform: translateY(-2px);
 }
 
@@ -203,7 +201,7 @@
     border-left: 5px solid var(--dourado, #d4af37);
     padding: 14px 22px;
     border-radius: 4px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -213,21 +211,20 @@
     transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-.toast span { 
-    color: var(--dourado, #d4af37); 
-    font-size: 18px; 
+.toast span {
+    color: var(--dourado, #d4af37);
+    font-size: 18px;
 }
 
-.toast.mostrar { 
-    opacity: 1; 
-    transform: translateX(0); 
+.toast.mostrar {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 /* =========================================
    RESPONSIVIDADE (MOBILE / CELULARES)
    ========================================= */
 @media (max-width: 768px) {
-    /* Banner Hero no celular com altura exata e setas ocultas */
     .carrossel-container {
         height: 340px;
     }
@@ -241,12 +238,12 @@
         gap: 12px;
     }
 
-    .slide-content h1 { 
-        font-size: 26px; 
+    .slide-content h1 {
+        font-size: 26px;
     }
 
-    .slide-content p { 
-        font-size: 13px; 
+    .slide-content p {
+        font-size: 13px;
         padding: 6px 12px;
     }
 
@@ -255,9 +252,8 @@
         font-size: 13px;
     }
 
-    /* Vitrine no celular */
-    .produtos { 
-        padding: 30px 12px; 
+    .produtos {
+        padding: 30px 12px;
     }
 
     .produtos h2 {
@@ -266,8 +262,8 @@
     }
 
     .grid-produtos {
-        grid-template-columns: repeat(2, 1fr); 
-        gap: 12px; 
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
     }
 
     .grid-produtos .card-produto img.imagem-produto {
@@ -295,10 +291,10 @@
         font-size: 12px !important;
     }
 
-    #toast-container { 
-        top: auto; 
-        bottom: 25px; 
-        right: 12px; 
-        left: 12px; 
+    #toast-container {
+        top: auto;
+        bottom: 25px;
+        right: 12px;
+        left: 12px;
     }
 }
