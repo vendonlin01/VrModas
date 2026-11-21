@@ -134,6 +134,38 @@
             font-size: 12px;
         }
 
+        .input-senha-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .input-senha-wrapper input {
+            padding-right: 44px;
+        }
+
+        .btn-olho-senha {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: color 0.2s ease;
+        }
+
+        .btn-olho-senha:hover {
+            color: var(--dourado, #d4af37);
+        }
+
         .btn-cadastrar {
             width: 100%;
             background: linear-gradient(135deg, var(--dourado, #d4af37) 0%, #b5952f 100%);
@@ -225,7 +257,15 @@
 
                 <div class="campo-grupo col-full">
                     <label for="cad-senha">Senha de Acesso *</label>
-                    <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                    <div class="input-senha-wrapper">
+                        <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                        <button type="button" class="btn-olho-senha" id="toggle-cad-senha" aria-label="Mostrar ou ocultar senha" title="Mostrar senha">
+                            <svg id="icone-olho-cad" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -266,13 +306,28 @@
         </div>
     </div>
 
-   <script>
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
             const inputCpf = document.getElementById('cad-cpf');
             const inputWhats = document.getElementById('cad-whatsapp');
             const inputCep = document.getElementById('cad-cep');
+            const inputSenha = document.getElementById('cad-senha');
+            const btnOlhoSenha = document.getElementById('toggle-cad-senha');
+            const iconeOlho = document.getElementById('icone-olho-cad');
             const form = document.getElementById('form-cadastro-cliente');
             const btnSubmit = document.getElementById('btn-submit-cad');
+
+            // 0. BOTÃO OLHINHO (MOSTRAR / OCULTAR SENHA)
+            if (btnOlhoSenha && inputSenha) {
+                btnOlhoSenha.addEventListener('click', () => {
+                    const mostrando = inputSenha.type === 'text';
+                    inputSenha.type = mostrando ? 'password' : 'text';
+                    btnOlhoSenha.title = mostrando ? 'Mostrar senha' : 'Ocultar senha';
+                    iconeOlho.innerHTML = mostrando
+                        ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>'
+                        : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+                });
+            }
 
             // 1. MÁSCARA DE CPF
             inputCpf.addEventListener('input', (e) => {
@@ -320,18 +375,25 @@
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
+                const cpfDigitos = inputCpf.value.replace(/\D/g, '');
+                if (cpfDigitos.length !== 11) {
+                    alert('Informe um CPF válido com 11 dígitos.');
+                    inputCpf.focus();
+                    return;
+                }
+
                 btnSubmit.disabled = true;
                 btnSubmit.innerText = 'Gravando Cadastro...';
 
                 const nome = document.getElementById('cad-nome').value.trim();
-                const cpf = document.getElementById('cad-cpf').value.trim();
+                const cpf = inputCpf.value.trim();
                 const dataNascimento = document.getElementById('cad-nasc').value || null;
-                const telefone = document.getElementById('cad-whatsapp').value.trim();
+                const telefone = inputWhats.value.trim();
                 const email = document.getElementById('cad-email').value.trim().toLowerCase();
-                const senha = document.getElementById('cad-senha').value;
+                const senha = inputSenha.value;
 
                 const enderecoObj = {
-                    cep: document.getElementById('cad-cep').value.trim(),
+                    cep: inputCep.value.trim(),
                     rua: document.getElementById('cad-rua').value.trim(),
                     numero: document.getElementById('cad-numero').value.trim(),
                     bairro: document.getElementById('cad-bairro').value.trim(),
@@ -365,25 +427,32 @@
                         return;
                     }
 
+                    // Limpa resíduos de sessões anteriores antes de gravar a nova
+                    ['vr_auth_token', 'vr_token', 'vr_usuario_ativo', 'vr_cliente_dados', 'vr_admin_logado', 'usuarioLogado'].forEach(chave => {
+                        sessionStorage.removeItem(chave);
+                        localStorage.removeItem(chave);
+                    });
+
                     if (dados.token) {
                         sessionStorage.setItem('vr_auth_token', dados.token);
                         localStorage.setItem('vr_auth_token', dados.token);
                     }
 
-                    // Guarda apenas dados não-sensíveis necessários para entrega e saudação
                     const sessaoCliente = {
                         id: dados.usuario.id,
                         nome: dados.usuario.nome,
                         email: dados.usuario.email,
                         whatsapp: dados.usuario.telefone,
                         endereco: { ...enderecoObj, enderecoFormatado: enderecoTexto },
-                        role: 'cliente'
+                        role: 'cliente',
+                        token: dados.token || ''
                     };
 
                     sessionStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
                     sessionStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
                     localStorage.setItem('vr_usuario_ativo', JSON.stringify(sessaoCliente));
                     localStorage.setItem('vr_cliente_dados', JSON.stringify(sessaoCliente));
+                    localStorage.setItem('usuarioLogado', JSON.stringify(sessaoCliente));
 
                     alert('Cadastro concluído com sucesso! Bem-vindo(a) à VR Modas.');
                     window.location.href = 'home.html';
