@@ -14,7 +14,7 @@
     <!-- Biblioteca de Gráficos do Dashboard -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- GUARDA DE ROTA: Apenas Administrador ou Proprietário com sessão ativa pode acessar -->
+    <!-- GUARDA DE ROTA: Exige cargo administrativo E token JWT ativo -->
     <script>
         (function () {
             try {
@@ -27,10 +27,19 @@
                 const adminLogado =
                     sessionStorage.getItem('vr_admin_logado') === 'true' ||
                     localStorage.getItem('vr_admin_logado') === 'true';
-                const ehAdminOuOwner = usuarioAtivo && (usuarioAtivo.role === 'admin' || usuarioAtivo.role === 'owner');
+                const tokenJwt =
+                    sessionStorage.getItem('vr_auth_token') ||
+                    localStorage.getItem('vr_auth_token') ||
+                    usuarioAtivo.token || '';
+                const role = String(usuarioAtivo.role || '').trim().toLowerCase();
+                const ehAdminOuOwner = role === 'admin' || role === 'owner';
 
-                if (!usuarioAtivo || !ehAdminOuOwner || !adminLogado) {
-                    alert("Acesso restrito! Por favor, faça login com uma conta administrativa.");
+                if (!usuarioAtivo || !ehAdminOuOwner || !adminLogado || !tokenJwt) {
+                    ['vr_auth_token', 'vr_token', 'vr_usuario_ativo', 'vr_cliente_dados', 'vr_admin_logado', 'usuarioLogado'].forEach(k => {
+                        sessionStorage.removeItem(k);
+                        localStorage.removeItem(k);
+                    });
+                    alert("Sessão expirada ou acesso restrito! Faça login novamente com sua conta administrativa.");
                     window.location.href = 'login.html';
                 }
             } catch (e) {
@@ -567,15 +576,10 @@
     <script>
         document.getElementById('btn-logout-admin').addEventListener('click', () => {
             if (confirm("Deseja sair do painel administrativo?")) {
-                sessionStorage.removeItem('vr_usuario_ativo');
-                sessionStorage.removeItem('vr_admin_logado');
-                sessionStorage.removeItem('vr_auth_token');
-                sessionStorage.removeItem('vr_token');
-                localStorage.removeItem('usuarioLogado');
-                localStorage.removeItem('vr_usuario_ativo');
-                localStorage.removeItem('vr_admin_logado');
-                localStorage.removeItem('vr_auth_token');
-                localStorage.removeItem('vr_token');
+                ['vr_auth_token', 'vr_token', 'vr_usuario_ativo', 'vr_cliente_dados', 'vr_admin_logado', 'usuarioLogado'].forEach(k => {
+                    sessionStorage.removeItem(k);
+                    localStorage.removeItem(k);
+                });
                 window.location.href = 'home.html';
             }
         });

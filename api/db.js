@@ -3,25 +3,29 @@ import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 
 function verificarTokenJwt(authHeader) {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return { payload: null, motivo: 'ausente' };
     const token = authHeader.slice(7).trim();
     const partes = token.split('.');
-    if (partes.length !== 3) return null;
+    if (partes.length !== 3) return { payload: null, motivo: 'malformado' };
 
     const secret = process.env.JWT_SECRET;
-    if (!secret) return null;
+    if (!secret) return { payload: null, motivo: 'sem_secret' };
 
     const [header, corpo, assinatura] = partes;
-    const assinaturaEsperada = crypto.createHmac('sha256', secret).update(`${header}.${corpo}`).digest('base64url');
-    if (assinatura !== assinaturaEsperada) return null;
+    const assinaturaEsperada = crypto
+        .createHmac('sha256', secret)
+        .update(`${header}.${corpo}`)
+        .digest('base64url');
+
+    if (assinatura !== assinaturaEsperada) return { payload: null, motivo: 'assinatura_invalida' };
 
     try {
         const payload = JSON.parse(Buffer.from(corpo, 'base64url').toString('utf8'));
         const agora = Math.floor(Date.now() / 1000);
-        if (payload.exp && payload.exp < agora) return null;
-        return payload;
+        if (payload.exp && payload.exp < agora) return { payload: null, motivo: 'expirado' };
+        return { payload, motivo: null };
     } catch {
-        return null;
+        return { payload: null, motivo: 'payload_invalido' };
     }
 }
 
@@ -53,17 +57,24 @@ export default async function handler(req, res) {
             return res.status(403).json({ error: 'Múltiplas instruções SQL não são permitidas.' });
         }
 
-        const usuarioToken = verificarTokenJwt(req.headers.authorization);
-        const ehGestor = usuarioToken && (usuarioToken.role === 'admin' || usuarioToken.role === 'owner');
-        const ehOwner = usuarioToken && usuarioToken.role === 'owner';
+        const { payload: usuarioToken, motivo } = verificarTokenJwt(req.headers.authorization);
+        const role = String(usuarioToken?.role || '').trim().toLowerCase();
+        const ehGestor = role === 'admin' || role === 'owner';
+        const ehOwner = role === 'owner';
 
         // 2. Protege a tabela de usuários (proíbe leitura pública e exige owner para alterar cargos)
         if (/\bUSUARIOS\b/.test(sqlUpper)) {
             if (/^(UPDATE|DELETE|INSERT)/.test(sqlUpper) && !ehOwner) {
-                return res.status(403).json({ error: 'Apenas o proprietário pode gerenciar usuários e permissões.' });
+                return res.status(403).json({
+                    error: 'Apenas o proprietário pode gerenciar usuários e permissões.',
+                    detalhe: motivo || 'permissao_insuficiente'
+                });
             }
             if (/^SELECT/.test(sqlUpper) && !ehGestor) {
-                return res.status(403).json({ error: 'Acesso não autorizado aos dados de usuários.' });
+                return res.status(403).json({
+                    error: 'Acesso não autorizado aos dados de usuários.',
+                    detalhe: motivo || 'token_nao_gestor'
+                });
             }
         }
 
@@ -71,7 +82,10 @@ export default async function handler(req, res) {
         const envolveTabelaAdmin = /\b(PRODUTOS|BANNERS|CUPONS|CONFIGURACOES)\b/.test(sqlUpper);
         const ehEscrita = /^(INSERT|UPDATE|DELETE|CREATE|ALTER)/.test(sqlUpper);
         if (envolveTabelaAdmin && ehEscrita && !ehGestor) {
-            return res.status(403).json({ error: 'Sessão administrativa expirada ou inválida. Faça login novamente.' });
+            return res.status(403).json({
+                error: 'Sessão administrativa expirada ou inválida. Faça login novamente.',
+                detalhe: motivo || 'token_nao_gestor'
+            });
         }
 
         // 4. Bloqueia INSERT/UPDATE/DELETE direto na tabela pedidos via proxy SQL genérico para não-gestores
