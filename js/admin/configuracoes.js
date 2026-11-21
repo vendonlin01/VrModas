@@ -1,5 +1,5 @@
 // ==========================================================================
-// VR MODAS - CONFIGURAÇÕES GERAIS, CUPONS DE DESCONTO & BACKUP
+// VR MODAS - CONFIGURAÇÕES GERAIS, PAGAMENTOS, ENTREGA, CUPONS & BACKUP
 // js/admin/configuracoes.js
 // ==========================================================================
 
@@ -12,16 +12,45 @@ function escaparTextoConfig(str) {
         .replace(/'/g, '&#39;');
 }
 
+function preencherFormularioConfig(cfg) {
+    if (!cfg || typeof cfg !== 'object') return;
+
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined && val !== null) el.value = val;
+    };
+    const setCheck = (id, val, padrao = true) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (val === undefined || val === null || val === '') {
+            el.checked = padrao;
+        } else {
+            el.checked = val === true || String(val).toLowerCase() === 'true' || String(val) === '1';
+        }
+    };
+
+    setVal('config-whatsapp', cfg.whatsapp || '');
+    setVal('config-email', cfg.email || '');
+    setVal('config-endereco-loja', cfg.enderecoLoja || cfg.endereco_loja || '');
+    setVal('config-pix-chave', cfg.pixChave || cfg.pix_chave || '');
+    setVal('config-pix-titular', cfg.pixTitular || cfg.pix_titular || '');
+    setVal('config-pix-banco', cfg.pixBanco || cfg.pix_banco || '');
+    setVal('config-link-cartao', cfg.linkCartao || cfg.link_cartao || '');
+    setVal('config-instrucoes-pagamento', cfg.instrucoesPagamento || cfg.instrucoes_pagamento || '');
+
+    setCheck('config-permitir-entrega', cfg.permitirEntrega ?? cfg.permitir_entrega, true);
+    setCheck('config-permitir-retirada', cfg.permitirRetirada ?? cfg.permitir_retirada, true);
+    setCheck('config-pag-pix', cfg.pagPix ?? cfg.pag_pix, true);
+    setCheck('config-pag-credito', cfg.pagCredito ?? cfg.pag_credito, true);
+    setCheck('config-pag-debito', cfg.pagDebito ?? cfg.pag_debito, true);
+}
+
 // ==========================================
-// 1. CONFIGURAÇÕES DE ATENDIMENTO (WHATSAPP / E-MAIL)
+// 1. CONFIGURAÇÕES DE ATENDIMENTO, ENTREGA & PAGAMENTOS
 // ==========================================
 async function carregarConfiguracoesAdmin() {
-    const inputWhats = document.getElementById('config-whatsapp');
-    const inputEmail = document.getElementById('config-email');
-
     const configLocal = JSON.parse(localStorage.getItem('vr_modas_config') || '{}');
-    if (inputWhats && configLocal.whatsapp) inputWhats.value = configLocal.whatsapp;
-    if (inputEmail && configLocal.email) inputEmail.value = configLocal.email;
+    preencherFormularioConfig(configLocal);
 
     try {
         const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
@@ -31,12 +60,25 @@ async function carregarConfiguracoesAdmin() {
         if (Array.isArray(configs)) {
             const mapa = {};
             configs.forEach(c => { mapa[c.chave] = c.valor; });
-            if (inputWhats && mapa['whatsapp']) inputWhats.value = mapa['whatsapp'];
-            if (inputEmail && mapa['email']) inputEmail.value = mapa['email'];
-            localStorage.setItem('vr_modas_config', JSON.stringify({
-                whatsapp: mapa['whatsapp'] || '',
-                email: mapa['email'] || ''
-            }));
+
+            const configConsolidada = {
+                whatsapp: mapa['whatsapp'] || configLocal.whatsapp || '',
+                email: mapa['email'] || configLocal.email || '',
+                permitirEntrega: mapa['permitir_entrega'] !== undefined ? mapa['permitir_entrega'] === 'true' : true,
+                permitirRetirada: mapa['permitir_retirada'] !== undefined ? mapa['permitir_retirada'] === 'true' : true,
+                enderecoLoja: mapa['endereco_loja'] || '',
+                pagPix: mapa['pag_pix'] !== undefined ? mapa['pag_pix'] === 'true' : true,
+                pagCredito: mapa['pag_credito'] !== undefined ? mapa['pag_credito'] === 'true' : true,
+                pagDebito: mapa['pag_debito'] !== undefined ? mapa['pag_debito'] === 'true' : true,
+                pixChave: mapa['pix_chave'] || '',
+                pixTitular: mapa['pix_titular'] || '',
+                pixBanco: mapa['pix_banco'] || '',
+                linkCartao: mapa['link_cartao'] || '',
+                instrucoesPagamento: mapa['instrucoes_pagamento'] || ''
+            };
+
+            preencherFormularioConfig(configConsolidada);
+            localStorage.setItem('vr_modas_config', JSON.stringify(configConsolidada));
         }
     } catch (e) {
         console.warn('Aviso ao carregar configurações:', e.message);
@@ -187,31 +229,94 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formConfig) {
         formConfig.onsubmit = async function (e) {
             e.preventDefault();
+
             const whatsappLimpo = document.getElementById('config-whatsapp').value.replace(/\D/g, '');
             const emailLimpo = document.getElementById('config-email').value.trim();
+
+            const permitirEntrega = !!document.getElementById('config-permitir-entrega')?.checked;
+            const permitirRetirada = !!document.getElementById('config-permitir-retirada')?.checked;
+            const enderecoLoja = (document.getElementById('config-endereco-loja')?.value || '').trim();
+
+            const pagPix = !!document.getElementById('config-pag-pix')?.checked;
+            const pagCredito = !!document.getElementById('config-pag-credito')?.checked;
+            const pagDebito = !!document.getElementById('config-pag-debito')?.checked;
+
+            const pixChave = (document.getElementById('config-pix-chave')?.value || '').trim();
+            const pixTitular = (document.getElementById('config-pix-titular')?.value || '').trim();
+            const pixBanco = (document.getElementById('config-pix-banco')?.value || '').trim();
+            const linkCartao = (document.getElementById('config-link-cartao')?.value || '').trim();
+            const instrucoesPagamento = (document.getElementById('config-instrucoes-pagamento')?.value || '').trim();
 
             if (!whatsappLimpo) {
                 alert('Informe um número de WhatsApp válido.');
                 return;
             }
+            if (!permitirEntrega && !permitirRetirada) {
+                alert('Ative pelo menos uma opção de recebimento (Receber em Casa ou Retirar na Loja).');
+                return;
+            }
+            if (!pagPix && !pagCredito && !pagDebito) {
+                alert('Ative pelo menos uma forma de pagamento (Pix, Crédito ou Débito).');
+                return;
+            }
+
+            const btnSalvar = document.getElementById('btn-salvar-config-loja');
+            if (btnSalvar) {
+                btnSalvar.disabled = true;
+                btnSalvar.innerText = 'Salvando...';
+            }
+
+            const pares = [
+                ['whatsapp', whatsappLimpo],
+                ['email', emailLimpo],
+                ['permitir_entrega', String(permitirEntrega)],
+                ['permitir_retirada', String(permitirRetirada)],
+                ['endereco_loja', enderecoLoja],
+                ['pag_pix', String(pagPix)],
+                ['pag_credito', String(pagCredito)],
+                ['pag_debito', String(pagDebito)],
+                ['pix_chave', pixChave],
+                ['pix_titular', pixTitular],
+                ['pix_banco', pixBanco],
+                ['link_cartao', linkCartao],
+                ['instrucoes_pagamento', instrucoesPagamento]
+            ];
 
             try {
                 const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
-                await sql`
-                    INSERT INTO configuracoes (chave, valor)
-                    VALUES ('whatsapp', ${whatsappLimpo})
-                    ON CONFLICT (chave) DO UPDATE SET valor = ${whatsappLimpo};
-                `;
-                await sql`
-                    INSERT INTO configuracoes (chave, valor)
-                    VALUES ('email', ${emailLimpo})
-                    ON CONFLICT (chave) DO UPDATE SET valor = ${emailLimpo};
-                `;
-                localStorage.setItem('vr_modas_config', JSON.stringify({ whatsapp: whatsappLimpo, email: emailLimpo }));
-                alert('✅ Configurações salvas com sucesso!');
+                for (const [chave, valor] of pares) {
+                    await sql`
+                        INSERT INTO configuracoes (chave, valor)
+                        VALUES (${chave}, ${valor})
+                        ON CONFLICT (chave) DO UPDATE SET valor = ${valor};
+                    `;
+                }
+
+                const configConsolidada = {
+                    whatsapp: whatsappLimpo,
+                    email: emailLimpo,
+                    permitirEntrega,
+                    permitirRetirada,
+                    enderecoLoja,
+                    pagPix,
+                    pagCredito,
+                    pagDebito,
+                    pixChave,
+                    pixTitular,
+                    pixBanco,
+                    linkCartao,
+                    instrucoesPagamento
+                };
+                localStorage.setItem('vr_modas_config', JSON.stringify(configConsolidada));
+                alert('✅ Configurações de entrega, pagamento e conta recebedora salvas com sucesso!');
             } catch (err) {
                 console.error('Erro ao salvar configurações:', err);
                 alert('Erro ao salvar configurações: ' + err.message);
+            } finally {
+                if (btnSalvar) {
+                    btnSalvar.disabled = false;
+                    btnSalvar.innerText = '💾 Salvar Todas as Configurações';
+                }
             }
         };
     }

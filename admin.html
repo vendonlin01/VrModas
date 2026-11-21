@@ -122,7 +122,7 @@
                 </div>
             </section>
 
-            <!-- 2. SEÇÃO: RELATÓRIOS DIÁRIOS & CAIXA (ESTRUTURA INJETADA VIA JS) -->
+            <!-- 2. SEÇÃO: RELATÓRIOS DIÁRIOS & CAIXA -->
             <section id="secao-relatorios" class="secao-admin"></section>
 
             <!-- 3. SEÇÃO: CADASTRO E EDIÇÃO DE PRODUTOS -->
@@ -436,28 +436,106 @@
                 </div>
             </section>
 
-            <!-- 7. SEÇÃO: CONFIGURAÇÕES, CUPONS & BACKUP -->
+            <!-- 7. SEÇÃO: CONFIGURAÇÕES, RECEBIMENTO, PAGAMENTOS & CUPONS -->
             <section id="secao-config" class="secao-admin">
                 <div class="admin-card">
-                    <h2>⚙️ Configurações de Atendimento & Suporte</h2>
-                    <p class="subtexto-card">Defina os canais oficiais de suporte.</p>
+                    <h2>⚙️ Configurações da Loja, Entregas & Pagamentos</h2>
+                    <p class="subtexto-card">Configure os canais de suporte, modalidades de entrega, formas de pagamento e a conta recebedora dos proprietários.</p>
 
                     <form id="form-config-loja" class="form-admin">
-                        <div class="linha-inputs">
-                            <div class="grupo-input">
-                                <label for="config-whatsapp">WhatsApp Oficial de Suporte (com DDD e 55) *</label>
-                                <input type="text" id="config-whatsapp" placeholder="Ex: 5589999999999" required>
-                                <small style="color: var(--cinza-texto); font-size: 11px;">Digite apenas números com código do país (55) e DDD.</small>
+                        <!-- BLOCO 1: ATENDIMENTO -->
+                        <div class="bloco-cadastro" style="margin-bottom: 18px;">
+                            <h3 class="titulo-bloco">📞 1. Canais de Atendimento</h3>
+                            <div class="linha-inputs">
+                                <div class="grupo-input">
+                                    <label for="config-whatsapp">WhatsApp Oficial de Suporte (com DDD e 55) *</label>
+                                    <input type="text" id="config-whatsapp" placeholder="Ex: 5589999999999" required>
+                                    <small style="color: var(--cinza-texto); font-size: 11px;">Digite apenas números com código do país (55) e DDD.</small>
+                                </div>
+
+                                <div class="grupo-input">
+                                    <label for="config-email">E-mail Oficial de Atendimento *</label>
+                                    <input type="email" id="config-email" placeholder="Ex: contato@vrmodas.com" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BLOCO 2: MODALIDADES DE RECEBIMENTO -->
+                        <div class="bloco-cadastro" style="margin-bottom: 18px;">
+                            <h3 class="titulo-bloco">📦 2. Opções de Recebimento Visíveis para o Cliente</h3>
+                            <p style="font-size: 12px; color: #999; margin-bottom: 12px;">Escolha quais opções aparecem na sacola do cliente (pelo menos uma deve ficar ativa).</p>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; background: #0d0d0d; border: 1px solid #282828; padding: 14px; border-radius: 6px; margin-bottom: 12px;">
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="config-permitir-entrega" checked style="accent-color: var(--dourado, #d4af37); width: 18px; height: 18px;">
+                                    <span>🏠 <strong>Receber em Casa</strong> (Entrega)</span>
+                                </label>
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="config-permitir-retirada" checked style="accent-color: var(--dourado, #d4af37); width: 18px; height: 18px;">
+                                    <span>🏬 <strong>Retirar na Loja</strong> (Balcão)</span>
+                                </label>
                             </div>
 
                             <div class="grupo-input">
-                                <label for="config-email">E-mail Oficial de Atendimento *</label>
-                                <input type="email" id="config-email" placeholder="Ex: contato@vrmodas.com" required>
+                                <label for="config-endereco-loja">Endereço da Loja Física (para Retirada)</label>
+                                <input type="text" id="config-endereco-loja" placeholder="Ex: Rua Exemplo, Nº 100 - Centro, São João do Piauí - PI">
+                                <small style="color: #777; font-size: 11px;">Mostrado ao cliente quando ele selecionar "Retirar na Loja".</small>
+                            </div>
+                        </div>
+
+                        <!-- BLOCO 3: FORMAS DE PAGAMENTO & CONTA RECEBEDORA -->
+                        <div class="bloco-cadastro" style="margin-bottom: 18px;">
+                            <h3 class="titulo-bloco">💳 3. Formas de Pagamento & Conta Recebedora</h3>
+                            <p style="font-size: 12px; color: #999; margin-bottom: 12px;">Ative os métodos aceitos na sacola e informe os dados da conta onde os pagamentos cairão.</p>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; background: #0d0d0d; border: 1px solid #282828; padding: 14px; border-radius: 6px; margin-bottom: 16px;">
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="config-pag-pix" checked style="accent-color: var(--dourado, #d4af37); width: 18px; height: 18px;">
+                                    <span>💠 <strong>Pix</strong></span>
+                                </label>
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="config-pag-credito" checked style="accent-color: var(--dourado, #d4af37); width: 18px; height: 18px;">
+                                    <span>💳 <strong>Cartão de Crédito</strong></span>
+                                </label>
+                                <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                    <input type="checkbox" id="config-pag-debito" checked style="accent-color: var(--dourado, #d4af37); width: 18px; height: 18px;">
+                                    <span>💳 <strong>Cartão de Débito</strong></span>
+                                </label>
+                            </div>
+
+                            <div class="linha-inputs">
+                                <div class="grupo-input">
+                                    <label for="config-pix-chave">Chave Pix Recebedora (CPF, CNPJ, E-mail ou Aleatória)</label>
+                                    <input type="text" id="config-pix-chave" placeholder="Ex: 00.000.000/0001-00 ou financeiro@vrmodas.com">
+                                </div>
+
+                                <div class="grupo-input">
+                                    <label for="config-pix-titular">Nome do Titular / Favorecido da Conta</label>
+                                    <input type="text" id="config-pix-titular" placeholder="Ex: VR Modas LTDA">
+                                </div>
+                            </div>
+
+                            <div class="linha-inputs" style="margin-top: 12px;">
+                                <div class="grupo-input">
+                                    <label for="config-pix-banco">Banco / Instituição Financeira</label>
+                                    <input type="text" id="config-pix-banco" placeholder="Ex: Nubank, Mercado Pago, Banco do Brasil">
+                                </div>
+
+                                <div class="grupo-input">
+                                    <label for="config-link-cartao">Link de Pagamento Cartão (Opcional)</label>
+                                    <input type="url" id="config-link-cartao" placeholder="Ex: https://link.mercadopago.com.br/sualoja">
+                                    <small style="color: #777; font-size: 11px;">Se preenchido, aparece um botão de pagamento direto no cartão após o pedido.</small>
+                                </div>
+                            </div>
+
+                            <div class="grupo-input" style="margin-top: 12px;">
+                                <label for="config-instrucoes-pagamento">Observações / Instruções de Pagamento para o Cliente (Opcional)</label>
+                                <input type="text" id="config-instrucoes-pagamento" placeholder="Ex: Envie o comprovante do Pix pelo WhatsApp ou pague na entrega/retirada.">
                             </div>
                         </div>
 
                         <div class="botoes-form" style="margin-top: 10px;">
-                            <button type="submit" class="btn-salvar">Salvar Configurações</button>
+                            <button type="submit" id="btn-salvar-config-loja" class="btn-salvar">💾 Salvar Todas as Configurações</button>
                         </div>
                     </form>
 

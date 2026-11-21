@@ -1,4 +1,4 @@
-// api/finalizar-pedido.js - Checkout Antifraude (Cálculo e Estoque 100% no Servidor)
+// api/finalizar-pedido.js - Checkout Antifraude (Cálculo, Regras da Loja e Estoque 100% no Servidor)
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
@@ -26,6 +26,42 @@ export default async function handler(req, res) {
 
         if (!Array.isArray(itens) || itens.length === 0) {
             return res.status(400).json({ erro: 'A sacola está vazia.' });
+        }
+
+        // 0. Carrega e valida as regras de recebimento e pagamento configuradas pelos administradores
+        const configsRows = await sql`SELECT chave, valor FROM configuracoes;`;
+        const cfgMapa = {};
+        if (Array.isArray(configsRows)) {
+            configsRows.forEach(r => { cfgMapa[r.chave] = r.valor; });
+        }
+
+        const permitirEntrega = cfgMapa['permitir_entrega'] !== undefined ? cfgMapa['permitir_entrega'] === 'true' : true;
+        const permitirRetirada = cfgMapa['permitir_retirada'] !== undefined ? cfgMapa['permitir_retirada'] === 'true' : true;
+        const pagPix = cfgMapa['pag_pix'] !== undefined ? cfgMapa['pag_pix'] === 'true' : true;
+        const pagCredito = cfgMapa['pag_credito'] !== undefined ? cfgMapa['pag_credito'] === 'true' : true;
+        const pagDebito = cfgMapa['pag_debito'] !== undefined ? cfgMapa['pag_debito'] === 'true' : true;
+        const enderecoLoja = String(cfgMapa['endereco_loja'] || '').trim();
+
+        const envioSolicitado = tipoEnvio === 'retirada' ? 'retirada' : 'entrega';
+        if (envioSolicitado === 'entrega' && !permitirEntrega) {
+            return res.status(400).json({ erro: 'A entrega em domicílio está desativada no momento. Selecione Retirar na Loja.' });
+        }
+        if (envioSolicitado === 'retirada' && !permitirRetirada) {
+            return res.status(400).json({ erro: 'A retirada na loja está desativada no momento. Selecione Receber em Casa.' });
+        }
+
+        const metodoSolicitado = String(formaPagamento || '').trim().toUpperCase();
+        if (!['PIX', 'CREDITO', 'DEBITO'].includes(metodoSolicitado)) {
+            return res.status(400).json({ erro: 'Forma de pagamento inválida.' });
+        }
+        if (metodoSolicitado === 'PIX' && !pagPix) {
+            return res.status(400).json({ erro: 'O pagamento via Pix está desativado no momento.' });
+        }
+        if (metodoSolicitado === 'CREDITO' && !pagCredito) {
+            return res.status(400).json({ erro: 'O pagamento via Cartão de Crédito está desativado no momento.' });
+        }
+        if (metodoSolicitado === 'DEBITO' && !pagDebito) {
+            return res.status(400).json({ erro: 'O pagamento via Cartão de Débito está desativado no momento.' });
         }
 
         let subtotalReal = 0;
@@ -102,15 +138,15 @@ export default async function handler(req, res) {
         }
 
         const totalFinalReal = Math.max(0, Number((subtotalReal - descontoReal).toFixed(2)));
-        const metodoLimpo = ['PIX', 'CREDITO', 'DEBITO'].includes(String(formaPagamento || '').toUpperCase())
-            ? String(formaPagamento).toUpperCase()
-            : 'PIX';
+        const enderecoFinal = envioSolicitado === 'retirada'
+            ? (enderecoLoja ? `Retirada na Loja: ${enderecoLoja}` : 'Retirada na Loja Física')
+            : String(clienteEndereco || 'A combinar na entrega').slice(0, 300);
 
         const dadosItensCompletos = {
             itens: itensValidados,
-            endereco_entrega: String(clienteEndereco || 'A combinar').slice(0, 300),
-            forma_pagamento: metodoLimpo,
-            tipo_envio: tipoEnvio === 'retirada' ? 'retirada' : 'entrega',
+            endereco_entrega: enderecoFinal.slice(0, 300),
+            forma_pagamento: metodoSolicitado,
+            tipo_envio: envioSolicitado,
             cupom: cupomConfirmado,
             desconto_aplicado: Number(descontoReal.toFixed(2))
         };
