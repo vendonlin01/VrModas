@@ -436,11 +436,11 @@
                 </div>
             </section>
 
-            <!-- 7. SEÇÃO: CONFIGURAÇÕES, RECEBIMENTO, PAGAMENTOS & CUPONS -->
+            <!-- 7. SEÇÃO: CONFIGURAÇÕES, RECEBIMENTO, INTEGRAÇÃO API DE PAGAMENTO & CUPONS -->
             <section id="secao-config" class="secao-admin">
                 <div class="admin-card">
                     <h2>⚙️ Configurações da Loja, Entregas & Pagamentos</h2>
-                    <p class="subtexto-card">Configure os canais de suporte, modalidades de entrega, formas de pagamento e a conta recebedora dos proprietários.</p>
+                    <p class="subtexto-card">Configure os canais de suporte, modalidades de entrega, formas de pagamento e a integração com a API bancária/gateway.</p>
 
                     <form id="form-config-loja" class="form-admin">
                         <!-- BLOCO 1: ATENDIMENTO -->
@@ -483,15 +483,15 @@
                             </div>
                         </div>
 
-                        <!-- BLOCO 3: FORMAS DE PAGAMENTO & CONTA RECEBEDORA -->
+                        <!-- BLOCO 3: FORMAS DE PAGAMENTO & INTEGRAÇÃO API / GATEWAY -->
                         <div class="bloco-cadastro" style="margin-bottom: 18px;">
-                            <h3 class="titulo-bloco">💳 3. Formas de Pagamento & Conta Recebedora</h3>
-                            <p style="font-size: 12px; color: #999; margin-bottom: 12px;">Ative os métodos aceitos na sacola e informe os dados da conta onde os pagamentos cairão.</p>
+                            <h3 class="titulo-bloco">💳 3. Formas de Pagamento & Integração API do Banco / Gateway</h3>
+                            <p style="font-size: 12px; color: #999; margin-bottom: 12px;">Ative os métodos disponíveis na sacola e configure o gateway que confirmará os pagamentos automaticamente via Webhook.</p>
 
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; background: #0d0d0d; border: 1px solid #282828; padding: 14px; border-radius: 6px; margin-bottom: 16px;">
                                 <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
                                     <input type="checkbox" id="config-pag-pix" checked style="accent-color: var(--dourado, #d4af37); width: 18px; height: 18px;">
-                                    <span>💠 <strong>Pix</strong></span>
+                                    <span>💠 <strong>Pix Automático (API)</strong></span>
                                 </label>
                                 <label style="color: #fff; font-size: 13px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
                                     <input type="checkbox" id="config-pag-credito" checked style="accent-color: var(--dourado, #d4af37); width: 18px; height: 18px;">
@@ -505,32 +505,38 @@
 
                             <div class="linha-inputs">
                                 <div class="grupo-input">
-                                    <label for="config-pix-chave">Chave Pix Recebedora (CPF, CNPJ, E-mail ou Aleatória)</label>
-                                    <input type="text" id="config-pix-chave" placeholder="Ex: 00.000.000/0001-00 ou financeiro@vrmodas.com">
+                                    <label for="config-gateway-provedor">Provedor / API de Pagamento</label>
+                                    <select id="config-gateway-provedor">
+                                        <option value="mercadopago">Mercado Pago (Pix + Cartão)</option>
+                                        <option value="asaas">Asaas (Pix + Cartão)</option>
+                                        <option value="efi">Efí Bank / Gerencianet</option>
+                                        <option value="pagbank">PagBank / PagSeguro</option>
+                                        <option value="stripe">Stripe</option>
+                                        <option value="outro">Outro Gateway / API Bancária</option>
+                                    </select>
                                 </div>
 
                                 <div class="grupo-input">
-                                    <label for="config-pix-titular">Nome do Titular / Favorecido da Conta</label>
-                                    <input type="text" id="config-pix-titular" placeholder="Ex: VR Modas LTDA">
+                                    <label for="config-gateway-ambiente">Ambiente da API</label>
+                                    <select id="config-gateway-ambiente">
+                                        <option value="producao">🟢 Produção (Pagamentos Reais)</option>
+                                        <option value="sandbox">🟡 Sandbox (Testes)</option>
+                                    </select>
                                 </div>
                             </div>
 
                             <div class="linha-inputs" style="margin-top: 12px;">
                                 <div class="grupo-input">
-                                    <label for="config-pix-banco">Banco / Instituição Financeira</label>
-                                    <input type="text" id="config-pix-banco" placeholder="Ex: Nubank, Mercado Pago, Banco do Brasil">
+                                    <label for="config-gateway-public-key">Public Key / Client ID (Chave Pública - Opcional)</label>
+                                    <input type="text" id="config-gateway-public-key" placeholder="Ex: APP_USR-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                                    <small style="color: #777; font-size: 11px;">O Token Secreto (Access Token) deve ficar na Vercel em <strong>GATEWAY_ACCESS_TOKEN</strong>.</small>
                                 </div>
 
                                 <div class="grupo-input">
-                                    <label for="config-link-cartao">Link de Pagamento Cartão (Opcional)</label>
-                                    <input type="url" id="config-link-cartao" placeholder="Ex: https://link.mercadopago.com.br/sualoja">
-                                    <small style="color: #777; font-size: 11px;">Se preenchido, aparece um botão de pagamento direto no cartão após o pedido.</small>
+                                    <label for="config-webhook-url">URL de Webhook (Cole no painel do seu Banco/Gateway)</label>
+                                    <input type="text" id="config-webhook-url" readonly value="https://vrmodas-lovat.vercel.app/api/webhook-pagamento" style="background: #181818; color: var(--dourado); font-weight: 600;">
+                                    <small style="color: #777; font-size: 11px;">O banco chama esta URL para confirmar o pagamento automaticamente.</small>
                                 </div>
-                            </div>
-
-                            <div class="grupo-input" style="margin-top: 12px;">
-                                <label for="config-instrucoes-pagamento">Observações / Instruções de Pagamento para o Cliente (Opcional)</label>
-                                <input type="text" id="config-instrucoes-pagamento" placeholder="Ex: Envie o comprovante do Pix pelo WhatsApp ou pague na entrega/retirada.">
                             </div>
                         </div>
 

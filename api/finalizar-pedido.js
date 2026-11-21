@@ -150,8 +150,11 @@ export default async function handler(req, res) {
             ? (enderecoLoja ? `Retirada na Loja: ${enderecoLoja}` : 'Retirada na Loja Física')
             : String(clienteEndereco || 'A combinar na entrega').slice(0, 300);
 
+        const emailLimpo = String(clienteEmail || '').slice(0, 150);
+
         const dadosItensCompletos = {
             itens: itensValidados,
+            cliente_email: emailLimpo,
             endereco_entrega: enderecoFinal.slice(0, 300),
             forma_pagamento: metodoSolicitado,
             tipo_envio: envioSolicitado,
@@ -159,7 +162,13 @@ export default async function handler(req, res) {
             desconto_aplicado: Number(descontoReal.toFixed(2))
         };
 
-        // 3. Registra o pedido no Neon com os valores blindados
+        // 3. Garante que a coluna cliente_email exista na tabela pedidos antes de inserir
+        await sql`
+            ALTER TABLE pedidos
+            ADD COLUMN IF NOT EXISTS cliente_email VARCHAR(150);
+        `;
+
+        // 4. Registra o pedido no Neon com os valores blindados
         const [pedidoCriado] = await sql`
             INSERT INTO pedidos (
                 cliente_nome,
@@ -170,7 +179,7 @@ export default async function handler(req, res) {
                 status
             ) VALUES (
                 ${String(clienteNome || 'Cliente Visitante').slice(0, 150)},
-                ${String(clienteEmail || '').slice(0, 150)},
+                ${emailLimpo},
                 ${String(clienteWhats || 'Não informado').slice(0, 50)},
                 ${totalFinalReal},
                 ${JSON.stringify(dadosItensCompletos)}::jsonb,
@@ -179,7 +188,7 @@ export default async function handler(req, res) {
             RETURNING id;
         `;
 
-        // 4. Abate o estoque real de forma segura
+        // 5. Abate o estoque real de forma segura
         for (const item of itensValidados) {
             await sql`
                 UPDATE produtos

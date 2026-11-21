@@ -1,5 +1,5 @@
 /* =====================================================
-   SACOLA, PERSISTÊNCIA, ALERTA DE PAGAMENTO & CHECKOUT - VR MODAS
+   SACOLA, CHECKOUT VIA GATEWAY & CONFIRMAÇÃO AUTOMÁTICA - VR MODAS
    ===================================================== */
 
 const CHAVE_SACOLA_STORAGE = 'vr_modas_sacola_itens';
@@ -70,12 +70,7 @@ function obterConfigCheckoutLoja() {
         enderecoLoja: String(salvo.enderecoLoja || '').trim(),
         pagPix: (!pagPix && !pagCredito && !pagDebito) ? true : pagPix,
         pagCredito,
-        pagDebito,
-        pixChave: String(salvo.pixChave || '').trim(),
-        pixTitular: String(salvo.pixTitular || '').trim(),
-        pixBanco: String(salvo.pixBanco || '').trim(),
-        linkCartao: String(salvo.linkCartao || '').trim(),
-        instrucoesPagamento: String(salvo.instrucoesPagamento || '').trim()
+        pagDebito
     };
 }
 
@@ -98,12 +93,7 @@ async function sincronizarConfigCheckoutNeon() {
                 enderecoLoja: mapa['endereco_loja'] ?? anterior.enderecoLoja ?? '',
                 pagPix: mapa['pag_pix'] !== undefined ? mapa['pag_pix'] === 'true' : (anterior.pagPix ?? true),
                 pagCredito: mapa['pag_credito'] !== undefined ? mapa['pag_credito'] === 'true' : (anterior.pagCredito ?? true),
-                pagDebito: mapa['pag_debito'] !== undefined ? mapa['pag_debito'] === 'true' : (anterior.pagDebito ?? true),
-                pixChave: mapa['pix_chave'] ?? anterior.pixChave ?? '',
-                pixTitular: mapa['pix_titular'] ?? anterior.pixTitular ?? '',
-                pixBanco: mapa['pix_banco'] ?? anterior.pixBanco ?? '',
-                linkCartao: mapa['link_cartao'] ?? anterior.linkCartao ?? '',
-                instrucoesPagamento: mapa['instrucoes_pagamento'] ?? anterior.instrucoesPagamento ?? ''
+                pagDebito: mapa['pag_debito'] !== undefined ? mapa['pag_debito'] === 'true' : (anterior.pagDebito ?? true)
             };
             localStorage.setItem('vr_modas_config', JSON.stringify(atualizada));
         }
@@ -125,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let metodoPagamentoSelecionado = 'pix';
     let cupomAtivo = null;
     let tipoEnvioSelecionado = 'entrega';
+    let intervaloVerificacaoPagamento = null;
 
     if (btnAbrirCarrinho) {
         btnAbrirCarrinho.onclick = async () => {
@@ -333,34 +324,26 @@ document.addEventListener('DOMContentLoaded', () => {
             <button type="button" class="btn-metodo-pag ${metodoPagamentoSelecionado === m.id ? 'ativo' : ''}" data-metodo="${m.id}" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${metodoPagamentoSelecionado === m.id ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${metodoPagamentoSelecionado === m.id ? '#000' : '#fff'}; cursor: pointer;">${m.label}</button>
         `).join('');
 
-        // ALERTA DE PAGAMENTO DINÂMICO NA SACOLA
-        let resumoContaHtml = '';
+        let avisoCheckoutHtml = '';
         if (metodoPagamentoSelecionado === 'pix') {
-            resumoContaHtml = `
+            avisoCheckoutHtml = `
                 <div style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.35); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 11px; color: #ddd; line-height: 1.4;">
-                    <div style="color: var(--dourado, #d4af37); font-weight: 700; margin-bottom: 2px;">💠 Pagamento via Pix</div>
-                    ${cfg.pixChave
-                        ? `<div><strong>Chave Pix:</strong> <span style="color: #fff;">${escaparHtmlSacola(cfg.pixChave)}</span></div>
-                           ${cfg.pixTitular ? `<div><strong>Titular:</strong> ${escaparHtmlSacola(cfg.pixTitular)}${cfg.pixBanco ? ` • ${escaparHtmlSacola(cfg.pixBanco)}` : ''}</div>` : ''}`
-                        : `<div>A chave Pix da loja será exibida assim que você finalizar o pedido.</div>`
-                    }
-                    ${cfg.instrucoesPagamento ? `<div style="color: #aaa; margin-top: 3px;">${escaparHtmlSacola(cfg.instrucoesPagamento)}</div>` : ''}
+                    <strong style="color: var(--dourado, #d4af37);">💠 Pagamento Instantâneo via Pix:</strong><br>
+                    Ao finalizar, o QR Code e o código Pix Copia e Cola são gerados e confirmados automaticamente pelo banco.
                 </div>
             `;
         } else if (metodoPagamentoSelecionado === 'credito') {
-            resumoContaHtml = `
+            avisoCheckoutHtml = `
                 <div style="background: rgba(79,195,247,0.08); border: 1px solid rgba(79,195,247,0.35); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 11px; color: #ddd; line-height: 1.4;">
-                    <div style="color: #4fc3f7; font-weight: 700; margin-bottom: 2px;">💳 Cartão de Crédito</div>
-                    <div>${cfg.linkCartao ? 'Após concluir o pedido, você receberá o link seguro para pagar no cartão.' : (tipoEnvioSelecionado === 'retirada' ? 'Pagamento na maquininha no momento da retirada na loja.' : 'Pagamento na maquininha no momento da entrega.')}</div>
-                    ${cfg.instrucoesPagamento ? `<div style="color: #aaa; margin-top: 3px;">${escaparHtmlSacola(cfg.instrucoesPagamento)}</div>` : ''}
+                    <strong style="color: #4fc3f7;">💳 Cartão de Crédito:</strong><br>
+                    Checkout seguro com aprovação automática pelo gateway de pagamento da loja.
                 </div>
             `;
         } else if (metodoPagamentoSelecionado === 'debito') {
-            resumoContaHtml = `
+            avisoCheckoutHtml = `
                 <div style="background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.35); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 11px; color: #ddd; line-height: 1.4;">
-                    <div style="color: #66bb6a; font-weight: 700; margin-bottom: 2px;">💳 Cartão de Débito</div>
-                    <div>${tipoEnvioSelecionado === 'retirada' ? 'Pagamento no débito na maquininha ao retirar na loja.' : 'Pagamento no débito na maquininha no ato da entrega.'}</div>
-                    ${cfg.instrucoesPagamento ? `<div style="color: #aaa; margin-top: 3px;">${escaparHtmlSacola(cfg.instrucoesPagamento)}</div>` : ''}
+                    <strong style="color: #66bb6a;">💳 Cartão de Débito:</strong><br>
+                    Pagamento processado com confirmação automática pelo sistema.
                 </div>
             `;
         }
@@ -409,7 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="display: flex; gap: 6px;">
                     ${botoesPagamentoHtml}
                 </div>
-                ${resumoContaHtml}
+                ${avisoCheckoutHtml}
             </div>
         `;
 
@@ -628,8 +611,37 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function exibirConfirmacaoNoSite(pedido) {
-        const cfg = obterConfigCheckoutLoja();
+    function iniciarMonitoramentoConfirmacaoBanco(pedidoId) {
+        if (intervaloVerificacaoPagamento) clearInterval(intervaloVerificacaoPagamento);
+        let tentativas = 0;
+
+        intervaloVerificacaoPagamento = setInterval(async () => {
+            tentativas++;
+            if (tentativas > 60) {
+                clearInterval(intervaloVerificacaoPagamento);
+                return;
+            }
+            try {
+                const res = await fetch(`/api/webhook-pagamento?pedidoId=${encodeURIComponent(pedidoId)}`);
+                if (!res.ok) return;
+                const dados = await res.json();
+                if (String(dados.status || '').toLowerCase() === 'pago') {
+                    clearInterval(intervaloVerificacaoPagamento);
+                    const badgeStatus = document.getElementById('status-pagamento-realtime');
+                    if (badgeStatus) {
+                        badgeStatus.style.background = 'rgba(76, 175, 80, 0.16)';
+                        badgeStatus.style.borderColor = '#4caf50';
+                        badgeStatus.style.color = '#66bb6a';
+                        badgeStatus.innerHTML = '✅ <strong>Pagamento Confirmado Automaticamente pelo Banco!</strong>';
+                    }
+                }
+            } catch {
+                // Ignora falhas momentâneas de rede durante polling
+            }
+        }, 4000);
+    }
+
+    function exibirConfirmacaoNoSite(pedido, cobranca) {
         let modal = document.getElementById('modal-pedido-sucesso');
         if (!modal) {
             modal = document.createElement('div');
@@ -653,24 +665,22 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
 
-        const formaPagUpper = String(pedido.formaPagamento || '').toUpperCase();
-        let blocoDadosContaHtml = '';
-
-        if (formaPagUpper === 'PIX' && cfg.pixChave) {
-            blocoDadosContaHtml = `
-                <div style="background:#101810; border:1px solid rgba(76,175,80,0.45); padding:10px; border-radius:6px; font-size:11.5px; color:#ddd; margin-bottom:14px; text-align:left;">
-                    <div style="color:#4caf50; font-weight:700; margin-bottom:4px;">💠 Dados para Transferência Pix</div>
-                    <div><strong>Chave Pix:</strong> <span id="valor-chave-pix-modal" style="color:#fff;">${escaparHtmlSacola(cfg.pixChave)}</span></div>
-                    ${cfg.pixTitular ? `<div><strong>Favorecido:</strong> ${escaparHtmlSacola(cfg.pixTitular)}</div>` : ''}
-                    ${cfg.pixBanco ? `<div><strong>Banco:</strong> ${escaparHtmlSacola(cfg.pixBanco)}</div>` : ''}
-                    <button type="button" id="btn-copiar-chave-pix" style="margin-top:8px; width:100%; background:#1f2e1f; border:1px solid #4caf50; color:#4caf50; padding:7px; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer;">📋 Copiar Chave Pix</button>
+        let blocoGatewayHtml = '';
+        if (cobranca?.qrCodeBase64 || cobranca?.pixCopiaECola) {
+            blocoGatewayHtml = `
+                <div style="background:#0f1410; border:1px solid rgba(212,175,55,0.45); padding:12px; border-radius:6px; margin-bottom:14px; text-align:center;">
+                    <div style="color:var(--dourado, #d4af37); font-weight:700; font-size:12px; margin-bottom:8px;">💠 Escaneie o QR Code ou copie o Pix</div>
+                    ${cobranca.qrCodeBase64 ? `<img src="data:image/png;base64,${escaparHtmlSacola(cobranca.qrCodeBase64)}" alt="QR Code Pix" style="width:165px; height:165px; background:#fff; padding:6px; border-radius:6px; margin-bottom:8px;">` : ''}
+                    ${cobranca.pixCopiaECola ? `
+                        <input type="text" readonly value="${escaparHtmlSacola(cobranca.pixCopiaECola)}" style="width:100%; box-sizing:border-box; background:#090909; border:1px solid #333; color:#ccc; padding:7px; border-radius:4px; font-size:11px; margin-bottom:6px;">
+                        <button type="button" id="btn-copiar-pix-gateway" style="width:100%; background:var(--dourado, #d4af37); color:#000; border:none; padding:8px; border-radius:4px; font-size:11px; font-weight:800; cursor:pointer;">📋 Copiar Código Pix</button>
+                    ` : ''}
                 </div>
             `;
-        } else if ((formaPagUpper === 'CREDITO' || formaPagUpper === 'DEBITO') && cfg.linkCartao && /^https?:\/\//i.test(cfg.linkCartao)) {
-            blocoDadosContaHtml = `
-                <div style="background:#12161f; border:1px solid rgba(79,195,247,0.45); padding:10px; border-radius:6px; font-size:11.5px; color:#ddd; margin-bottom:14px; text-align:left;">
-                    <div style="color:#4fc3f7; font-weight:700; margin-bottom:6px;">💳 Finalizar Pagamento no Cartão</div>
-                    <a href="${escaparHtmlSacola(cfg.linkCartao)}" target="_blank" rel="noopener noreferrer" style="display:block; text-align:center; background:#4fc3f7; color:#000; padding:8px; border-radius:4px; font-weight:800; font-size:12px; text-decoration:none;">Abrir Link de Pagamento Seguro</a>
+        } else if (cobranca?.ticketUrl && /^https?:\/\//i.test(cobranca.ticketUrl)) {
+            blocoGatewayHtml = `
+                <div style="background:#101620; border:1px solid rgba(79,195,247,0.45); padding:12px; border-radius:6px; margin-bottom:14px; text-align:center;">
+                    <a href="${escaparHtmlSacola(cobranca.ticketUrl)}" target="_blank" rel="noopener noreferrer" style="display:block; background:#4fc3f7; color:#000; padding:9px; border-radius:4px; font-weight:800; font-size:12px; text-decoration:none;">💳 Concluir Pagamento no Gateway Seguro</a>
                 </div>
             `;
         }
@@ -679,8 +689,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="background:#141414; border:1px solid #333; border-top:3px solid var(--dourado, #d4af37); border-radius:8px; max-width:440px; width:100%; padding:22px; color:#fff; text-align:center; box-shadow:0 15px 35px rgba(0,0,0,0.9); max-height:92vh; overflow-y:auto;">
                 <div style="font-size:36px; margin-bottom:8px;">🛍️</div>
                 <h2 style="margin:0 0 6px 0; color:var(--dourado, #d4af37); font-size:18px;">Pedido Registrado com Sucesso!</h2>
-                <p style="font-size:12px; color:#aaa; margin:0 0 14px 0;">Obrigada por comprar na VR Modas! O seu pedido já foi enviado ao painel do lojista.</p>
-                
+                <p style="font-size:12px; color:#aaa; margin:0 0 12px 0;">Assim que o banco aprovar a transação, o status abaixo será atualizado automaticamente.</p>
+
+                <div id="status-pagamento-realtime" style="background: rgba(212, 175, 55, 0.12); border: 1px solid rgba(212, 175, 55, 0.45); color: var(--dourado, #d4af37); padding: 8px 10px; border-radius: 6px; font-size: 11.5px; margin-bottom: 14px;">
+                    ⏳ <strong>Aguardando confirmação automática do banco...</strong>
+                </div>
+
+                ${blocoGatewayHtml}
+
                 <div style="background:#0a0a0a; border:1px solid #222; border-radius:6px; padding:12px; text-align:left; margin-bottom:14px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #1f1f1f; padding-bottom:6px;">
                         <span style="font-size:12px; color:#777;">Código do Pedido:</span>
@@ -693,13 +709,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
 
-                ${blocoDadosContaHtml}
-
                 <div style="background:#1a1a1a; padding:10px; border-radius:6px; font-size:11px; color:#aaa; margin-bottom:15px; text-align:left;">
                     <span style="color:var(--dourado, #d4af37); font-weight:bold;">📦 Forma de Recebimento:</span><br>
                     ${escaparHtmlSacola(pedido.cliente?.endereco || '')}<br><br>
-                    <span style="color:var(--dourado, #d4af37); font-weight:bold;">💳 Forma de Pagamento:</span> ${escaparHtmlSacola(formaPagUpper)}
-                    ${cfg.instrucoesPagamento ? `<br><span style="color:#888;">${escaparHtmlSacola(cfg.instrucoesPagamento)}</span>` : ''}
+                    <span style="color:var(--dourado, #d4af37); font-weight:bold;">💳 Método Escolhido:</span> ${escaparHtmlSacola(String(pedido.formaPagamento || '').toUpperCase())}
                 </div>
 
                 <button type="button" id="btn-fechar-modal-pedido" style="width:100%; background:var(--dourado, #d4af37); color:#000; border:none; padding:11px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">Continuar Comprando</button>
@@ -708,21 +721,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modal.style.display = 'flex';
 
-        const btnCopiarPix = document.getElementById('btn-copiar-chave-pix');
-        if (btnCopiarPix && cfg.pixChave) {
-            btnCopiarPix.onclick = async () => {
+        const btnCopiarPixGateway = document.getElementById('btn-copiar-pix-gateway');
+        if (btnCopiarPixGateway && cobranca?.pixCopiaECola) {
+            btnCopiarPixGateway.onclick = async () => {
                 try {
-                    await navigator.clipboard.writeText(cfg.pixChave);
-                    btnCopiarPix.innerText = '✓ Chave Pix Copiada!';
+                    await navigator.clipboard.writeText(cobranca.pixCopiaECola);
+                    btnCopiarPixGateway.innerText = '✓ Código Pix Copiado!';
                 } catch {
-                    alert('Chave Pix: ' + cfg.pixChave);
+                    alert('Código Pix: ' + cobranca.pixCopiaECola);
                 }
             };
         }
 
         document.getElementById('btn-fechar-modal-pedido').onclick = () => {
+            if (intervaloVerificacaoPagamento) clearInterval(intervaloVerificacaoPagamento);
             modal.style.display = 'none';
         };
+
+        if (pedido.id) {
+            iniciarMonitoramentoConfirmacaoBanco(pedido.id);
+        }
     }
 
     const btnFinalizarCompra = document.getElementById('btn-finalizar-compra') || document.querySelector('.btn-finalizar');
@@ -809,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderizarSacola();
                 if (carrinhoLateral) carrinhoLateral.classList.remove('aberto');
 
-                exibirConfirmacaoNoSite(novoPedido);
+                exibirConfirmacaoNoSite(novoPedido, dadosServidor.cobranca || {});
             } catch (erroRede) {
                 console.error("Erro ao comunicar com checkout seguro:", erroRede);
                 alert("Falha de conexão ao finalizar o pedido. Verifique sua internet e tente novamente.");
@@ -820,6 +838,5 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Renderiza a sacola salva ao carregar qualquer página
     renderizarSacola();
 });
