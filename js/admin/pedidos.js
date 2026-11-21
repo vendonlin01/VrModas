@@ -1,10 +1,13 @@
 // ==========================================================================
-// VR MODAS - GESTÃO DE PEDIDOS & CENTRAL DE DESPACHO INTELIGENTE (NEON DB)
+// VR MODAS - GESTÃO DE PEDIDOS, CENTRAL DE DESPACHO & NOTIFICAÇÃO MOBILE
 // js/admin/pedidos.js
 // ==========================================================================
 
 let listaPedidosGeral = [];
 let filtroStatusPedidoAtivo = 'todos';
+let ultimoIdPedidoConhecido = null;
+let novosPedidosNaoVistos = 0;
+let timerMonitorPedidos = null;
 
 function escaparAdminPedidos(str) {
     return String(str || '')
@@ -98,6 +101,236 @@ function normalizarStatus(statusRaw) {
     return 'pendente';
 }
 
+// ==========================================================================
+// SISTEMA DE NOTIFICAÇÃO NO CELULAR DO ADMINISTRADOR
+// ==========================================================================
+function tocarSomNovoPedido() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const notas = [587.33, 880]; // Ré5 -> Lá5 (toque suave de notificação)
+        notas.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.14, ctx.currentTime + i * 0.16);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.16 + 0.35);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + i * 0.16);
+            osc.stop(ctx.currentTime + i * 0.16 + 0.36);
+        });
+    } catch {
+        // Ignora bloqueio de autoplay antes de interação
+    }
+}
+
+function atualizarBadgePedidosMenu() {
+    const btnNavPedidos = document.getElementById('btn-nav-pedidos');
+    if (!btnNavPedidos) return;
+
+    if (novosPedidosNaoVistos > 0) {
+        btnNavPedidos.innerHTML = `🛍️ Pedidos <span style="background:#ff4444; color:#fff; font-size:10px; font-weight:900; padding:1px 6px; border-radius:10px; margin-left:4px;">+${novosPedidosNaoVistos}</span>`;
+    } else {
+        btnNavPedidos.innerHTML = `🛍️ Pedidos`;
+    }
+}
+
+function dispararNotificacaoCelularNovoPedido(pedido) {
+    const idPed = parseInt(pedido.id, 10);
+    const cliente = pedido.cliente_nome || 'Cliente';
+    const totalFmt = Number(pedido.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    // 1. Vibração no celular (Android / navegadores compatíveis)
+    if (navigator.vibrate) {
+        navigator.vibrate([250, 120, 250]);
+    }
+
+    // 2. Som discreto
+    tocarSomNovoPedido();
+
+    // 3. Notificação nativa do sistema no celular / navegador
+    if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+            const notif = new Notification(`🛍️ Novo Pedido #${idPed} - VR Modas`, {
+                body: `${cliente} • Total: ${totalFmt}`,
+                tag: `vr-pedido-${idPed}`,
+                renotify: true
+            });
+            notif.onclick = () => {
+                window.focus();
+                if (typeof alternarAbaAdmin === 'function') alternarAbaAdmin('secao-pedidos');
+                abrirModalDetalhesPedido(idPed);
+                notif.close();
+            };
+        } catch (e) {
+            console.warn('Falha ao exibir notificação nativa:', e.message);
+        }
+    }
+
+    // 4. Banner visual flutuante dentro do painel
+    let banner = document.getElementById('vr-banner-novo-pedido');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'vr-banner-novo-pedido';
+        banner.style.cssText = `
+            position: fixed;
+            bottom: 18px;
+            right: 18px;
+            left: 18px;
+            max-width: 420px;
+            margin: 0 auto;
+            background: #141414;
+            border: 1px solid var(--dourado, #d4af37);
+            border-left: 5px solid var(--dourado, #d4af37);
+            color: #fff;
+            padding: 14px 16px;
+            border-radius: 10px;
+            z-index: 99998;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        `;
+        document.body.appendChild(banner);
+    }
+
+    banner.innerHTML = `
+        <div style="min-width: 0;">
+            <div style="color: var(--dourado, #d4af37); font-weight: 800; font-size: 12.5px;">🛍️ Novo Pedido #${idPed}!</div>
+            <div style="font-size: 12px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${escaparAdminPedidos(cliente)} • <strong>${totalFmt}</strong>
+            </div>
+        </div>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+            <button type="button" id="btn-ver-novo-pedido-banner" style="background: var(--dourado, #d4af37); color: #000; border: none; padding: 7px 11px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer;">Ver</button>
+            <button type="button" id="btn-fechar-novo-pedido-banner" style="background: #252525; color: #aaa; border: none; padding: 7px 9px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer;">✕</button>
+        </div>
+    `;
+
+    document.getElementById('btn-ver-novo-pedido-banner').onclick = () => {
+        banner.remove();
+        novosPedidosNaoVistos = 0;
+        atualizarBadgePedidosMenu();
+        if (typeof alternarAbaAdmin === 'function') alternarAbaAdmin('secao-pedidos');
+        abrirModalDetalhesPedido(idPed);
+    };
+    document.getElementById('btn-fechar-novo-pedido-banner').onclick = () => banner.remove();
+}
+
+function configurarBotaoPermissaoNotificacoes() {
+    const abasPedidos = document.getElementById('abas-status-pedidos');
+    if (!abasPedidos || document.getElementById('barra-notificacao-celular')) return;
+
+    const barra = document.createElement('div');
+    barra.id = 'barra-notificacao-celular';
+    barra.style.cssText = `
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        background: #111;
+        border: 1px solid #282828;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        font-size: 12px;
+    `;
+
+    const permissaoAtual = ('Notification' in window) ? Notification.permission : 'unsupported';
+
+    barra.innerHTML = `
+        <span id="texto-status-notif-celular" style="color: #bbb;">
+            ${permissaoAtual === 'granted'
+                ? '🔔 <strong style="color:#4cd137;">Alertas no celular ativos!</strong> Você será notificado assim que entrar um pedido.'
+                : '🔕 Ative as notificações para receber alerta no celular quando um cliente fizer um pedido.'}
+        </span>
+        <button type="button" id="btn-ativar-notif-celular" style="background: var(--dourado, #d4af37); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 11px; cursor: pointer;">
+            ${permissaoAtual === 'granted' ? '🔔 Testar Alerta' : '🔔 Ativar Alertas no Celular'}
+        </button>
+    `;
+
+    abasPedidos.parentNode.insertBefore(barra, abasPedidos);
+
+    document.getElementById('btn-ativar-notif-celular').onclick = async () => {
+        tocarSomNovoPedido();
+        if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
+
+        if (!('Notification' in window)) {
+            alert('Este navegador não suporta notificações nativas, mas o alerta sonoro e visual no painel já está ativo!');
+            return;
+        }
+
+        if (Notification.permission === 'granted') {
+            new Notification('🔔 Alertas Ativos - VR Modas', {
+                body: 'Você receberá notificações neste celular sempre que um novo pedido chegar!'
+            });
+            return;
+        }
+
+        const resultado = await Notification.requestPermission();
+        const textoEl = document.getElementById('texto-status-notif-celular');
+        const btnEl = document.getElementById('btn-ativar-notif-celular');
+
+        if (resultado === 'granted') {
+            if (textoEl) textoEl.innerHTML = '🔔 <strong style="color:#4cd137;">Alertas no celular ativos!</strong> Você será notificado assim que entrar um pedido.';
+            if (btnEl) btnEl.innerText = '🔔 Testar Alerta';
+            new Notification('🔔 Alertas Ativados - VR Modas', {
+                body: 'Pronto! Novos pedidos vão notificar diretamente neste aparelho.'
+            });
+        } else {
+            alert('Permissão de notificação bloqueada no navegador. Libere nas configurações do site no seu celular para receber alertas na barra superior.');
+        }
+    };
+}
+
+async function verificarNovosPedidosEmSegundoPlano() {
+    try {
+        const sql = (typeof getSql === 'function') ? await getSql() : window.sql;
+        if (!sql) return;
+
+        const pedidos = await sql`SELECT * FROM pedidos ORDER BY id DESC;`;
+        if (!Array.isArray(pedidos)) return;
+
+        const maiorIdAtual = pedidos.length > 0 ? parseInt(pedidos[0].id, 10) : 0;
+
+        if (ultimoIdPedidoConhecido === null) {
+            ultimoIdPedidoConhecido = maiorIdAtual;
+            return;
+        }
+
+        if (maiorIdAtual > ultimoIdPedidoConhecido) {
+            const recemChegados = pedidos.filter(p => parseInt(p.id, 10) > ultimoIdPedidoConhecido);
+            ultimoIdPedidoConhecido = maiorIdAtual;
+
+            if (recemChegados.length > 0) {
+                novosPedidosNaoVistos += recemChegados.length;
+                atualizarBadgePedidosMenu();
+                dispararNotificacaoCelularNovoPedido(recemChegados[0]);
+
+                listaPedidosGeral = pedidos;
+                atualizarContadoresStatusPedidos(pedidos);
+                filtrarERenderizarTabelaPedidos();
+
+                if (typeof atualizarDashboard === 'function') {
+                    atualizarDashboard();
+                }
+            }
+        }
+    } catch {
+        // Silencia falhas pontuais de rede no polling
+    }
+}
+
+function iniciarMonitoramentoPedidosCelular() {
+    if (timerMonitorPedidos) clearInterval(timerMonitorPedidos);
+    timerMonitorPedidos = setInterval(verificarNovosPedidosEmSegundoPlano, 10000);
+}
+
 function copiarEnderecoSeguro(idBotao) {
     const btn = document.getElementById(idBotao);
     const texto = btn ? (btn.getAttribute('data-endereco') || '') : '';
@@ -120,6 +353,10 @@ function copiarEnderecoSeguro(idBotao) {
 window.copiarEnderecoSeguro = copiarEnderecoSeguro;
 
 async function carregarEAtualizarTabelaPedidos() {
+    configurarBotaoPermissaoNotificacoes();
+    novosPedidosNaoVistos = 0;
+    atualizarBadgePedidosMenu();
+
     const tabelaCorpo = document.getElementById('lista-pedidos-admin');
     if (!tabelaCorpo) return;
 
@@ -135,7 +372,16 @@ async function carregarEAtualizarTabelaPedidos() {
         `;
 
         listaPedidosGeral = pedidos || [];
-        atualizarContadoresStatusPedidos(pedidos);
+        if (listaPedidosGeral.length > 0) {
+            const maiorId = parseInt(listaPedidosGeral[0].id, 10);
+            if (ultimoIdPedidoConhecido === null || maiorId > ultimoIdPedidoConhecido) {
+                ultimoIdPedidoConhecido = maiorId;
+            }
+        } else if (ultimoIdPedidoConhecido === null) {
+            ultimoIdPedidoConhecido = 0;
+        }
+
+        atualizarContadoresStatusPedidos(listaPedidosGeral);
         filtrarERenderizarTabelaPedidos();
 
     } catch (e) {
@@ -601,6 +847,7 @@ window.imprimirComprovantePedido = imprimirComprovantePedido;
 
 document.addEventListener('DOMContentLoaded', () => {
     carregarEAtualizarTabelaPedidos();
+    iniciarMonitoramentoPedidosCelular();
 
     const botoesStatus = document.querySelectorAll('#abas-status-pedidos .btn-aba-cat');
     botoesStatus.forEach(btn => {
