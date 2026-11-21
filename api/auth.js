@@ -40,7 +40,11 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ erro: 'Método não permitido' });
 
     if (!process.env.DATABASE_URL || !process.env.JWT_SECRET) {
-        return res.status(500).json({ erro: 'Configuração de segurança incompleta no servidor.' });
+        const faltando = [
+            !process.env.DATABASE_URL ? 'DATABASE_URL' : null,
+            !process.env.JWT_SECRET ? 'JWT_SECRET' : null
+        ].filter(Boolean).join(', ');
+        return res.status(500).json({ erro: `Configuração de segurança incompleta no servidor (${faltando}).` });
     }
 
     const sql = neon(process.env.DATABASE_URL);
@@ -106,6 +110,15 @@ export default async function handler(req, res) {
             const roleFinal = (u.role || 'cliente').toString().trim().toLowerCase();
             const token = gerarToken({ id: u.id, email: u.email, role: roleFinal });
 
+            let permissoesObj = {};
+            if (u.permissoes) {
+                try {
+                    permissoesObj = typeof u.permissoes === 'string' ? JSON.parse(u.permissoes) : u.permissoes;
+                } catch {
+                    permissoesObj = {};
+                }
+            }
+
             return res.status(200).json({
                 sucesso: true,
                 token,
@@ -117,7 +130,7 @@ export default async function handler(req, res) {
                     cpf: u.cpf,
                     endereco: u.endereco,
                     role: roleFinal,
-                    permissoes: u.permissoes || {}
+                    permissoes: permissoesObj
                 }
             });
         }
