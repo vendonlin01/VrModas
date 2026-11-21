@@ -1,5 +1,5 @@
 // ==========================================================================
-// VR MODAS - GESTÃO DE PRODUTOS, CATÁLOGO, ESTOQUE & EDIÇÃO (NEON DB - COMPACTO)
+// VR MODAS - GESTÃO DE PRODUTOS, CATÁLOGO, ESTOQUE & EDIÇÃO (NEON DB)
 // js/admin/produtos.js
 // ==========================================================================
 
@@ -31,7 +31,7 @@ function escaparAdminProdutos(str) {
 
 function urlImagemSeguraAdmin(src) {
     const val = String(src || '').trim();
-    if (!val) return 'img/placeholder.png';
+    if (!val) return 'img/produto1.jpg';
     if (
         val.startsWith('data:image/png;base64,') ||
         val.startsWith('data:image/jpeg;base64,') ||
@@ -42,7 +42,7 @@ function urlImagemSeguraAdmin(src) {
     if (/^(https?:\/\/|\/|\.\/|img\/)/i.test(val)) {
         return escaparAdminProdutos(val);
     }
-    return 'img/placeholder.png';
+    return 'img/produto1.jpg';
 }
 
 function configurarUploadImagensProduto() {
@@ -54,14 +54,19 @@ function configurarUploadImagensProduto() {
         const ficheiros = Array.from(e.target.files);
         for (const ficheiro of ficheiros) {
             if (!ficheiro.type.startsWith('image/')) continue;
+            if (listaImagensProdutoBase64.length >= 5) {
+                alert('Limite máximo de 5 fotos por peça atingido.');
+                break;
+            }
             const base64 = await redimensionarEConverterImagem(ficheiro);
             listaImagensProdutoBase64.push(base64);
         }
+        inputImagens.value = '';
         renderizarPreviewImagens();
     });
 }
 
-function redimensionarEConverterImagem(ficheiro, larguraMax = 800) {
+function redimensionarEConverterImagem(ficheiro, larguraMax = 720) {
     return new Promise((resolve) => {
         const leitor = new FileReader();
         leitor.onload = (e) => {
@@ -80,7 +85,7 @@ function redimensionarEConverterImagem(ficheiro, larguraMax = 800) {
                 canvas.height = altura;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, largura, altura);
-                resolve(canvas.toDataURL('image/jpeg', 0.8));
+                resolve(canvas.toDataURL('image/jpeg', 0.72));
             };
             img.src = e.target.result;
         };
@@ -95,7 +100,7 @@ function renderizarPreviewImagens() {
     container.innerHTML = listaImagensProdutoBase64.map((img, idx) => `
         <div style="position: relative; width: 70px; height: 70px; border-radius: 6px; overflow: hidden; border: 1px solid #444;">
             <img src="${urlImagemSeguraAdmin(img)}" style="width: 100%; height: 100%; object-fit: cover;">
-            <button type="button" onclick="removerImagemUpload(${idx})" style="position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); color: #ff4444; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px;">&times;</button>
+            <button type="button" onclick="removerImagemUpload(${idx})" style="position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.75); color: #ff4444; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px;">&times;</button>
         </div>
     `).join('');
 }
@@ -106,6 +111,45 @@ function removerImagemUpload(index) {
 }
 window.removerImagemUpload = removerImagemUpload;
 
+function adicionarCorPendenteDosInputs(silencioso = false) {
+    const inputNomeCor = document.getElementById('input-nome-cor');
+    const inputQtdCor = document.getElementById('input-qtd-cor');
+    if (!inputNomeCor || !inputQtdCor) return false;
+
+    const nomeCor = inputNomeCor.value.trim();
+    const qtdCor = parseInt(inputQtdCor.value, 10);
+
+    if (!nomeCor && isNaN(qtdCor)) return false;
+
+    if (!nomeCor) {
+        if (!silencioso) {
+            alert('Digite o nome da cor (Ex: Azul Marinho, Bege, Preto).');
+            inputNomeCor.focus();
+        }
+        return false;
+    }
+
+    if (isNaN(qtdCor) || qtdCor <= 0) {
+        if (!silencioso) {
+            alert('Digite uma quantidade válida maior que zero para esta cor.');
+            inputQtdCor.focus();
+        }
+        return false;
+    }
+
+    const existente = coresAdicionadas.find(c => c.nome.toLowerCase() === nomeCor.toLowerCase());
+    if (existente) {
+        existente.qtd += qtdCor;
+    } else {
+        coresAdicionadas.push({ nome: nomeCor, qtd: qtdCor });
+    }
+
+    inputNomeCor.value = '';
+    inputQtdCor.value = '';
+    renderizarCoresAdicionadas();
+    return true;
+}
+
 function configurarGerenciadorCores() {
     const btnAddCor = document.getElementById('btn-adicionar-cor');
     const inputNomeCor = document.getElementById('input-nome-cor');
@@ -114,27 +158,21 @@ function configurarGerenciadorCores() {
     if (!btnAddCor) return;
 
     btnAddCor.addEventListener('click', () => {
-        const nomeCor = inputNomeCor.value.trim();
-        const qtdCor = parseInt(inputQtdCor.value, 10);
-
-        if (!nomeCor) {
-            alert('Digite o nome da cor (Ex: Azul Marinho, Bege, etc).');
-            inputNomeCor.focus();
-            return;
+        if (adicionarCorPendenteDosInputs(false)) {
+            inputNomeCor?.focus();
         }
+    });
 
-        if (isNaN(qtdCor) || qtdCor <= 0) {
-            alert('Digite uma quantidade válida para esta cor.');
-            inputQtdCor.focus();
-            return;
-        }
-
-        coresAdicionadas.push({ nome: nomeCor, qtd: qtdCor });
-        inputNomeCor.value = '';
-        inputQtdCor.value = '';
-        inputNomeCor.focus();
-
-        renderizarCoresAdicionadas();
+    [inputNomeCor, inputQtdCor].forEach(inp => {
+        if (!inp) return;
+        inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (adicionarCorPendenteDosInputs(false)) {
+                    inputNomeCor?.focus();
+                }
+            }
+        });
     });
 }
 
@@ -235,9 +273,12 @@ async function carregarEAtualizarTabelaProdutos() {
         const produtos = await sql`SELECT * FROM produtos ORDER BY id DESC;`;
 
         listaProdutosGeral = produtos || [];
-        atualizarContadoresCategorias(produtos);
+        atualizarContadoresCategorias(listaProdutosGeral);
         filtrarERenderizarTabelaProdutos();
 
+        if (typeof window.sincronizarProdutosNeon === 'function') {
+            await window.sincronizarProdutosNeon();
+        }
     } catch (e) {
         console.error('Erro ao carregar lista de produtos:', e);
         tabelaCorpo.innerHTML = `<tr><td colspan="6" style="color: #ff6b6b; text-align: center; padding: 20px; font-size: 12px;">Falha ao obter produtos: ${escaparAdminProdutos(e.message)}</td></tr>`;
@@ -266,7 +307,7 @@ function filtrarERenderizarTabelaProdutos() {
         const precoFmt = Number(p.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         const estoqueTotal = parseInt(p.estoque || 0, 10);
 
-        let primeiraImagem = 'img/placeholder.png';
+        let primeiraImagem = 'img/produto1.jpg';
         try {
             const arrImgs = typeof p.imagens === 'string' ? JSON.parse(p.imagens) : p.imagens;
             if (Array.isArray(arrImgs) && arrImgs.length > 0) primeiraImagem = arrImgs[0];
@@ -291,7 +332,7 @@ function filtrarERenderizarTabelaProdutos() {
         return `
             <tr>
                 <td style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; text-align: left;">
-                    <img src="${srcSegura}" style="width: 38px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/placeholder.png'">
+                    <img src="${srcSegura}" style="width: 38px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid #333; flex-shrink: 0;" onerror="this.src='img/produto1.jpg'">
                     <div style="flex: 1; min-width: 0;">
                         <div style="display: flex; align-items: center; gap: 5px; margin-bottom: 2px;">
                             <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: #222; color: var(--dourado, #d4af37); font-weight: 700;">${cat}</span>
@@ -440,6 +481,9 @@ window.cancelarEdicaoProduto = cancelarEdicaoProduto;
 async function salvarProduto(e) {
     e.preventDefault();
 
+    // Se o usuário digitou uma cor e quantidade mas não clicou no '+', adiciona automaticamente
+    adicionarCorPendenteDosInputs(true);
+
     const editandoId = document.getElementById('editando-id')?.value;
     const nome = document.getElementById('nome-produto')?.value.trim();
     const categoria = document.getElementById('categoria-produto')?.value;
@@ -449,7 +493,8 @@ async function salvarProduto(e) {
     const descricao = document.getElementById('descricao-produto')?.value.trim() || '';
     const destaque = document.getElementById('destaque-promocao')?.checked || false;
 
-    const tamanhos = Array.from(document.querySelectorAll('.check-tamanho:checked')).map(chk => chk.value);
+    const tamanhosSelecionados = Array.from(document.querySelectorAll('.check-tamanho:checked')).map(chk => chk.value);
+    const tamanhos = tamanhosSelecionados.length > 0 ? tamanhosSelecionados : ['Único'];
 
     if (!nome) {
         alert('Por favor, informe o nome do produto.');
@@ -463,8 +508,8 @@ async function salvarProduto(e) {
         alert('Por favor, informe um preço válido.');
         return;
     }
-    if (coresAdicionadas.length === 0 && estoque === 0) {
-        alert('Adicione pelo menos uma cor com quantidade usando o botão (+) ou defina o estoque.');
+    if (coresAdicionadas.length === 0 && estoque <= 0) {
+        alert('Adicione pelo menos uma cor com quantidade usando o botão (+) antes de salvar.');
         return;
     }
     if (listaImagensProdutoBase64.length === 0) {
@@ -475,7 +520,7 @@ async function salvarProduto(e) {
     const btnSubmit = document.getElementById('btn-submit-produto');
     if (btnSubmit) {
         btnSubmit.disabled = true;
-        btnSubmit.innerText = editandoId ? 'Atualizando peça...' : 'Salvando peça no catálogo...';
+        btnSubmit.innerText = editandoId ? 'Atualizando peça...' : 'Publicando peça na vitrine...';
     }
 
     try {
@@ -499,7 +544,7 @@ async function salvarProduto(e) {
                     cores = ${JSON.stringify(coresAdicionadas)}
                 WHERE id = ${parseInt(editandoId, 10)};
             `;
-            alert('✨ Peça atualizada com sucesso!');
+            alert('Peça atualizada e publicada na vitrine com sucesso!');
         } else {
             await sql`
                 INSERT INTO produtos (
@@ -511,7 +556,7 @@ async function salvarProduto(e) {
                     ${JSON.stringify(tamanhos)}, ${JSON.stringify(coresAdicionadas)}
                 );
             `;
-            alert('✨ Peça cadastrada com sucesso no catálogo!');
+            alert('Peça cadastrada e publicada na vitrine com sucesso!');
         }
 
         cancelarEdicaoProduto();
@@ -523,6 +568,7 @@ async function salvarProduto(e) {
     } finally {
         if (btnSubmit) {
             btnSubmit.disabled = false;
+            btnSubmit.innerText = editandoId ? '💾 Atualizar Peça no Catálogo' : '💾 Salvar Peça no Catálogo';
         }
     }
 }
@@ -535,6 +581,9 @@ async function atualizarEstoqueRapido(idProduto, novoEstoque) {
             SET estoque = ${parseInt(novoEstoque, 10) || 0} 
             WHERE id = ${parseInt(idProduto, 10)};
         `;
+        if (typeof window.sincronizarProdutosNeon === 'function') {
+            await window.sincronizarProdutosNeon();
+        }
     } catch (e) {
         console.error('Erro ao atualizar estoque:', e);
         alert('Falha ao atualizar estoque.');

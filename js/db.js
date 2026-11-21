@@ -97,7 +97,7 @@ async function sincronizarProdutosNeon() {
         const sql = await getSql();
         const dadosNeon = await sql`SELECT * FROM produtos ORDER BY id DESC;`;
 
-        if (Array.isArray(dadosNeon) && dadosNeon.length > 0) {
+        if (Array.isArray(dadosNeon)) {
             const produtosFormatados = dadosNeon.map(item => {
                 const imagens = parseListaSeguraDb(item.imagens, [item.imagem || 'img/produto1.jpg']);
                 const tamanhos = parseListaSeguraDb(item.tamanhos, ['P', 'M', 'G']);
@@ -112,6 +112,7 @@ async function sincronizarProdutosNeon() {
                     precoPromocional: item.preco_promocional ? parseFloat(item.preco_promocional) : null,
                     descricao: item.descricao || '',
                     categoria: item.categoria || 'geral',
+                    destaque: Boolean(item.destaque),
                     estoque: estoqueNum,
                     imagem: item.imagem || imagens[0] || 'img/produto1.jpg',
                     imagens,
@@ -130,6 +131,8 @@ async function sincronizarProdutosNeon() {
         console.warn('⚠️ Operando com cache local:', erro.message);
     }
 }
+
+window.sincronizarProdutosNeon = sincronizarProdutosNeon;
 
 document.addEventListener('DOMContentLoaded', () => {
     sincronizarProdutosNeon();

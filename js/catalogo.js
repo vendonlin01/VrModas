@@ -312,10 +312,10 @@ document.addEventListener('DOMContentLoaded', () => {
             filtrados.sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
         }
 
-        // Na vitrine principal da home (quando não há seletor de ordenação), limita destaques se necessário
+        // Na vitrine principal da home (quando não há seletor de ordenação), exibe os 20 lançamentos mais recentes
         const ehPaginaCatalogo = Boolean(document.getElementById('ordenar-produtos'));
         if (!ehPaginaCatalogo && categoriaAtual === 'todos' && !termoBuscaAtual) {
-            renderizarProdutos(filtrados.slice(0, 8));
+            renderizarProdutos(filtrados.slice(0, 20));
         } else {
             renderizarProdutos(filtrados);
         }
