@@ -28,11 +28,15 @@ export default async function handler(req, res) {
             return res.status(400).json({ erro: 'A sacola está vazia.' });
         }
 
-        // 0. Carrega e valida as regras de recebimento e pagamento configuradas pelos administradores
-        const configsRows = await sql`SELECT chave, valor FROM configuracoes;`;
+        // 0. Carrega regras da loja com fallback seguro caso a tabela configuracoes ainda não exista
         const cfgMapa = {};
-        if (Array.isArray(configsRows)) {
-            configsRows.forEach(r => { cfgMapa[r.chave] = r.valor; });
+        try {
+            const configsRows = await sql`SELECT chave, valor FROM configuracoes;`;
+            if (Array.isArray(configsRows)) {
+                configsRows.forEach(r => { cfgMapa[r.chave] = r.valor; });
+            }
+        } catch (errCfg) {
+            console.warn('Tabela configuracoes indisponível no checkout, aplicando padrão:', errCfg.message);
         }
 
         const permitirEntrega = cfgMapa['permitir_entrega'] !== undefined ? cfgMapa['permitir_entrega'] === 'true' : true;
@@ -120,19 +124,23 @@ export default async function handler(req, res) {
         if (cupomCodigo && typeof cupomCodigo === 'string') {
             const codNorm = cupomCodigo.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
             if (codNorm) {
-                const [cupomDb] = await sql`
-                    SELECT codigo, tipo, valor
-                    FROM cupons
-                    WHERE UPPER(codigo) = ${codNorm} AND ativo = true
-                    LIMIT 1;
-                `;
+                try {
+                    const [cupomDb] = await sql`
+                        SELECT codigo, tipo, valor
+                        FROM cupons
+                        WHERE UPPER(codigo) = ${codNorm} AND ativo = true
+                        LIMIT 1;
+                    `;
 
-                if (cupomDb) {
-                    const valCupom = parseFloat(cupomDb.valor);
-                    descontoReal = cupomDb.tipo === 'porcentagem'
-                        ? (subtotalReal * valCupom) / 100
-                        : valCupom;
-                    cupomConfirmado = cupomDb.codigo;
+                    if (cupomDb) {
+                        const valCupom = parseFloat(cupomDb.valor);
+                        descontoReal = cupomDb.tipo === 'porcentagem'
+                            ? (subtotalReal * valCupom) / 100
+                            : valCupom;
+                        cupomConfirmado = cupomDb.codigo;
+                    }
+                } catch (errCupom) {
+                    console.warn('Erro ao consultar cupom no checkout:', errCupom.message);
                 }
             }
         }
@@ -189,6 +197,9 @@ export default async function handler(req, res) {
         });
     } catch (erro) {
         console.error('Erro no checkout antifraude:', erro);
-        return res.status(500).json({ erro: 'Erro interno ao processar o pedido.' });
+        return res.status(500).json({
+            erro: 'Erro interno ao processar o pedido.',
+            detalhe: erro.message || String(erro)
+        });
     }
 }

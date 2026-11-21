@@ -1,6 +1,8 @@
 /* =====================================================
-   SACOLA, ENVIO (CASA/LOJA) & CHECKOUT CONFIGURÁVEL - VR MODAS
+   SACOLA, PERSISTÊNCIA, ALERTA DE PAGAMENTO & CHECKOUT - VR MODAS
    ===================================================== */
+
+const CHAVE_SACOLA_STORAGE = 'vr_modas_sacola_itens';
 
 function escaparHtmlSacola(str) {
     return String(str || '')
@@ -25,6 +27,24 @@ function urlImagemSeguraSacola(src) {
         return escaparHtmlSacola(val);
     }
     return 'img/produto1.jpg';
+}
+
+function carregarItensSacolaStorage() {
+    try {
+        const raw = localStorage.getItem(CHAVE_SACOLA_STORAGE);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+    } catch {
+        return [];
+    }
+}
+
+function salvarItensSacolaStorage(itens) {
+    try {
+        localStorage.setItem(CHAVE_SACOLA_STORAGE, JSON.stringify(itens || []));
+    } catch (e) {
+        console.warn('Não foi possível salvar sacola localmente:', e.message);
+    }
 }
 
 function obterConfigCheckoutLoja() {
@@ -96,12 +116,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const carrinhoLateral = document.getElementById('carrinho-lateral');
     const btnAbrirCarrinho = document.getElementById('abrir-carrinho');
     const btnFecharCarrinho = document.getElementById('fechar-carrinho');
+    const listaItens = document.getElementById('lista-itens');
+
+    let totalCarrinho = 0;
+    let qtdItensCarrinho = 0;
+    let itensNoCarrinhoData = carregarItensSacolaStorage();
+
+    let metodoPagamentoSelecionado = 'pix';
+    let cupomAtivo = null;
+    let tipoEnvioSelecionado = 'entrega';
 
     if (btnAbrirCarrinho) {
         btnAbrirCarrinho.onclick = async () => {
-            await sincronizarConfigCheckoutNeon();
+            itensNoCarrinhoData = carregarItensSacolaStorage();
             renderizarSacola();
             if (carrinhoLateral) carrinhoLateral.classList.add('aberto');
+            await sincronizarConfigCheckoutNeon();
+            renderizarSacola();
         };
     }
     if (btnFecharCarrinho && carrinhoLateral) {
@@ -109,15 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     sincronizarConfigCheckoutNeon();
-
-    const listaItens = document.getElementById('lista-itens');
-    let totalCarrinho = 0;
-    let qtdItensCarrinho = 0;
-    let itensNoCarrinhoData = [];
-
-    let metodoPagamentoSelecionado = 'pix';
-    let cupomAtivo = null;
-    let tipoEnvioSelecionado = 'entrega';
 
     async function obterSqlSacolaSeguro() {
         if (typeof window.getSql === 'function') {
@@ -196,7 +218,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let enderecoEntregaCustom = clienteAtual && clienteAtual.endereco ? formatarEnderecoParaTexto(clienteAtual.endereco) : '';
 
     function renderizarSacola() {
-        if (!listaItens) return;
+        salvarItensSacolaStorage(itensNoCarrinhoData);
+
+        if (!listaItens) {
+            const qtdTotal = itensNoCarrinhoData.reduce((acc, it) => acc + (parseInt(it.quantidade, 10) || 1), 0);
+            const valTotal = itensNoCarrinhoData.reduce((acc, it) => acc + ((Number(it.preco) || 0) * (parseInt(it.quantidade, 10) || 1)), 0);
+            atualizarContadores(qtdTotal, valTotal);
+            return;
+        }
+
         listaItens.innerHTML = '';
         totalCarrinho = 0;
         qtdItensCarrinho = 0;
@@ -258,7 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const cfg = obterConfigCheckoutLoja();
 
-        // Garante que a opção selecionada exista entre as opções permitidas
         if (tipoEnvioSelecionado === 'entrega' && !cfg.permitirEntrega && cfg.permitirRetirada) {
             tipoEnvioSelecionado = 'retirada';
         } else if (tipoEnvioSelecionado === 'retirada' && !cfg.permitirRetirada && cfg.permitirEntrega) {
@@ -304,19 +333,34 @@ document.addEventListener('DOMContentLoaded', () => {
             <button type="button" class="btn-metodo-pag ${metodoPagamentoSelecionado === m.id ? 'ativo' : ''}" data-metodo="${m.id}" style="flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 4px; border: 1px solid #333; background: ${metodoPagamentoSelecionado === m.id ? 'var(--dourado, #d4af37)' : '#1a1a1a'}; color: ${metodoPagamentoSelecionado === m.id ? '#000' : '#fff'}; cursor: pointer;">${m.label}</button>
         `).join('');
 
+        // ALERTA DE PAGAMENTO DINÂMICO NA SACOLA
         let resumoContaHtml = '';
-        if (metodoPagamentoSelecionado === 'pix' && cfg.pixChave) {
+        if (metodoPagamentoSelecionado === 'pix') {
             resumoContaHtml = `
-                <div style="background: #161616; border: 1px dashed rgba(212,175,55,0.45); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; font-size: 11px; color: #ccc;">
+                <div style="background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.35); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 11px; color: #ddd; line-height: 1.4;">
                     <div style="color: var(--dourado, #d4af37); font-weight: 700; margin-bottom: 2px;">💠 Pagamento via Pix</div>
-                    <div><strong>Chave:</strong> <span style="color: #fff;">${escaparHtmlSacola(cfg.pixChave)}</span></div>
-                    ${cfg.pixTitular ? `<div><strong>Titular:</strong> ${escaparHtmlSacola(cfg.pixTitular)}${cfg.pixBanco ? ` (${escaparHtmlSacola(cfg.pixBanco)})` : ''}</div>` : ''}
+                    ${cfg.pixChave
+                        ? `<div><strong>Chave Pix:</strong> <span style="color: #fff;">${escaparHtmlSacola(cfg.pixChave)}</span></div>
+                           ${cfg.pixTitular ? `<div><strong>Titular:</strong> ${escaparHtmlSacola(cfg.pixTitular)}${cfg.pixBanco ? ` • ${escaparHtmlSacola(cfg.pixBanco)}` : ''}</div>` : ''}`
+                        : `<div>A chave Pix da loja será exibida assim que você finalizar o pedido.</div>`
+                    }
+                    ${cfg.instrucoesPagamento ? `<div style="color: #aaa; margin-top: 3px;">${escaparHtmlSacola(cfg.instrucoesPagamento)}</div>` : ''}
                 </div>
             `;
-        } else if ((metodoPagamentoSelecionado === 'credito' || metodoPagamentoSelecionado === 'debito') && cfg.instrucoesPagamento) {
+        } else if (metodoPagamentoSelecionado === 'credito') {
             resumoContaHtml = `
-                <div style="background: #161616; border: 1px solid #292929; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; font-size: 11px; color: #bbb;">
-                    ${escaparHtmlSacola(cfg.instrucoesPagamento)}
+                <div style="background: rgba(79,195,247,0.08); border: 1px solid rgba(79,195,247,0.35); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 11px; color: #ddd; line-height: 1.4;">
+                    <div style="color: #4fc3f7; font-weight: 700; margin-bottom: 2px;">💳 Cartão de Crédito</div>
+                    <div>${cfg.linkCartao ? 'Após concluir o pedido, você receberá o link seguro para pagar no cartão.' : (tipoEnvioSelecionado === 'retirada' ? 'Pagamento na maquininha no momento da retirada na loja.' : 'Pagamento na maquininha no momento da entrega.')}</div>
+                    ${cfg.instrucoesPagamento ? `<div style="color: #aaa; margin-top: 3px;">${escaparHtmlSacola(cfg.instrucoesPagamento)}</div>` : ''}
+                </div>
+            `;
+        } else if (metodoPagamentoSelecionado === 'debito') {
+            resumoContaHtml = `
+                <div style="background: rgba(76,175,80,0.08); border: 1px solid rgba(76,175,80,0.35); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 11px; color: #ddd; line-height: 1.4;">
+                    <div style="color: #66bb6a; font-weight: 700; margin-bottom: 2px;">💳 Cartão de Débito</div>
+                    <div>${tipoEnvioSelecionado === 'retirada' ? 'Pagamento no débito na maquininha ao retirar na loja.' : 'Pagamento no débito na maquininha no ato da entrega.'}</div>
+                    ${cfg.instrucoesPagamento ? `<div style="color: #aaa; margin-top: 3px;">${escaparHtmlSacola(cfg.instrucoesPagamento)}</div>` : ''}
                 </div>
             `;
         }
@@ -362,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${cupomAtivo ? `<div style="color: #4caf50; font-size: 11px; margin-bottom: 8px; font-weight: 700;">✓ Cupom ${cupomCodigoSeguro} aplicado (-R$ ${valorDesconto.toFixed(2)})</div>` : ''}
 
                 <label style="font-size: 11px; text-transform: uppercase; color: var(--dourado, #d4af37); font-weight: 700; display: block; margin-bottom: 8px;">Forma de Pagamento</label>
-                <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <div style="display: flex; gap: 6px;">
                     ${botoesPagamentoHtml}
                 </div>
                 ${resumoContaHtml}
@@ -493,24 +537,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 prodRef = produtosAtuais[0];
             }
 
-            const estoqueMax = Math.max(0, parseInt(prodRef?.estoque || 10, 10));
+            if (!prodRef || !prodRef.id) {
+                alert("Não foi possível identificar o produto. Atualize a página e tente novamente.");
+                return;
+            }
+
+            const estoqueMax = Math.max(0, parseInt(prodRef.estoque || 10, 10));
             if (estoqueMax <= 0) {
                 alert("Este produto está esgotado no momento.");
                 return;
             }
 
-            const nomeStr = document.getElementById('detalhe-nome')?.innerText || prodRef?.nome || 'Peça VR Modas';
+            const nomeStr = document.getElementById('detalhe-nome')?.innerText || prodRef.nome || 'Peça VR Modas';
             const tamSelecionado = document.querySelector('input[name="tamanho"]:checked')?.value || 'Padrão';
             const corBruta = document.querySelector('input[name="cor"]:checked')?.value || 'Padrão';
             const corSelecionada = limparTextoCor(corBruta);
 
-            let precoCobrado = Number(prodRef?.preco || 0);
-            if (prodRef?.precoPromocional && Number(prodRef.precoPromocional) < Number(prodRef.preco)) {
+            let precoCobrado = Number(prodRef.preco || 0);
+            if (prodRef.precoPromocional && Number(prodRef.precoPromocional) < Number(prodRef.preco)) {
                 precoCobrado = Number(prodRef.precoPromocional);
             }
 
             const imgEl = document.getElementById('detalhe-img');
-            const fotoAtual = imgEl ? imgEl.src : (prodRef?.imagem || 'img/produto1.jpg');
+            const fotoAtual = imgEl ? imgEl.src : (prodRef.imagem || 'img/produto1.jpg');
 
             const inputQtd = document.getElementById('qtd-produto');
             let qtd = parseInt(inputQtd?.value || inputQtd?.innerText || '1', 10);
@@ -518,7 +567,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (qtd > estoqueMax) qtd = estoqueMax;
 
             const itemExistente = itensNoCarrinhoData.find(it =>
-                it.nome === nomeStr && it.tamanho === tamSelecionado && it.cor === corSelecionada
+                String(it.idProduto) === String(prodRef.id) &&
+                it.tamanho === tamSelecionado &&
+                it.cor === corSelecionada
             );
 
             if (itemExistente) {
@@ -531,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 itensNoCarrinhoData.push({
                     idRef: Date.now(),
-                    idProduto: prodRef?.id,
+                    idProduto: prodRef.id,
                     nome: nomeStr,
                     preco: precoCobrado,
                     quantidade: qtd,
@@ -721,7 +772,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dadosServidor = await resposta.json();
 
                 if (!resposta.ok || !dadosServidor.sucesso) {
-                    alert(dadosServidor.erro || "Não foi possível finalizar o pedido.");
+                    const msgErro = dadosServidor.detalhe
+                        ? `${dadosServidor.erro}\n(${dadosServidor.detalhe})`
+                        : (dadosServidor.erro || "Não foi possível finalizar o pedido.");
+                    alert(msgErro);
                     return;
                 }
 
@@ -751,6 +805,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 itensNoCarrinhoData = [];
                 cupomAtivo = null;
+                salvarItensSacolaStorage([]);
                 renderizarSacola();
                 if (carrinhoLateral) carrinhoLateral.classList.remove('aberto');
 
@@ -764,4 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     }
+
+    // Renderiza a sacola salva ao carregar qualquer página
+    renderizarSacola();
 });
